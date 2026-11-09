@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="bn">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101828">
+  <meta name="description" content="Sajjadhub — সুন্দর ডিজাইন, সহজে কিনুন ও ডাউনলোড করুন।">
+  <title>Sajjadhub — ডিজাইন শপ</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#"><span class="brand-mark">S</span><span>Sajjad<span class="brand-light">hub</span><small>ডিজাইন শপ</small></span></a>
+    <nav><a href="#shop">ডিজাইন</a><a href="#how">কীভাবে কিনবেন</a><a href="#contact">যোগাযোগ</a></nav>
+    <button class="cart-button" id="openCart" aria-label="কার্ট খুলুন">কার্ট <span id="cartCount">0</span></button>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="hero-copy">
+        <span class="eyebrow"><i></i> DIGITAL DESIGN MARKETPLACE</span>
+        <h1>আপনার পরের সুন্দর ডিজাইনটি<br><em>এখানেই খুঁজে নিন।</em></h1>
+        <p>Sajjadhub-এ পাবেন পোস্টার, ব্যানার, সোশ্যাল মিডিয়া ও প্রিন্টের জন্য মানসম্মত ডিজাইন। পছন্দ করুন, কিনুন, ডাউনলোড করুন।</p>
+        <a class="primary-link" href="#shop">ডিজাইন দেখুন <span>↗</span></a>
+        <div class="hero-note"><span>✦</span> ডিজিটাল পণ্য · দ্রুত ডেলিভারি · সহজ কেনাকাটা</div>
+      </div>
+      <div class="hero-art" aria-label="ডিজাইন প্রিভিউ">
+        <div class="art-glow"></div>
+        <div class="poster poster-back"><span>CREATIVE</span><b>IDEAS<br>INTO<br>DESIGN.</b><small>VISUAL COLLECTION / 2026</small></div>
+        <div class="poster poster-front"><span class="poster-tag">SAJJADHUB SELECT</span><b>DESIGN<br><i>YOUR</i><br>WORLD.</b><div class="poster-bottom"><span>01 — 06</span><span>✳</span></div></div>
+        <div class="floating-chip">✦ নতুন কালেকশন</div>
+      </div>
+    </section>
+
+    <section class="trust-strip">
+      <div><b>01</b><span>পছন্দের ডিজাইন বাছাই</span></div><div><b>02</b><span>নিরাপদ পেমেন্ট</span></div><div><b>03</b><span>ডাউনলোড করে ব্যবহার</span></div>
+    </section>
+
+    <section class="shop-section" id="shop">
+      <div class="section-heading"><div><span class="eyebrow">THE COLLECTION</span><h2>এক্সপ্লোর করুন <em>ডিজাইন</em></h2></div><div class="shop-tools"><input id="searchInput" type="search" placeholder="ডিজাইন খুঁজুন..." aria-label="ডিজাইন খুঁজুন"><select id="categoryFilter" aria-label="ক্যাটাগরি"><option value="সব">সব ক্যাটাগরি</option><option>পোস্টার</option><option>ব্যানার</option><option>সোশ্যাল মিডিয়া</option><option>লোগো</option></select></div></div>
+      <div class="category-pills" id="categoryPills"><button class="active" data-category="সব">সব ডিজাইন</button><button data-category="পোস্টার">পোস্টার</button><button data-category="ব্যানার">ব্যানার</button><button data-category="সোশ্যাল মিডিয়া">সোশ্যাল মিডিয়া</button><button data-category="লোগো">লোগো</button></div>
+      <div class="product-grid" id="productGrid"></div>
+      <p class="empty-state" id="emptyState" hidden>এই নামে কোনো ডিজাইন পাওয়া যায়নি।</p>
+    </section>
+
+    <section class="how-section" id="how"><div><span class="eyebrow">SIMPLE & QUICK</span><h2>কেনাকাটা হবে <em>সহজ।</em></h2></div><div class="steps"><article><span>01</span><h3>ডিজাইন বাছাই</h3><p>পছন্দের ডিজাইনটি দেখে কার্টে যোগ করুন।</p></article><article><span>02</span><h3>পেমেন্ট সম্পন্ন</h3><p>চেকআউটে গিয়ে পেমেন্টের ধাপ অনুসরণ করুন।</p></article><article><span>03</span><h3>ডাউনলোড</h3><p>পেমেন্ট যাচাই হলে আপনার ডিজাইনের ডাউনলোড লিংক পাবেন।</p></article></div></section>
+  </main>
+
+  <footer id="contact"><a class="brand" href="#"><span class="brand-mark">S</span><span>Sajjad<span class="brand-light">hub</span><small>ডিজাইন শপ</small></span></a><p>আপনার সৃজনশীলতার ডিজিটাল ঠিকানা।</p><span>© <span id="year"></span> Sajjadhub. সর্বস্বত্ব সংরক্ষিত।</span></footer>
+
+  <div class="drawer-backdrop" id="backdrop"></div>
+  <aside class="cart-drawer" id="cartDrawer" aria-label="শপিং কার্ট">
+    <div class="drawer-head"><div><span class="eyebrow">YOUR SELECTION</span><h2>আপনার কার্ট</h2></div><button id="closeCart" class="icon-button" aria-label="বন্ধ করুন">×</button></div>
+    <div id="cartItems" class="cart-items"><p class="cart-empty">আপনার কার্ট এখনো খালি।</p></div>
+    <div class="cart-footer"><div class="total-row"><span>সর্বমোট</span><strong id="cartTotal">৳০</strong></div><button class="checkout-button" id="checkoutButton" disabled>চেকআউট করুন <span>→</span></button><small>পেমেন্ট গেটওয়ে যুক্ত না হওয়া পর্যন্ত চেকআউট ডেমো মোডে থাকবে।</small></div>
+  </aside>
+
+  <dialog id="productDialog" class="product-dialog"><div class="product-detail-modal"><button type="button" class="modal-close" id="closeProductDialog" aria-label="বন্ধ করুন">×</button><div id="productDetailContent"></div></div></dialog>
+  <dialog id="checkoutDialog"><form method="dialog" class="checkout-modal"><button type="button" class="modal-close" id="closeCheckout" aria-label="বন্ধ করুন">×</button><span class="eyebrow">MANUAL NAGAD PAYMENT</span><h2>অর্ডার সম্পন্ন করুন</h2><p>নিচের ব্যক্তিগত Nagad নম্বরে <b>Send Money</b> করে পেমেন্ট করুন। পেমেন্ট যাচাই না হওয়া পর্যন্ত অর্ডারটি Pending থাকবে।</p><div class="nagad-box"><small>পেমেন্ট পাঠানোর নম্বর</small><strong id="nagadNumber">01951608000</strong><button type="button" id="copyNagad" class="copy-button">নম্বর কপি করুন</button></div><label>আপনার ইমেইল<input id="buyerEmail" type="email" placeholder="name@example.com" required></label><label>যে নম্বর থেকে টাকা পাঠিয়েছেন<input id="senderPhone" type="tel" inputmode="numeric" placeholder="01XXXXXXXXX" required></label><label>Nagad TrxID<input id="trxId" type="text" placeholder="ট্রানজেকশন আইডি লিখুন" required></label><div class="total-row"><span>অর্ডারের মোট</span><strong id="dialogTotal">৳০</strong></div><button class="checkout-button" id="submitPayment" type="button">পেমেন্ট তথ্য কপি করুন</button><small>এই ডেমো সংস্করণে তথ্য সার্ভারে জমা হয় না। কপি করা অর্ডার তথ্য সাইট পরিচালকের কাছে পাঠাতে হবে; যাচাইয়ের পরই ডিজাইন দেওয়া যাবে।</small><p id="checkoutMessage" class="checkout-message" role="status"></p></form></dialog>
+  <script src="app.js"></script>
+</body>
+</html>
