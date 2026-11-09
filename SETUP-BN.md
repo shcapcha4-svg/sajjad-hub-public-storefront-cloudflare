@@ -1,21 +1,21 @@
-# Sajjadhub Admin + D1 + R2 সেটআপ
+# Sajjadhub Admin + D1 + Backblaze B2 সেটআপ
 
 ## এই সংস্করণে যা আছে
 - আগের storefront ডিজাইন, search/filter, cart এবং product details রাখা হয়েছে।
 - `/admin.html`-এ password-protected Admin Panel।
 - ডিজাইন/প্রিভিউ ছবি upload, পণ্য edit ও remove।
 - D1-এ product এবং order সংরক্ষণ।
-- R2-এ preview ও আসল downloadable file private storage।
+- Backblaze B2-তে preview ও আসল downloadable file private storage।
 - Admin order-এ Nagad TrxID যাচাই করে Paid/Reject করতে পারবেন; Paid হলে download link তৈরি হবে।
 
 ## Cloudflare-এ একবারের সেটআপ
 তোমার বর্তমান Pages প্রজেক্ট GitHub-এর সঙ্গে যুক্ত, তাই ফাইল GitHub-এ push করলে Cloudflare স্বয়ংক্রিয়ভাবে deploy করবে। Dashboard-এর ZIP drag-and-drop দিয়ে Functions deploy হয় না; Functions-সহ এই সংস্করণ GitHub integration বা Wrangler দিয়ে deploy করতে হবে।
 
 1. Cloudflare Dashboard → Storage & databases → D1 SQL Database → Create database। নাম দিন `sajjadhub-db`।
-2. Storage & databases → R2 object storage → Create bucket। নাম দিন `sajjadhub-product-files`। Bucket public করবেন না।
+2. Backblaze B2-তে একটি private bucket তৈরি করুন। Bucket public করবেন না। ওই bucket-এর জন্য read, write ও delete অনুমতিসহ একটি Application Key তৈরি করুন; key ID, application key, bucket-এর নাম এবং S3 endpoint প্রস্তুত রাখুন। Endpoint-এর উদাহরণ `https://s3.us-west-004.backblazeb2.com`—আপনার bucket-এর region অনুযায়ী endpoint ব্যবহার করুন।
 3. Workers & Pages → `sajjadhub` project → Settings → Bindings → Add → D1 database। Variable name দিন `DB`, তারপর `sajjadhub-db` নির্বাচন করুন।
-4. একই Bindings পেজে Add → R2 bucket। Variable name দিন `PRODUCT_FILES`, তারপর `sajjadhub-product-files` নির্বাচন করুন।
-5. Settings → Variables and Secrets-এ `ADMIN_PASSWORD` নামে শক্তিশালী আলাদা admin password দিন এবং `SESSION_SECRET` নামে অন্তত 32 random অক্ষরের secret দিন। দুটিই Secret হিসেবে রাখুন। এগুলো কাউকে পাঠাবেন না।
+4. Settings → Variables and Secrets-এ `B2_BUCKET`, `B2_ENDPOINT`, `B2_KEY_ID` এবং `B2_APPLICATION_KEY` নামে B2-এর মানগুলো Secret হিসেবে যোগ করুন। `B2_ENDPOINT`-এ আপনার bucket-এর region-এর S3 endpoint দিন, যেমন `https://s3.us-west-004.backblazeb2.com`।
+5. একই জায়গায় `ADMIN_PASSWORD` নামে শক্তিশালী আলাদা admin password দিন এবং `SESSION_SECRET` নামে অন্তত 32 random অক্ষরের secret দিন। সবগুলো Secret হিসেবে রাখুন। এগুলো কাউকে পাঠাবেন না।
 6. D1 → `sajjadhub-db` → Console-এ `migrations/0001_initial.sql` ফাইলের সম্পূর্ণ SQL একবার চালান।
 7. এই ZIP extract করে প্রজেক্টের ফাইলগুলো তোমার VS Code-এর `Sajjadhub-public-storefront-cloudflare` ফোল্ডারের ভেতরে overwrite/merge করো। পুরোনো `functions/api/health.js` থাকলে নতুনটির সঙ্গে মিলিয়ে নাও।
 8. VS Code Terminal-এ চালাও:
@@ -32,7 +32,7 @@ Admin Panel → নতুন ডিজাইন আপলোড → নাম, �
 ক্রেতা checkout-এ ইমেইল, টাকা পাঠানো নম্বর ও Nagad TrxID জমা দিলে D1-এ Pending order হবে। Admin-কে Nagad লেনদেন নিজে যাচাই করে Paid করতে হবে। Paid হলে অর্ডারের জন্য download link তৈরি হবে; Admin Panel থেকে লিংক কপি করে ক্রেতাকে পাঠাতে হবে। এই সংস্করণ নিজে থেকে ইমেইল পাঠায় না এবং Nagad API দিয়ে পেমেন্ট যাচাই করে না।
 
 ## নিরাপত্তা ও গুরুত্বপূর্ণ নোট
-- R2 bucket public করবেন না; ফাইল API binding দিয়ে পরিবেশন হয়।
+- Backblaze B2 bucket public করবেন না; ফাইল API-এর মাধ্যমে privateভাবে পরিবেশন হয়।
 - `ADMIN_PASSWORD` ও `SESSION_SECRET` কখনো HTML/JS-এ লিখবেন না।
 - প্রথমবার লাইভ করার আগে নিজের একটি test product দিয়ে upload, edit, remove এবং test order করে নিন।
 - Admin login cookie 8 ঘণ্টা কার্যকর থাকে।
