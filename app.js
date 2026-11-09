@@ -73,18 +73,15 @@ document.getElementById("openCart").onclick=openCart;document.getElementById("cl
 document.getElementById("checkoutButton").onclick=()=>{closeCart();document.getElementById("checkoutDialog").showModal();document.getElementById("checkoutMessage").textContent=""};
 document.getElementById("copyNagad").onclick=async()=>{try{await navigator.clipboard.writeText("01951608000");document.getElementById("checkoutMessage").textContent="Nagad নম্বর কপি হয়েছে।"}catch{document.getElementById("checkoutMessage").textContent="Nagad নম্বর: 01951608000"}};
 document.getElementById("submitPayment").onclick=async()=>{
-  const email=document.getElementById("buyerEmail"), sender=document.getElementById("senderPhone"), trx=document.getElementById("trxId");
+  const email=document.getElementById("buyerEmail"), sender=document.getElementById("senderPhone"), trx=document.getElementById("trxId"), msg=document.getElementById("checkoutMessage"), btn=document.getElementById("submitPayment");
   if(!email.reportValidity()||!sender.reportValidity()||!trx.reportValidity())return;
-  if(!cart.length){document.getElementById("checkoutMessage").textContent="আপনার কার্ট খালি।";return;}
-  const orderId="SH"+Date.now().toString().slice(-8);
-  const total=cart.reduce((a,b)=>a+b.qty*b.price,0);
-  const lines=["Sajjadhub অর্ডার তথ্য",`অর্ডার আইডি: ${orderId}`,`ইমেইল: ${email.value.trim()}`,`পাঠানো নম্বর: ${sender.value.trim()}`,`Nagad TrxID: ${trx.value.trim()}`,`মোট: ${money(total)}`,"পেমেন্ট পদ্ধতি: Nagad Send Money", "স্ট্যাটাস: Pending — ম্যানুয়াল যাচাই প্রয়োজন", "পণ্য: "+cart.map(x=>`${x.name} × ${x.qty}`).join(", ")].join("\n");
-  try {
-    await navigator.clipboard.writeText(lines);
-    document.getElementById("checkoutMessage").textContent="অর্ডারের তথ্য কপি হয়েছে। এখন এই তথ্য Sajjadhub পরিচালকের কাছে আপনার নির্ধারিত যোগাযোগ মাধ্যমে পাঠান। এই ওয়েবসাইট তথ্য সার্ভারে পাঠায় না বা অর্ডার সংরক্ষণ করে না। পেমেন্ট যাচাই না হওয়া পর্যন্ত কোনো ডাউনলোড দেওয়া হবে না।";
-  } catch(e) {
-    document.getElementById("checkoutMessage").textContent="ক্লিপবোর্ডে কপি করা যায়নি। অনুগ্রহ করে আপনার দেওয়া তথ্য ও অর্ডারের বিবরণ কপি করে Sajjadhub পরিচালকের কাছে পাঠান। ওয়েবসাইট তথ্য সার্ভারে পাঠায় না বা অর্ডার সংরক্ষণ করে না।";
-  }
+  if(!cart.length){msg.textContent="আপনার কার্ট খালি।";return;}
+  btn.disabled=true;msg.textContent="অর্ডার জমা হচ্ছে...";
+  try{
+    const response=await fetch('/api/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email.value.trim(),phone:sender.value.trim(),trxId:trx.value.trim(),items:cart.map(x=>({id:x.id,qty:x.qty}))})});
+    const data=await response.json();if(!response.ok||!data.success)throw new Error(data.message||'অর্ডার জমা হয়নি।');
+    msg.textContent=`অর্ডার ${data.orderId} সফলভাবে জমা হয়েছে। পেমেন্ট যাচাই শেষে ডাউনলোডের ব্যবস্থা করা হবে।`;cart=[];renderCart();
+  }catch(error){msg.textContent=error.message||'সার্ভারের সঙ্গে সংযোগ হয়নি। আবার চেষ্টা করুন।'}finally{btn.disabled=false}
 };
 
 search.addEventListener("input",renderProducts);filter.addEventListener("change",renderProducts);
@@ -92,3 +89,4 @@ document.getElementById("categoryPills").addEventListener("click",e=>{const c=e.
 filter.addEventListener("change",()=>document.querySelectorAll(".category-pills button").forEach(b=>b.classList.toggle("active",b.dataset.category===filter.value)));
 document.getElementById("year").textContent=new Date().getFullYear();
 renderProducts();renderCart();
+(async()=>{try{const r=await fetch('/api/products');const d=await r.json();if(r.ok&&d.success){products=d.products;renderProducts();}}catch(e){console.warn('Products API unavailable; showing sample products.',e)}})();
