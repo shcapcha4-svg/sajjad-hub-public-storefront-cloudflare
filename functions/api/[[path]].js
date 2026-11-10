@@ -352,6 +352,7 @@ export async function onRequest({ request, env }) {
       const items = Array.isArray(body.items) ? body.items : [];
 
       if (
+        !customerName ||
         !/^\S+@\S+\.\S+$/.test(email) ||
         !/^01\d{9}$/.test(phone) ||
         trx.length < 4 ||
