@@ -393,3 +393,19 @@ body[data-theme="dark"] .checkout-email-field small{color:#cbd5e1}
 body[data-theme="dark"] .topbar nav a[href="#my-orders"]{background:#34451f;border-color:#526b35;color:#e2f6bd}
 body[data-theme="dark"] .my-orders-panel{background:linear-gradient(145deg,#202c25,#1f2937 70%);border-color:#475569}
 @media(max-width:760px){.my-orders-panel{padding:22px 14px;border-radius:18px}}
+
+
+/* Simplified customer order status */
+.my-orders-heading{margin:0 auto 18px}
+.my-orders-heading h2{margin:0;text-align:center;font-size:clamp(25px,3vw,34px)}
+.my-saved-orders{max-width:620px;margin:0 auto;gap:10px}
+.my-order-card{padding:12px 16px;border-radius:12px;box-shadow:none}
+.my-order-simple-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:10px 2px}
+.my-order-simple-row+.my-order-simple-row{border-top:1px solid var(--line,#e4e7ec)}
+.my-order-product-name{font-weight:600;font-size:14px}
+.my-order-simple-status{display:inline-flex;align-items:center;justify-content:center;min-width:92px;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:800;text-decoration:none}
+.my-order-simple-status.is-pending{background:#fff4db;color:#9a6700}
+.my-order-simple-status.is-download{background:#087443;color:#fff}
+body[data-theme="dark"] .my-order-simple-row+.my-order-simple-row{border-color:#374151}
+body[data-theme="dark"] .my-order-simple-status.is-pending{background:#59451b;color:#fde68a}
+@media(max-width:620px){.my-orders-section{padding:55px 18px}.my-order-card{padding:10px 12px}.my-order-product-name{font-size:13px}.my-order-simple-status{min-width:82px;padding:7px 11px}}
