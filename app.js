@@ -127,6 +127,8 @@ document.getElementById("submitPayment").onclick=async()=>{
 };
 
 // Customer order cards and secure, payment-gated downloads.
+const pendingDownloadUrls=new Set();
+const expiredDownloadUrls=new Set();
 function renderMyOrderCard(order){
   const items=(order.items||[]).map(item=>{
     const productId=String(item.product_id);
@@ -134,8 +136,11 @@ function renderMyOrderCard(order){
     const file=(order.downloads||[]).find(download=>
       String(download.productId??download.product_id??"")===productId && download.url
     );
-    const status=paid&&file
-      ? '<a class="my-order-simple-status is-download" href="'+escapeHTML(file.url)+'">Download</a>'
+    const downloadUrl=file?.url?String(file.url):"";
+    const status=paid&&file&&expiredDownloadUrls.has(downloadUrl)
+      ? '<span class="my-order-simple-status is-pending">আপনার কোনো ডাউনলোড ফাইল নেই</span>'
+      : paid&&file
+        ? '<a class="my-order-simple-status is-download" href="'+escapeHTML(file.url)+'">Download</a>'
       : paid
         ? '<span class="my-order-simple-status is-pending">ফাইল যুক্ত নেই</span>'
         : '<span class="my-order-simple-status is-pending">Pending</span>';
@@ -162,18 +167,19 @@ async function loadSavedCustomerOrders(){
 document.querySelector('a[href="#my-orders"]')?.addEventListener("click",()=>{loadSavedCustomerOrders();});
 loadSavedCustomerOrders();
 
-// Download-এ ক্লিক করলে সাময়িক বার্তা দেখাবে; ২০ সেকেন্ড পর আগের লেখায় ফিরবে।
+// Download-এ ক্লিকের ২০ সেকেন্ড পর Download লিংক সরিয়ে বার্তা দেখাবে।
 document.getElementById("mySavedOrders")?.addEventListener("click",event=>{
   const link=event.target.closest("a.my-order-simple-status.is-download");
   if(!link)return;
-  const originalText=link.textContent;
+  const downloadUrl=link.href;
+  if(pendingDownloadUrls.has(downloadUrl)||expiredDownloadUrls.has(downloadUrl))return;
+  pendingDownloadUrls.add(downloadUrl);
   link.textContent="ডাউনলোড শুরু হয়েছে";
   link.setAttribute("aria-label","ডাউনলোড শুরু হয়েছে");
-  const clickedLink=link;
-  setTimeout(()=>{
-    if(!clickedLink.isConnected)return;
-    clickedLink.textContent=originalText;
-    clickedLink.setAttribute("aria-label","Download");
+  setTimeout(async()=>{
+    pendingDownloadUrls.delete(downloadUrl);
+    expiredDownloadUrls.add(downloadUrl);
+    await loadSavedCustomerOrders();
   },20000);
 });
 
