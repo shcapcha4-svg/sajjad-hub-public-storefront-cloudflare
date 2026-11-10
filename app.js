@@ -137,7 +137,9 @@ function renderMyOrderCard(order){
       String(download.productId??download.product_id??"")===productId && download.url
     );
     const downloadUrl=file?.url?String(file.url):"";
-    const status=paid&&file&&expiredDownloadUrls.has(downloadUrl)
+    const serverExpired=Boolean(file?.expiresAt&&Date.parse(file.expiresAt)<=Date.now());
+    const isExpired=serverExpired||expiredDownloadUrls.has(downloadUrl);
+    const status=paid&&file&&isExpired
       ? '<span class="my-order-simple-status is-pending">আপনার কোনো ডাউনলোড ফাইল নেই</span>'
       : paid&&file
         ? '<a class="my-order-simple-status is-download" href="'+escapeHTML(file.url)+'">Download</a>'
@@ -172,10 +174,15 @@ document.getElementById("mySavedOrders")?.addEventListener("click",event=>{
   const link=event.target.closest("a.my-order-simple-status.is-download");
   if(!link)return;
   const downloadUrl=link.href;
-  if(pendingDownloadUrls.has(downloadUrl)||expiredDownloadUrls.has(downloadUrl))return;
+  if(pendingDownloadUrls.has(downloadUrl)||expiredDownloadUrls.has(downloadUrl)){
+    event.preventDefault();
+    return;
+  }
   pendingDownloadUrls.add(downloadUrl);
   link.textContent="ডাউনলোড শুরু হয়েছে";
   link.setAttribute("aria-label","ডাউনলোড শুরু হয়েছে");
+  link.setAttribute("aria-disabled","true");
+  link.style.pointerEvents="none";
   setTimeout(async()=>{
     pendingDownloadUrls.delete(downloadUrl);
     expiredDownloadUrls.add(downloadUrl);
