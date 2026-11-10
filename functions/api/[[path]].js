@@ -236,86 +236,86 @@ async function b2Request(env, method, key, body, contentType) {
     `AWS4-HMAC-SHA256 Credential=${keyId}/${scope}, SignedHeaders=${signedHeaders}, Signature=${signature}`
   );
 
-  // A FixedLengthStream makes Workers send the exact Content-Length
-  // expected by S3-compatible storage.
-  if (method === "PUT" && body !== undefined && body !== null) {
-    console.log("B2_STREAM_DIAG_START", JSON.stringify({
-      method,
-      expectedBytes: body.byteLength,
-      bodyType: body.constructor?.name,
-      contentLengthHeaderBeforeFetch: headers.get("content-length"),
-    }));
-    const fixedBody = new FixedLengthStream(body.byteLength);
-    // Construct the fixed-length Request first, then start fetch before
-    // writing so the readable side is consumed while bytes are produced.
-    const uploadRequest = new Request(url, {
-      method,
-      headers,
-      body: fixedBody.readable,
-    });
-    const uploadPromise = fetch(uploadRequest);
-
-    const writer = fixedBody.writable.getWriter();
-    try {
-      const writeResult = await writer.write(body);
-      console.log("B2_STREAM_DIAG_WRITE_DONE", JSON.stringify({
-        expectedBytes: body.byteLength,
-        writeResult: writeResult ?? null,
-      }));
-      await writer.close();
-      console.log("B2_STREAM_DIAG_CLOSED", JSON.stringify({
-        expectedBytes: body.byteLength,
-      }));
-    } catch (error) {
-      console.error("B2_STREAM_DIAG_WRITE_ERROR", String(error));
-      try {
-        await writer.abort(error);
-      } catch {}
-      throw error;
-    }
-
-    const response = await uploadPromise;
-    console.log("B2_STREAM_DIAG_RESPONSE", JSON.stringify({
-      status: response.status,
-      expectedBytes: body.byteLength,
-      responseContentLength: response.headers.get("content-length"),
-    }));
-    return response;
-  }
 
   return fetch(url, { method, headers });
 }
 
 async function putB2(env, key, file, contentType) {
-  console.log("B2_FILE_DIAG", JSON.stringify({
-    key,
-    fileSize: file.size,
-    fileType: file.type,
-    contentType,
-  }));
   const body = new Uint8Array(await file.arrayBuffer());
-  console.log("B2_BUFFER_DIAG", JSON.stringify({
-    key,
-    fileSize: file.size,
-    arrayBufferBytes: body.byteLength,
-    bufferLength: body.buffer.byteLength,
-    byteOffset: body.byteOffset,
-  }));
 
   if (body.byteLength !== file.size) {
     throw new Error("আপলোডের ফাইলের আকার মেলেনি। আবার ফাইল নির্বাচন করুন।");
   }
 
-  const response = await b2Request(env, "PUT", key, body, contentType);
+  const { B2_BUCKET: bucket, B2_KEY_ID: keyId, B2_APPLICATION_KEY: applicationKey } = env;
+  if (!bucket || !keyId || !applicationKey) {
+    throw new Error("B2_BUCKET, B2_KEY_ID ও B2_APPLICATION_KEY configure করা হয়নি।");
+  }
 
+  // Authorize with the B2 Native API.
+  const authResponse = await fetch(
+    "https://api.backblazeb2.com/b2api/v4/b2_authorize_account",
+    {
+      headers: {
+        Authorization: `Basic ${btoa(`${keyId}:${applicationKey}`)}`,
+      },
+    }
+  );
+  if (!authResponse.ok) {
+    throw new Error(`B2 authorization ব্যর্থ হয়েছে (${authResponse.status})।`);
+  }
+  const auth = await authResponse.json();
+  const storage = auth.apiInfo?.storageApi;
+  const allowedBuckets = storage?.allowed?.buckets || [];
+  const bucketInfo = allowedBuckets.find((item) => item.name === bucket);
+  if (!storage?.apiUrl || !auth.authorizationToken || !bucketInfo?.id) {
+    throw new Error("B2 authorization-এ নির্ধারিত bucket পাওয়া যায়নি।");
+  }
+
+  // Request a dedicated upload URL for this bucket.
+  const uploadUrlResponse = await fetch(
+    `${storage.apiUrl}/b2api/v4/b2_get_upload_url?bucketId=${encodeURIComponent(bucketInfo.id)}`,
+    {
+      headers: { Authorization: auth.authorizationToken },
+    }
+  );
+  if (!uploadUrlResponse.ok) {
+    const detail = (await uploadUrlResponse.text()).slice(0, 300);
+    throw new Error(`B2 upload URL পাওয়া যায়নি (${uploadUrlResponse.status})। ${detail}`);
+  }
+  const uploadInfo = await uploadUrlResponse.json();
+
+  const sha1 = hex(await crypto.subtle.digest("SHA-1", body));
+  const uploadRequest = new Request(uploadInfo.uploadUrl, {
+    method: "POST",
+    headers: {
+      Authorization: uploadInfo.authorizationToken,
+      "X-Bz-File-Name": encodeURIComponent(key),
+      "Content-Type": contentType || "b2/x-auto",
+      "X-Bz-Content-Sha1": sha1,
+    },
+    // A TypedArray has a fixed length; Workers sets Content-Length automatically.
+    body,
+  });
+
+  console.log("B2_NATIVE_UPLOAD_START", JSON.stringify({
+    key,
+    expectedBytes: body.byteLength,
+    contentLength: uploadRequest.headers.get("content-length"),
+    contentType: contentType || "b2/x-auto",
+  }));
+
+  const response = await fetch(uploadRequest);
   if (!response.ok) {
     const detail = (await response.text()).slice(0, 300);
-    throw new Error(
-      `B2 upload ব্যর্থ হয়েছে (${response.status})। ${detail}`
-    );
+    throw new Error(`B2 upload ব্যর্থ হয়েছে (${response.status})। ${detail}`);
+  }
+
+  const result = await response.json();
+  if (result.contentLength !== body.byteLength || result.contentSha1 !== sha1) {
+    throw new Error("B2-তে আপলোড সম্পন্ন হলেও ফাইলের আকার বা SHA-1 মেলেনি।");
   }
 }
-
 async function deleteB2(env, key) {
   const response = await b2Request(env, "DELETE", key);
 
