@@ -68,7 +68,12 @@ const customerCookie = (value, maxAge) =>
   `sh_customer=${value}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${maxAge}`;
 
 async function ensureCustomerTable(env) {
-  await env.DB.prepare("CREATE TABLE IF NOT EXISTS customer_accounts (email TEXT PRIMARY KEY COLLATE NOCASE, name TEXT NOT NULL, password_hash TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)").run();
+  await env.DB.prepare("CREATE TABLE IF NOT EXISTS customer_accounts (id TEXT NOT NULL UNIQUE, email TEXT PRIMARY KEY COLLATE NOCASE, name TEXT NOT NULL, password_hash TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)").run();
+  const columns = await env.DB.prepare("PRAGMA table_info(customer_accounts)").all();
+  if (!(columns.results || []).some((column) => column.name === "id")) await env.DB.prepare("ALTER TABLE customer_accounts ADD COLUMN id TEXT").run();
+  const legacy = await env.DB.prepare("SELECT email FROM customer_accounts WHERE id IS NULL").all();
+  for (const row of legacy.results || []) await env.DB.prepare("UPDATE customer_accounts SET id=? WHERE email=? AND id IS NULL").bind(id(), row.email).run();
+  await env.DB.prepare("CREATE TABLE IF NOT EXISTS customer_order_links (order_id INTEGER PRIMARY KEY, customer_id TEXT NOT NULL)").run();
 }
 
 async function passwordHash(password, saltHex) {
@@ -78,8 +83,8 @@ async function passwordHash(password, saltHex) {
   return { salt: hex(salt), hash: hex(bits) };
 }
 
-async function customerSessionCookie(email, secret) {
-  const payload = b64u(enc(JSON.stringify({ customer: true, email, exp: Date.now() + 30 * 24 * 60 * 60 * 1000 })));
+async function customerSessionCookie(customerId, secret) {
+  const payload = b64u(enc(JSON.stringify({ customer: true, customerId, exp: Date.now() + 30 * 24 * 60 * 60 * 1000 })));
   return `${payload}.${await sign(payload, secret)}`;
 }
 
@@ -91,7 +96,7 @@ async function getCustomer(request, env) {
   try {
     const session = JSON.parse(new TextDecoder().decode(unb64u(payload)));
     if (session.customer !== true || session.exp <= Date.now()) return null;
-    return await env.DB.prepare("SELECT email,name,created_at FROM customer_accounts WHERE lower(email)=? LIMIT 1").bind(String(session.email || "").toLowerCase()).first();
+    return await env.DB.prepare("SELECT id,email,name,created_at FROM customer_accounts WHERE id=? LIMIT 1").bind(String(session.customerId || "")).first();
   } catch { return null; }
 }
 
@@ -387,9 +392,9 @@ export async function onRequest({ request, env }) {
         if (!name || !/^\S+@\S+\.\S+$/.test(email) || password.length < 8 || password.length > 128) return json({ success: false, message: "নাম, সঠিক ইমেইল ও কমপক্ষে ৮ অক্ষরের পাসওয়ার্ড দিন।" }, 400);
         const exists = await env.DB.prepare("SELECT email FROM customer_accounts WHERE lower(email)=?").bind(email).first();
         if (exists) return json({ success: false, message: "এই ইমেইলে অ্যাকাউন্ট আছে। লগইন করুন।" }, 409);
-        const pw = await passwordHash(password);
+        const pw = await passwordHash(password);\n        const customerId = id();
         await env.DB.prepare("INSERT INTO customer_accounts(email,name,password_hash) VALUES(?,?,?)").bind(email, name, `pbkdf2${pw.salt}${pw.hash}`).run();
-        const session = await customerSessionCookie(email, env.SESSION_SECRET);
+        const session = await customerSessionCookie(customerId, env.SESSION_SECRET);
         return new Response(JSON.stringify({ success: true, customer: { email, name } }), { headers: { "Content-Type": "application/json; charset=utf-8", "Set-Cookie": customerCookie(session, 2592000), "Cache-Control": "no-store" } });
       }
 
@@ -397,13 +402,13 @@ export async function onRequest({ request, env }) {
         const body = await request.json();
         const email = String(body.email || "").trim().slice(0, 254).toLowerCase();
         const password = String(body.password || "");
-        const account = await env.DB.prepare("SELECT email,name,password_hash FROM customer_accounts WHERE lower(email)=? LIMIT 1").bind(email).first();
+        const account = await env.DB.prepare("SELECT id,email,name,password_hash FROM customer_accounts WHERE lower(email)=? LIMIT 1").bind(email).first();
         if (!account) return json({ success: false, message: "ইমেইল বা পাসওয়ার্ড সঠিক নয়।" }, 401);
         const [algorithm, salt, storedHash] = String(account.password_hash).split("$");
         if (algorithm !== "pbkdf2" || !salt || !storedHash) return json({ success: false, message: "অ্যাকাউন্ট যাচাই করা যায়নি।" }, 401);
         const calculated = await passwordHash(password, salt);
         if (calculated.hash !== storedHash) return json({ success: false, message: "ইমেইল বা পাসওয়ার্ড সঠিক নয়।" }, 401);
-        const session = await customerSessionCookie(account.email, env.SESSION_SECRET);
+        const session = await customerSessionCookie(account.id, env.SESSION_SECRET);
         return new Response(JSON.stringify({ success: true, customer: { email: account.email, name: account.name } }), { headers: { "Content-Type": "application/json; charset=utf-8", "Set-Cookie": customerCookie(session, 2592000), "Cache-Control": "no-store" } });
       }
 
@@ -417,7 +422,7 @@ export async function onRequest({ request, env }) {
       if (route === "customer/orders" && method === "GET") {
         const customer = await getCustomer(request, env);
         if (!customer) return json({ success: false, message: "অর্ডার দেখতে আগে লগইন করুন।" }, 401);
-        const { results = [] } = await env.DB.prepare("SELECT o.id,o.total,o.status,o.created_at,oi.product_id,oi.product_name,oi.quantity,t.token FROM orders o JOIN order_items oi ON oi.order_id=o.id LEFT JOIN download_tokens t ON t.order_id=o.id AND t.product_id=oi.product_id WHERE lower(o.buyer_email)=? AND datetime(o.created_at)>=datetime(?) ORDER BY datetime(o.created_at) DESC").bind(customer.email.toLowerCase(), customer.created_at).all();
+        const { results = [] } = await env.DB.prepare("SELECT o.id,o.total,o.status,o.created_at,oi.product_id,oi.product_name,oi.quantity,t.token FROM customer_order_links l JOIN orders o ON o.id=l.order_id JOIN order_items oi ON oi.order_id=o.id LEFT JOIN download_tokens t ON t.order_id=o.id AND t.product_id=oi.product_id WHERE l.customer_id=? ORDER BY datetime(o.created_at) DESC").bind(customer.id).all();
         const byOrder = new Map();
         for (const row of results) {
           if (!byOrder.has(row.id)) byOrder.set(row.id, { id: row.id, total: row.total, status: row.status, createdAt: row.created_at, items: [] });
@@ -561,6 +566,7 @@ export async function onRequest({ request, env }) {
         .bind(customerName, phone, first.id, first.name, valid.reduce((sum, item) => sum + item.quantity, 0), total, "Nagad", trx, "pending", email)
         .run();
       const orderId = inserted.meta.last_row_id;
+      await env.DB.prepare("INSERT INTO customer_order_links(order_id,customer_id) VALUES(?,?)").bind(orderId, customer.id).run();
 
       for (const item of valid) {
         await env.DB.prepare(
