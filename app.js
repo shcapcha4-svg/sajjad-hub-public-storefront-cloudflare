@@ -89,4 +89,4 @@ document.getElementById("categoryPills").addEventListener("click",e=>{const c=e.
 filter.addEventListener("change",()=>document.querySelectorAll(".category-pills button").forEach(b=>b.classList.toggle("active",b.dataset.category===filter.value)));
 document.getElementById("year").textContent=new Date().getFullYear();
 renderProducts();renderCart();
-(async()=>{try{const r=await fetch('/api/products');const d=await r.json();if(r.ok&&d.success){products=d.products;renderProducts();}}catch(e){console.warn('Products API unavailable; showing sample products.',e)}})();
+(async()=>{try{const r=await fetch('/api/products');const d=await r.json();if(r.ok&&d.success){products=[...defaultProducts,...d.products];renderProducts();}}catch(e){console.warn('Products API unavailable; showing sample products.',e)}})();
