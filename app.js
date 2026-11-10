@@ -221,6 +221,19 @@ function scheduleDownloadExpiry(url,expiresAt){
   },Math.max(0,expiryTime-Date.now())+80);
   orderExpiryTimers.set(url,timer);
 }
+document.getElementById("mySavedOrders")?.addEventListener("click",event=>{
+  const link=event.target.closest("a.my-order-simple-status.is-download");
+  if(!link)return;
+  const url=link.href;
+  if(pendingDownloadUrls.has(url)||expiredDownloadUrls.has(url)){
+    event.preventDefault();
+    return;
+  }
+  pendingDownloadUrls.add(url);
+  link.textContent="ডাউনলোড শুরু হয়েছে";
+  link.classList.remove("is-download");
+  link.classList.add("is-download-started");
+}
 
 // স্বয়ংক্রিয় অর্ডার স্ট্যাটাস আপডেট: Admin Paid করলে ২০ সেকেন্ডের মধ্যে
 // পেজ রিফ্রেশ ছাড়াই Pending থেকে Download দেখাবে।
