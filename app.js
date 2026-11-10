@@ -231,7 +231,6 @@ document.getElementById("mySavedOrders")?.addEventListener("click",event=>{
   }
   pendingDownloadUrls.add(url);
   link.textContent="ডাউনলোড শুরু হয়েছে";
-  link.classList.remove("is-download");
   link.classList.add("is-download-started");
 }
 
