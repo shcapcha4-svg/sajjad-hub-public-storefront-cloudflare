@@ -361,7 +361,7 @@ export async function onRequest({ request, env }) {
         return json(
           {
             success: false,
-            message: "ইমেইল, ১১ সংখ্যার ফোন, TrxID এবং পণ্য যাচাই করুন।",
+            message: "নাম, ইমেইল, ১১ সংখ্যার ফোন, TrxID এবং পণ্য যাচাই করুন।",
           },
           400
         );
