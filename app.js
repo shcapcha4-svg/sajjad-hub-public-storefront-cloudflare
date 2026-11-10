@@ -117,6 +117,41 @@ document.getElementById("submitPayment").onclick=async()=>{
   }catch(error){msg.textContent=error.message||'সার্ভারের সঙ্গে সংযোগ হয়নি। আবার চেষ্টা করুন।'}finally{btn.disabled=false}
 };
 
+// Customer order lookup and secure, payment-gated downloads.
+document.getElementById("myOrderForm").addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const orderId = document.getElementById("lookupOrderId").value.trim();
+  const email = document.getElementById("lookupOrderEmail").value.trim();
+  const button = document.getElementById("lookupOrderButton");
+  const result = document.getElementById("myOrderResult");
+  button.disabled = true;
+  result.innerHTML = '<p class="my-order-loading">অর্ডার খোঁজা হচ্ছে...</p>';
+  try {
+    const response = await fetch("/api/my-orders", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ orderId, email })
+    });
+    const data = await response.json();
+    if (!response.ok || !data.success) throw new Error(data.message || "অর্ডার খুঁজে পাওয়া যায়নি।");
+    const order = data.order;
+    const statusLabel = order.status === "paid" ? "পেমেন্ট সম্পন্ন" : order.status === "rejected" ? "অর্ডার বাতিল" : "পেমেন্ট যাচাই অপেক্ষমাণ";
+    const downloads = order.status === "paid"
+      ? (order.downloads || []).map(file => '<a class="my-order-download" href="' + escapeHTML(file.url) + '">↓ ' + escapeHTML(file.name) + ' ডাউনলোড করুন</a>').join("")
+      : "";
+    const content = order.status === "paid"
+      ? (downloads || '<p class="my-order-pending">পেমেন্ট সম্পন্ন, তবে এই অর্ডারের ডাউনলোড ফাইল পাওয়া যায়নি। অনুগ্রহ করে যোগাযোগ করুন।</p>')
+      : order.status === "rejected"
+        ? '<p class="my-order-pending">এই অর্ডারটি বাতিল করা হয়েছে। সহায়তার জন্য যোগাযোগ করুন।</p>'
+        : '<p class="my-order-pending">আপনার পেমেন্ট এখনো যাচাই করা হয়নি। Admin পেমেন্ট Paid করলেই এখানে ডাউনলোড বাটন দেখা যাবে।</p>';
+    result.innerHTML = '<div class="my-order-card"><div class="my-order-card-head"><div><span>অর্ডার নম্বর</span><strong>#' + escapeHTML(order.id) + '</strong></div><span class="my-order-status ' + escapeHTML(order.status) + '">' + statusLabel + '</span></div><p class="my-order-items">' + (order.items || []).map(item => escapeHTML(item.product_name) + ' × ' + escapeHTML(item.quantity)).join(" · ") + '</p><div class="my-order-total"><span>অর্ডারের মোট</span><strong>' + money(order.total) + '</strong></div><div class="my-order-downloads">' + content + '</div></div>';
+  } catch (error) {
+    result.innerHTML = '<p class="my-order-error">' + escapeHTML(error.message || "সার্ভারের সঙ্গে সংযোগ হয়নি।") + '</p>';
+  } finally {
+    button.disabled = false;
+  }
+});
+
 search.addEventListener("input",renderProducts);filter.addEventListener("change",renderProducts);
 document.querySelector(".category-menu-dropdown")?.addEventListener("click",e=>{const link=e.target.closest("[data-category-link]");if(!link)return;const category=link.dataset.categoryLink;filter.value=category;document.querySelectorAll(".category-pills button").forEach(b=>b.classList.toggle("active",b.dataset.category===category));renderProducts();document.querySelector(".category-menu")?.removeAttribute("open")});
 document.getElementById("printReceipt").addEventListener("click",()=>window.print());
