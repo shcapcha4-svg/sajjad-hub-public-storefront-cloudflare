@@ -4,6 +4,9 @@ const money=n=>'৳'+Number(n||0).toLocaleString('bn-BD');
 const bn=n=>Number(n||0).toLocaleString('bn-BD');
 function esc(s=''){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 async function api(url,options={}){const r=await fetch(url,options);let d={};try{d=await r.json()}catch{}if(!r.ok)throw new Error(d.message||'অনুরোধ ব্যর্থ হয়েছে');return d}
+function applyTheme(theme){document.body.dataset.theme=theme;const b=$('#themeToggle');if(b){b.textContent=theme==='dark'?'☀️ লাইট মোড':'🌙 ডার্ক মোড';b.setAttribute('aria-label',theme==='dark'?'লাইট মোড চালু করুন':'ডার্ক মোড চালু করুন')}try{localStorage.setItem('sajjadhub-admin-theme',theme)}catch{}}
+try{applyTheme(localStorage.getItem('sajjadhub-admin-theme')||'light')}catch{applyTheme('light')}
+document.addEventListener('click',e=>{if(e.target.closest('#themeToggle'))applyTheme(document.body.dataset.theme==='dark'?'light':'dark')});
 function message(el,text,error=false){el.textContent=text;el.classList.toggle('error',error)}
 function showDashboard(){ $('#loginView').hidden=true;$('#dashboard').hidden=false;loadAll() }
 async function check(){try{const d=await api('/api/admin/me');if(d.success){showDashboard();return}}catch{}$('#loginView').hidden=false}
