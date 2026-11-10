@@ -162,6 +162,21 @@ async function loadSavedCustomerOrders(){
 document.querySelector('a[href="#my-orders"]')?.addEventListener("click",()=>{loadSavedCustomerOrders();});
 loadSavedCustomerOrders();
 
+// Download-এ ক্লিক করলে সাময়িক বার্তা দেখাবে; ২০ সেকেন্ড পর আগের লেখায় ফিরবে।
+document.getElementById("mySavedOrders")?.addEventListener("click",event=>{
+  const link=event.target.closest("a.my-order-simple-status.is-download");
+  if(!link)return;
+  const originalText=link.textContent;
+  link.textContent="ডাউনলোড শুরু হয়েছে";
+  link.setAttribute("aria-label","ডাউনলোড শুরু হয়েছে");
+  const clickedLink=link;
+  setTimeout(()=>{
+    if(!clickedLink.isConnected)return;
+    clickedLink.textContent=originalText;
+    clickedLink.setAttribute("aria-label","Download");
+  },20000);
+});
+
 // স্বয়ংক্রিয় অর্ডার স্ট্যাটাস আপডেট: Admin Paid করলে ২০ সেকেন্ডের মধ্যে
 // পেজ রিফ্রেশ ছাড়াই Pending থেকে Download দেখাবে।
 let customerOrderRefreshBusy=false;
