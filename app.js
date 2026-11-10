@@ -22,19 +22,8 @@
   });
 })();
 
-const defaultProducts = [
-  {id:"p1",name:"মডার্ন বিজনেস পোস্টার",category:"পোস্টার",price:150,tag:"BEST SELLER",bg:"#d9e7c4",ink:"#243b20",title:"GROW<br>YOUR<br>IDEA",sub:"BUSINESS / 2026"},
-  {id:"p2",name:"ইসলামিক ইভেন্ট ব্যানার",category:"ব্যানার",price:200,tag:"NEW",bg:"#173c35",ink:"#f3e7c2",title:"نور<br>الإيمان",sub:"SPECIAL EVENT"},
-  {id:"p3",name:"সোশ্যাল মিডিয়া প্যাক",category:"সোশ্যাল মিডিয়া",price:120,tag:"POPULAR",bg:"#f1d4c8",ink:"#913f35",title:"MAKE<br>IT<br>MATTER",sub:"SOCIAL TEMPLATE"},
-  {id:"p4",name:"মিনিমাল লোগো টেমপ্লেট",category:"লোগো",price:180,tag:"EDITABLE",bg:"#dce4f6",ink:"#263c6c",title:"S / H",sub:"BRAND IDENTITY"},
-  {id:"p5",name:"শিক্ষা প্রতিষ্ঠানের পোস্টার",category:"পোস্টার",price:160,tag:"FRESH",bg:"#f5e7b9",ink:"#56451b",title:"LEARN<br>& GROW",sub:"EDUCATION SERIES"},
-  {id:"p6",name:"প্রমোশনাল ব্যানার",category:"ব্যানার",price:220,tag:"FEATURED",bg:"#d9d3ef",ink:"#46336c",title:"BIG<br>OFFER",sub:"PROMOTION DESIGN"},
-  {id:"p7",name:"ইনস্টাগ্রাম পোস্ট সেট",category:"সোশ্যাল মিডিয়া",price:130,tag:"5 TEMPLATES",bg:"#d4e9e8",ink:"#1b5554",title:"STAY<br>INSPIRED",sub:"SOCIAL MEDIA KIT"},
-  {id:"p8",name:"ক্রিয়েটিভ মনোগ্রাম",category:"লোগো",price:190,tag:"CLASSIC",bg:"#e6d6c7",ink:"#634a35",title:"SH",sub:"MONOGRAM SERIES"}
-];
-defaultProducts.forEach(product => { product.isSample = true; });
-// Public storefront: sample products remain visible, but only real D1 products can be purchased.
-let products = defaultProducts;
+// আগের আটটি নমুনা পণ্য সরানো হয়েছে; এখন শুধু Admin থেকে আপলোড করা পণ্য দেখাবে।
+let products = [];
 const money = n => "৳" + Number(n).toLocaleString("bn-BD");
 let cart = [];
 const grid = document.getElementById("productGrid");
@@ -106,13 +95,33 @@ document.getElementById("submitPayment").onclick=async()=>{
   try{
     const response=await fetch('/api/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({customerName:name.value.trim(),email:email.value.trim(),phone:sender.value.trim(),trxId:trx.value.trim(),items:cart.map(x=>({id:x.id,qty:x.qty}))})});
     const data=await response.json();if(!response.ok||!data.success)throw new Error(data.message||'অর্ডার জমা হয়নি।');
-    msg.textContent=`অর্ডার ${data.orderId} সফলভাবে জমা হয়েছে। পেমেন্ট যাচাই শেষে ডাউনলোডের ব্যবস্থা করা হবে।`;cart=[];renderCart();
+    const purchasedItems=cart.map(item=>({...item}));
+    const receiptTotal=Number(data.total)||purchasedItems.reduce((sum,item)=>sum+item.price*item.qty,0);
+    document.getElementById("receiptContent").innerHTML=`
+      <div class="receipt-brand"><span class="brand-mark">S</span><strong>Sajjad<span>hub</span></strong></div>
+      <p class="receipt-kicker">SAJJADHUB · ORDER RECEIPT</p>
+      <h2>ক্যাশ মেমো</h2>
+      <p class="receipt-status">অর্ডার গ্রহণ করা হয়েছে · পেমেন্ট যাচাই বাকি</p>
+      <div class="receipt-meta"><span>অর্ডার নম্বর</span><strong>#${escapeHTML(data.orderId)}</strong><span>তারিখ ও সময়</span><strong>${escapeHTML(new Date().toLocaleString("bn-BD"))}</strong></div>
+      <hr>
+      <h3>ক্রেতার তথ্য</h3>
+      <p>${escapeHTML(name.value.trim())}<br>${escapeHTML(email.value.trim())}<br>${escapeHTML(sender.value.trim())}</p>
+      <h3>পণ্যের বিবরণ</h3>
+      <table class="receipt-table"><thead><tr><th>পণ্য</th><th>পরিমাণ</th><th>মূল্য</th></tr></thead><tbody>${purchasedItems.map(item=>`<tr><td>${escapeHTML(item.name)}</td><td>${item.qty}</td><td>${money(item.price*item.qty)}</td></tr>`).join("")}</tbody></table>
+      <div class="receipt-total"><span>সর্বমোট</span><strong>${money(receiptTotal)}</strong></div>
+      <div class="receipt-payment"><p>পেমেন্ট মাধ্যম: Nagad Send Money</p><p>TrxID: ${escapeHTML(trx.value.trim())}</p><p>পেমেন্ট স্ট্যাটাস: <strong>Pending (যাচাই অপেক্ষমাণ)</strong></p></div>
+      <p class="receipt-note">এটি অর্ডার জমার রসিদ, পেমেন্ট সম্পন্ন হওয়ার প্রমাণ নয়। পেমেন্ট যাচাই হলে ডাউনলোডের ব্যবস্থা করা হবে।</p>
+    `;
+    cart=[];renderCart();document.getElementById("checkoutDialog").close();document.getElementById("receiptDialog").showModal();
   }catch(error){msg.textContent=error.message||'সার্ভারের সঙ্গে সংযোগ হয়নি। আবার চেষ্টা করুন।'}finally{btn.disabled=false}
 };
 
 search.addEventListener("input",renderProducts);filter.addEventListener("change",renderProducts);
+document.querySelector("[data-category-link]")?.addEventListener("click",()=>{filter.value="ক্যাশ মেমো";document.querySelectorAll(".category-pills button").forEach(b=>b.classList.toggle("active",b.dataset.category==="ক্যাশ মেমো"));renderProducts()});
+document.getElementById("printReceipt").addEventListener("click",()=>window.print());
+document.getElementById("closeReceipt").addEventListener("click",()=>document.getElementById("receiptDialog").close());
 document.getElementById("categoryPills").addEventListener("click",e=>{const c=e.target.dataset.category;if(!c)return;filter.value=c;document.querySelectorAll(".category-pills button").forEach(b=>b.classList.toggle("active",b.dataset.category===c));renderProducts()});
 filter.addEventListener("change",()=>document.querySelectorAll(".category-pills button").forEach(b=>b.classList.toggle("active",b.dataset.category===filter.value)));
 document.getElementById("year").textContent=new Date().getFullYear();
 renderProducts();renderCart();
-(async()=>{try{const r=await fetch('/api/products');const d=await r.json();if(r.ok&&d.success){products=[...defaultProducts,...d.products];renderProducts();}}catch(e){console.warn('Products API unavailable; showing sample products.',e)}})();
+(async()=>{try{const r=await fetch('/api/products');const d=await r.json();if(r.ok&&d.success){products=d.products;renderProducts();}}catch(e){console.warn('Products API unavailable; no sample products are shown.',e)}})();
