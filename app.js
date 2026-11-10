@@ -157,6 +157,18 @@ async function loadSavedCustomerOrders(){
 document.querySelector('a[href="#my-orders"]')?.addEventListener("click",()=>{loadSavedCustomerOrders();});
 loadSavedCustomerOrders();
 
+// স্বয়ংক্রিয় অর্ডার স্ট্যাটাস আপডেট: Admin Paid করলে ২০ সেকেন্ডের মধ্যে
+// পেজ রিফ্রেশ ছাড়াই Pending থেকে Download দেখাবে।
+let customerOrderRefreshBusy=false;
+async function refreshCustomerOrderStatus(){
+  if(customerOrderRefreshBusy||document.hidden)return;
+  customerOrderRefreshBusy=true;
+  try{await loadSavedCustomerOrders();}finally{customerOrderRefreshBusy=false;}
+}
+setInterval(refreshCustomerOrderStatus,20000);
+window.addEventListener("focus",refreshCustomerOrderStatus);
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)refreshCustomerOrderStatus();});
+
 search.addEventListener("input",renderProducts);filter.addEventListener("change",renderProducts);
 document.querySelector(".category-menu-dropdown")?.addEventListener("click",e=>{const link=e.target.closest("[data-category-link]");if(!link)return;const category=link.dataset.categoryLink;filter.value=category;document.querySelectorAll(".category-pills button").forEach(b=>b.classList.toggle("active",b.dataset.category===category));renderProducts();document.querySelector(".category-menu")?.removeAttribute("open")});
 document.getElementById("printReceipt").addEventListener("click",()=>window.print());
