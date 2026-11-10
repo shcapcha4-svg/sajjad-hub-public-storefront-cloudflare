@@ -275,7 +275,7 @@ export async function onRequest({ request, env }) {
 
     if (route === "products" && method === "GET") {
       const { results = [] } = await env.DB.prepare(
-        "SELECT * FROM products WHERE is_is_active=1 ORDER BY created_at DESC"
+        "SELECT * FROM products WHERE is_active=1 ORDER BY created_at DESC"
       ).all();
 
       return json({
@@ -395,16 +395,13 @@ export async function onRequest({ request, env }) {
         valid.push({ product, quantity });
       }
 
-      const orderId =
-        "SH" +
-        Date.now().toString(36).toUpperCase() +
-        crypto.randomUUID().slice(0, 4).toUpperCase();
-
-      await env.DB.prepare(
-        "INSERT INTO orders(id,buyer_email,sender_phone,trx_id,total) VALUES(?,?,?,?,?)"
+      const first = valid[0].product;
+      const inserted = await env.DB.prepare(
+        "INSERT INTO orders(customer_name,phone,product_id,product_name,quantity,total_amount,payment_method,transaction_id,payment_status,customer_email) VALUES(?,?,?,?,?,?,?,?,?,?)"
       )
-        .bind(orderId, email, phone, trx, total)
+        .bind(email, phone, first.id, first.name, valid.reduce((sum, item) => sum + item.quantity, 0), total, "Nagad", trx, "pending", email)
         .run();
+      const orderId = inserted.meta.last_row_id;
 
       for (const item of valid) {
         await env.DB.prepare(
@@ -647,10 +644,10 @@ export async function onRequest({ request, env }) {
 
         // Remove replaced objects after the database update succeeds.
         if (imageKey !== old.image_url && old.image_url) {
-          await deleteB2(env, old.image_key);
+          // Keep the previous B2 object to prevent accidental data loss.
         }
-        if (fileKey !== old.file_url && old.file_key) {
-          await deleteB2(env, old.file_key);
+        if (fileKey !== old.file_url && old.file_url) {
+          // Keep the previous B2 object to prevent accidental data loss.
         }
 
         return json({ success: true });
@@ -700,12 +697,12 @@ export async function onRequest({ request, env }) {
     .bind(productId)
     .run();
 
-  if (old.image_key) {
-    await deleteB2(env, old.image_key);
+  if (old.image_url) {
+    await deleteB2(env, old.image_url);
   }
 
-  if (old.file_key) {
-    await deleteB2(env, old.file_key);
+  if (old.file_url) {
+    await deleteB2(env, old.file_url);
   }
 
   return json({ success: true });
@@ -729,15 +726,15 @@ export async function onRequest({ request, env }) {
           .bind(productId)
           .run();
 
-        if (old.image_key) await deleteB2(env, old.image_key);
-        if (old.file_key) await deleteB2(env, old.file_key);
+        if (old.image_url) await deleteB2(env, old.image_url);
+        if (old.file_url) await deleteB2(env, old.file_url);
 
         return json({ success: true });
       }
 
       if (route === "admin/orders" && method === "GET") {
         const { results = [] } = await env.DB.prepare(
-          "SELECT * FROM orders ORDER BY created_at DESC LIMIT 200"
+          "SELECT *, customer_email AS buyer_email, phone AS sender_phone, transaction_id AS trx_id, total_amount AS total, payment_status AS status FROM orders ORDER BY created_at DESC LIMIT 200"
         ).all();
 
         const orders = [];
@@ -796,12 +793,12 @@ export async function onRequest({ request, env }) {
         await env.DB.prepare(
           "UPDATE orders SET payment_status=?,verified_at=CASE WHEN ?='paid' THEN CURRENT_TIMESTAMP ELSE verified_at END WHERE id=?"
         )
-          .bind(status, orderId)
+          .bind(status, status, orderId)
           .run();
 
         if (status === "paid") {
           const { results: items = [] } = await env.DB.prepare(
-            "SELECT oi.product_id,p.file_key FROM order_items oi JOIN products p ON p.id=oi.product_id WHERE oi.order_id=?"
+            "SELECT oi.product_id,p.file_url AS file_key FROM order_items oi JOIN products p ON p.id=oi.product_id WHERE oi.order_id=?"
           )
             .bind(orderId)
             .all();
