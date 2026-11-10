@@ -31,6 +31,8 @@ const grid = document.getElementById("productGrid");
 const search = document.getElementById("searchInput");
 const filter = document.getElementById("categoryFilter");
 const productImageUrls = new Map();
+let customerProductOrders = new Map();
+let signedInCustomer = null;
 function escapeHTML(value="") { return String(value).replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch])); }
 function productArtwork(p, extraClass="") {
   if (p.imageUrl) return `<img class="${extraClass}" src="${escapeHTML(p.imageUrl)}" alt="${escapeHTML(p.name)}" loading="lazy">`;
@@ -39,7 +41,7 @@ function productArtwork(p, extraClass="") {
 function renderProducts(){
   const q=search.value.trim().toLowerCase(), c=filter.value;
   const shown=products.filter(p=>(c==="সব"||p.category===c)&&(p.name.toLowerCase().includes(q)||p.category.toLowerCase().includes(q)));
-  grid.innerHTML=shown.map(p=>`<article class="product-card" data-product="${escapeHTML(p.id)}" tabindex="0" role="button" aria-label="${escapeHTML(p.name)} বিস্তারিত দেখুন"><button class="product-open" type="button" data-detail="${escapeHTML(p.id)}" aria-label="${escapeHTML(p.name)} বিস্তারিত দেখুন"><div class="product-thumb" style="background:${escapeHTML(p.bg||"#e5e7eb")}">${productArtwork(p)}</div></button><div class="product-info"><div class="product-meta"><span>${escapeHTML(p.category)}</span><span>ডিজিটাল ফাইল</span></div><button class="product-title-button" type="button" data-detail="${escapeHTML(p.id)}"><h3>${escapeHTML(p.name)}</h3></button><div class="product-bottom"><span class="price">${money(p.price)}</span><button class="add-button" data-add="${escapeHTML(p.id)}">+ কার্টে যোগ</button></div><button class="details-link" type="button" data-detail="${escapeHTML(p.id)}">বিস্তারিত দেখুন →</button></div></article>`).join("");
+  grid.innerHTML=shown.map(p=>`<article class="product-card" data-product="${escapeHTML(p.id)}" tabindex="0" role="button" aria-label="${escapeHTML(p.name)} বিস্তারিত দেখুন"><button class="product-open" type="button" data-detail="${escapeHTML(p.id)}" aria-label="${escapeHTML(p.name)} বিস্তারিত দেখুন"><div class="product-thumb" style="background:${escapeHTML(p.bg||"#e5e7eb")}">${productArtwork(p)}</div></button><div class="product-info"><div class="product-meta"><span>${escapeHTML(p.category)}</span><span>ডিজিটাল ফাইল</span></div><button class="product-title-button" type="button" data-detail="${escapeHTML(p.id)}"><h3>${escapeHTML(p.name)}</h3></button><div class="product-bottom"><span class="price">${money(p.price)}</span><button class="add-button" data-add="${escapeHTML(p.id)}">+ কার্টে যোগ</button></div><button class="details-link" type="button" data-detail="${escapeHTML(p.id)}">বিস্তারিত দেখুন →</button></div>${customerProductOrders.has(String(p.id)) ? `<div class="customer-product-status">${customerProductOrders.get(String(p.id)).status === "paid" ? `<span class="customer-status-paid">✓ Download</span><a href="${escapeHTML(customerProductOrders.get(String(p.id)).url)}">ডাউনলোড করুন ↓</a>` : `<span class="customer-status-pending">Pending · যাচাই চলছে</span><small>যাচাইয়ে ২০–৩০ মিনিট সময় লাগতে পারে। অনুমোদনের পর পেজ রিফ্রেশ করুন।</small>`}</div>` : ""}</article>`).join("");
   const emptyState=document.getElementById("emptyState");emptyState.hidden=shown.length>0;emptyState.textContent=products.length?"এই নামে কোনো ডিজাইন পাওয়া যায়নি।":"এখনো কোনো ডিজাইন আপলোড করা হয়নি।";
 }
 function showProductDetails(id){
@@ -114,6 +116,7 @@ document.getElementById("submitPayment").onclick=async()=>{
       <p class="receipt-note">এটি অর্ডার জমার রসিদ, পেমেন্ট সম্পন্ন হওয়ার প্রমাণ নয়। পেমেন্ট যাচাই হলে ওয়েবসাইটের “আমার অর্ডার / ডাউনলোড” অংশে অর্ডার নম্বর ও ইমেইল দিয়ে ডিজাইন ডাউনলোড করতে পারবেন।</p>
     `;
     cart=[];renderCart();document.getElementById("checkoutDialog").close();document.getElementById("receiptDialog").showModal();
+    loadCustomerOrders();
   }catch(error){msg.textContent=error.message||'সার্ভারের সঙ্গে সংযোগ হয়নি। আবার চেষ্টা করুন।'}finally{btn.disabled=false}
 };
 
@@ -151,6 +154,79 @@ document.getElementById("myOrderForm").addEventListener("submit", async (event) 
     button.disabled = false;
   }
 });
+
+
+async function loadCustomerOrders(){
+  if(!signedInCustomer)return;
+  try{
+    const response=await fetch("/api/customer/orders");
+    const data=await response.json();
+    if(!response.ok||!data.success)throw new Error(data.message||"অর্ডার লোড করা যায়নি।");
+    customerProductOrders=new Map();
+    const host=document.getElementById("customerOrders");
+    if(!data.orders.length){host.innerHTML='<p class="customer-orders-empty">এখনো কোনো অর্ডার নেই। পছন্দের ডিজাইন কিনলে এখানে দেখা যাবে।</p>';renderProducts();return;}
+    host.innerHTML=data.orders.map(order=>{
+      const status=order.status==="paid"?"পেমেন্ট সম্পন্ন":order.status==="rejected"?"বাতিল":"Pending · যাচাই চলছে";
+      const files=(order.downloads||[]).map(file=>'<a class="my-order-download" href="'+escapeHTML(file.url)+'">↓ '+escapeHTML(file.name)+' ডাউনলোড</a>').join("");
+      for(const item of (order.items||[])){
+        const file=(order.downloads||[]).find(x=>String(x.productId)===String(item.product_id));
+        const old=customerProductOrders.get(String(item.product_id));
+        if(!old||order.status==="paid")customerProductOrders.set(String(item.product_id),{status:order.status,url:file?.url||""});
+      }
+      return '<article class="customer-order-card"><div class="customer-order-top"><strong>অর্ডার #'+escapeHTML(order.id)+'</strong><span>'+status+'</span></div><p>'+(order.items||[]).map(item=>escapeHTML(item.product_name)+' × '+escapeHTML(item.quantity)).join(" · ")+'</p><div class="customer-order-bottom"><b>'+money(order.total)+'</b>'+(order.status==="paid"?(files||'<small>ডাউনলোড ফাইল পাওয়া যায়নি। যোগাযোগ করুন।</small>'):order.status==="rejected"?"":'<small>যাচাইয়ে ২০–৩০ মিনিট সময় লাগতে পারে। অনুমোদনের পর পেজ রিফ্রেশ করুন।</small>')+'</div></article>';
+    }).join("");
+    renderProducts();
+  }catch(error){document.getElementById("customerOrders").innerHTML='<p class="customer-orders-empty">'+escapeHTML(error.message)+'</p>';}
+}
+function setCustomer(customer){
+  signedInCustomer=customer;
+  document.getElementById("customerAuthArea").hidden=!!customer;
+  document.getElementById("customerSignedIn").hidden=!customer;
+  if(customer){
+    document.getElementById("customerWelcome").textContent="স্বাগতম, "+customer.name;
+    document.getElementById("customerAccountEmail").textContent=customer.email;
+    document.getElementById("buyerName").value=customer.name;
+    document.getElementById("buyerEmail").value=customer.email;
+    document.getElementById("customerAuthMessage").textContent="আপনি সফলভাবে লগইন করেছেন।";
+    loadCustomerOrders();
+  }else{
+    customerProductOrders.clear();
+    document.getElementById("buyerName").value="";
+    document.getElementById("buyerEmail").value="";
+    document.getElementById("customerOrders").innerHTML="";
+    renderProducts();
+  }
+}
+async function submitCustomerAuth(formId,endpoint,payload){
+  const form=document.getElementById(formId), button=form.querySelector("button[type=submit]"), message=document.getElementById("customerAuthMessage");
+  button.disabled=true;message.textContent="অ্যাকাউন্ট যাচাই হচ্ছে...";
+  try{
+    const response=await fetch(endpoint,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});
+    const data=await response.json();
+    if(!response.ok||!data.success)throw new Error(data.message||"লগইন করা যায়নি।");
+    setCustomer(data.customer);form.reset();
+  }catch(error){message.textContent=error.message||"সার্ভারের সঙ্গে সংযোগ হয়নি।";}
+  finally{button.disabled=false;}
+}
+document.getElementById("customerRegisterForm").addEventListener("submit",event=>{
+  event.preventDefault();
+  submitCustomerAuth("customerRegisterForm","/api/customer/register",{name:document.getElementById("customerRegisterName").value.trim(),email:document.getElementById("customerRegisterEmail").value.trim(),password:document.getElementById("customerRegisterPassword").value});
+});
+document.getElementById("customerLoginForm").addEventListener("submit",event=>{
+  event.preventDefault();
+  submitCustomerAuth("customerLoginForm","/api/customer/login",{email:document.getElementById("customerLoginEmail").value.trim(),password:document.getElementById("customerLoginPassword").value});
+});
+document.getElementById("customerLogout").addEventListener("click",async()=>{
+  await fetch("/api/customer/logout",{method:"POST"});
+  setCustomer(null);
+  document.getElementById("customerAuthMessage").textContent="আপনি লগআউট করেছেন।";
+});
+(async()=>{
+  try{
+    const response=await fetch("/api/customer/me"),data=await response.json();
+    if(data.success&&data.customer)setCustomer(data.customer);
+  }catch(error){console.warn("Customer account status unavailable.",error);}
+})();
 
 search.addEventListener("input",renderProducts);filter.addEventListener("change",renderProducts);
 document.querySelector(".category-menu-dropdown")?.addEventListener("click",e=>{const link=e.target.closest("[data-category-link]");if(!link)return;const category=link.dataset.categoryLink;filter.value=category;document.querySelectorAll(".category-pills button").forEach(b=>b.classList.toggle("active",b.dataset.category===category));renderProducts();document.querySelector(".category-menu")?.removeAttribute("open")});
