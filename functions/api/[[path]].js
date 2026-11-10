@@ -236,10 +236,19 @@ async function b2Request(env, method, key, body, contentType) {
     `AWS4-HMAC-SHA256 Credential=${keyId}/${scope}, SignedHeaders=${signedHeaders}, Signature=${signature}`
   );
 
+  // Use a Blob so the runtime sends a fixed-length request body to
+  // S3-compatible storage instead of a potentially streamed/chunked body.
+  const requestBody =
+    method === "PUT" && body !== undefined && body !== null
+      ? new Blob([body], {
+          type: contentType || "application/octet-stream",
+        })
+      : undefined;
+
   return fetch(url, {
     method,
     headers,
-    body: method === "PUT" ? body : undefined,
+    body: requestBody,
   });
 }
 
