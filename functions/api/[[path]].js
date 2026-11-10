@@ -262,7 +262,12 @@ async function putB2(env, key, file, contentType) {
     }
   );
   if (!authResponse.ok) {
-    throw new Error(`B2 authorization ব্যর্থ হয়েছে (${authResponse.status})।`);
+    const detail = (await authResponse.text()).slice(0, 500);
+    console.error("B2_AUTH_DIAG", JSON.stringify({
+      status: authResponse.status,
+      detail,
+    }));
+    throw new Error(`B2 authorization ব্যর্থ হয়েছে (${authResponse.status})। ${detail}`);
   }
   const auth = await authResponse.json();
   const storage = auth.apiInfo?.storageApi;
