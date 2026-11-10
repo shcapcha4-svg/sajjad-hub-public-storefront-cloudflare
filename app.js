@@ -31,6 +31,8 @@ const grid = document.getElementById("productGrid");
 const search = document.getElementById("searchInput");
 const filter = document.getElementById("categoryFilter");
 const productImageUrls = new Map();
+const purchaseStatusByProduct = new Map();
+const PURCHASE_STORAGE_KEY = "sajjadhub-purchases";
 function escapeHTML(value="") { return String(value).replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch])); }
 function productArtwork(p, extraClass="") {
   if (p.imageUrl) return `<img class="${extraClass}" src="${escapeHTML(p.imageUrl)}" alt="${escapeHTML(p.name)}" loading="lazy">`;
@@ -40,7 +42,18 @@ function renderProducts(){
   const q=search.value.trim().toLowerCase(), c=filter.value;
   const shown=products.filter(p=>(c==="সব"||p.category===c)&&(p.name.toLowerCase().includes(q)||p.category.toLowerCase().includes(q)));
   grid.innerHTML=shown.map(p=>`<article class="product-card" data-product="${escapeHTML(p.id)}" tabindex="0" role="button" aria-label="${escapeHTML(p.name)} বিস্তারিত দেখুন"><button class="product-open" type="button" data-detail="${escapeHTML(p.id)}" aria-label="${escapeHTML(p.name)} বিস্তারিত দেখুন"><div class="product-thumb" style="background:${escapeHTML(p.bg||"#e5e7eb")}">${productArtwork(p)}</div></button><div class="product-info"><div class="product-meta"><span>${escapeHTML(p.category)}</span><span>ডিজিটাল ফাইল</span></div><button class="product-title-button" type="button" data-detail="${escapeHTML(p.id)}"><h3>${escapeHTML(p.name)}</h3></button><div class="product-bottom"><span class="price">${money(p.price)}</span><button class="add-button" data-add="${escapeHTML(p.id)}">+ কার্টে যোগ</button></div><button class="details-link" type="button" data-detail="${escapeHTML(p.id)}">বিস্তারিত দেখুন →</button></div></article>`).join("");
+  appendPurchaseStatusCards(shown);
   const emptyState=document.getElementById("emptyState");emptyState.hidden=shown.length>0;emptyState.textContent=products.length?"এই নামে কোনো ডিজাইন পাওয়া যায়নি।":"এখনো কোনো ডিজাইন আপলোড করা হয়নি।";
+}
+function appendPurchaseStatusCards(shown){
+  for(const product of shown){
+    const purchase=purchaseStatusByProduct.get(String(product.id));if(!purchase)continue;
+    const card=grid.querySelector('[data-product="'+CSS.escape(String(product.id))+'"] .product-info');if(!card)continue;
+    const status=document.createElement('div');status.className='product-purchase-status '+(purchase.status==='paid'?'is-ready':'is-pending');
+    if(purchase.status==='paid'&&purchase.downloads.length){const label=document.createElement('span');label.textContent='✓ পেমেন্ট সম্পন্ন';status.append(label);for(const file of purchase.downloads){const link=document.createElement('a');link.className='product-download-link';link.href=file.url;link.textContent='↓ ডাউনলোড';status.append(link);}}
+    else status.textContent='◷ পেমেন্ট যাচাই অপেক্ষমাণ · Pending';
+    card.append(status);
+  }
 }
 function showProductDetails(id){
   const p=products.find(x=>String(x.id)===String(id)); if(!p)return;
@@ -102,6 +115,7 @@ document.getElementById("submitPayment").onclick=async()=>{
     const response=await fetch('/api/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({customerName:name.value.trim(),email:email.value.trim(),phone:sender.value.trim(),trxId:trx.value.trim(),items:cart.map(x=>({id:x.id,qty:x.qty}))})});
     const data=await response.json();if(!response.ok||!data.success)throw new Error(data.message||'অর্ডার জমা হয়নি।');
     const purchasedItems=cart.map(item=>({...item}));
+    try{const saved=JSON.parse(localStorage.getItem(PURCHASE_STORAGE_KEY)||"[]");saved.unshift({orderId:String(data.orderId),email:email.value.trim()});localStorage.setItem(PURCHASE_STORAGE_KEY,JSON.stringify(saved.slice(0,30)));}catch{}
     const receiptTotal=Number(data.total)||purchasedItems.reduce((sum,item)=>sum+item.price*item.qty,0);
     document.getElementById("receiptContent").innerHTML=`
       <div class="receipt-brand"><span class="brand-mark">S</span><strong>Sajjad<span>hub</span></strong></div>
@@ -157,6 +171,18 @@ document.getElementById("myOrderForm").addEventListener("submit", async (event) 
   }
 });
 
+async function refreshPurchasedProductStatuses(){
+  let saved=[];try{saved=JSON.parse(localStorage.getItem(PURCHASE_STORAGE_KEY)||'[]');}catch{}
+  purchaseStatusByProduct.clear();
+  for(const entry of saved.slice(0,30)){
+    if(!entry||!entry.orderId||!entry.email)continue;
+    try{const response=await fetch('/api/my-orders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({orderId:entry.orderId,email:entry.email})});const data=await response.json();if(!response.ok||!data.success)continue;
+      const order=data.order;for(const item of order.items||[]){const productId=String(item.product_id);const files=(order.downloads||[]).filter(file=>String(file.productId)===productId);const prev=purchaseStatusByProduct.get(productId);if(order.status==='paid'&&files.length)purchaseStatusByProduct.set(productId,{status:'paid',downloads:files});else if(!prev)purchaseStatusByProduct.set(productId,{status:order.status,downloads:[]});}
+    }catch{}
+  }
+  renderProducts();
+}
+refreshPurchasedProductStatuses();
 
 search.addEventListener("input",renderProducts);filter.addEventListener("change",renderProducts);
 document.querySelector(".category-menu-dropdown")?.addEventListener("click",e=>{const link=e.target.closest("[data-category-link]");if(!link)return;const category=link.dataset.categoryLink;filter.value=category;document.querySelectorAll(".category-pills button").forEach(b=>b.classList.toggle("active",b.dataset.category===category));renderProducts();document.querySelector(".category-menu")?.removeAttribute("open")});
