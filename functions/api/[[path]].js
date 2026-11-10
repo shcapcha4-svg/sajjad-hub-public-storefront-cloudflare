@@ -796,9 +796,7 @@ export async function onRequest({ request, env }) {
         return json({ success: true });
       }
     }
-
-
-  catch (error) {
+  } catch (error) {
     console.error("API ERROR:", error);
     return json(
       {
