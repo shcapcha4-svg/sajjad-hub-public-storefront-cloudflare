@@ -770,12 +770,14 @@ export async function onRequest({ request, env }) {
 
   return json({ success: true });
 }
+      const isPreviewDeployment = new URL(request.url).hostname !== "sajjadhub.pages.dev";
+
       if (route === "admin/test-mode" && method === "GET") {
-        return json({ success: true, enabled: env.PREVIEW_TEST_MODE === "true" });
+        return json({ success: true, enabled: isPreviewDeployment });
       }
 
       if (route === "admin/test-orders" && method === "POST") {
-        if (env.PREVIEW_TEST_MODE !== "true") {
+        if (!isPreviewDeployment) {
           return json({ success: false, message: "Test Mode চালু নেই।" }, 403);
         }
 
