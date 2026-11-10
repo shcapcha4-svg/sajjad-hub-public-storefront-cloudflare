@@ -742,33 +742,16 @@ export async function onRequest({ request, env }) {
     );
   }
 
-  const orderCount = await env.DB.prepare(
-    "SELECT COUNT(*) AS total FROM order_items WHERE product_id=?"
-  )
-    .bind(productId)
-    .first();
-
-  const tokenCount = await env.DB.prepare(
-    "SELECT COUNT(*) AS total FROM download_tokens WHERE product_id=?"
-  )
-    .bind(productId)
-    .first();
-
-  if (orderCount.total > 0 || tokenCount.total > 0) {
-    return json(
-      {
-        success: false,
-        message: "এই ডিজাইনের অর্ডার বা ডাউনলোড রেকর্ড আছে। এটি মুছে ফেলা যাবে না।"
-      },
-      409
-    );
-  }
-
+  // Safely hide the product from the storefront without deleting
+  // its order history, download tokens, or any Backblaze files.
   await env.DB.prepare("UPDATE products SET is_active=0 WHERE id=?")
     .bind(productId)
     .run();
 
-  return json({ success: true });
+  return json({
+    success: true,
+    message: "ডিজাইনটি সাইট থেকে লুকানো হয়েছে। পুরোনো অর্ডার ও ফাইল সংরক্ষিত আছে।"
+  });
 }
       const isPreviewDeployment = new URL(request.url).hostname !== "sajjadhub.pages.dev";
 
