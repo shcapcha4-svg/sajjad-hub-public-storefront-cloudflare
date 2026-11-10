@@ -137,40 +137,37 @@ document.getElementById("submitPayment").onclick=async()=>{
   }catch(error){msg.textContent=error.message||'সার্ভারের সঙ্গে সংযোগ হয়নি। আবার চেষ্টা করুন।'}finally{btn.disabled=false}
 };
 
-// Customer order lookup and secure, payment-gated downloads.
-document.getElementById("myOrderForm").addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const orderId = document.getElementById("lookupOrderId").value.trim();
-  const email = document.getElementById("lookupOrderEmail").value.trim();
-  const button = document.getElementById("lookupOrderButton");
-  const result = document.getElementById("myOrderResult");
-  button.disabled = true;
-  result.innerHTML = '<p class="my-order-loading">অর্ডার খোঁজা হচ্ছে...</p>';
-  try {
-    const response = await fetch("/api/my-orders", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ orderId, email })
-    });
-    const data = await response.json();
-    if (!response.ok || !data.success) throw new Error(data.message || "অর্ডার খুঁজে পাওয়া যায়নি।");
-    const order = data.order;
-    const statusLabel = order.status === "paid" ? "পেমেন্ট সম্পন্ন" : order.status === "rejected" ? "অর্ডার বাতিল" : "পেমেন্ট যাচাই অপেক্ষমাণ";
-    const downloads = order.status === "paid"
-      ? (order.downloads || []).map(file => '<a class="my-order-download" href="' + escapeHTML(file.url) + '">↓ ' + escapeHTML(file.name) + ' ডাউনলোড করুন</a>').join("")
-      : "";
-    const content = order.status === "paid"
-      ? (downloads || '<p class="my-order-pending">পেমেন্ট সম্পন্ন, তবে এই অর্ডারের ডাউনলোড ফাইল পাওয়া যায়নি। অনুগ্রহ করে যোগাযোগ করুন।</p>')
-      : order.status === "rejected"
-        ? '<p class="my-order-pending">এই অর্ডারটি বাতিল করা হয়েছে। সহায়তার জন্য যোগাযোগ করুন।</p>'
-        : '<p class="my-order-pending">আপনার পেমেন্ট এখনো যাচাই করা হয়নি। Admin পেমেন্ট Paid করলেই এখানে ডাউনলোড বাটন দেখা যাবে।</p>';
-    result.innerHTML = '<div class="my-order-card"><div class="my-order-card-head"><div><span>অর্ডার নম্বর</span><strong>#' + escapeHTML(order.id) + '</strong></div><span class="my-order-status ' + escapeHTML(order.status) + '">' + statusLabel + '</span></div><p class="my-order-items">' + (order.items || []).map(item => escapeHTML(item.product_name) + ' × ' + escapeHTML(item.quantity)).join(" · ") + '</p><div class="my-order-total"><span>অর্ডারের মোট</span><strong>' + money(order.total) + '</strong></div><div class="my-order-downloads">' + content + '</div></div>';
-  } catch (error) {
-    result.innerHTML = '<p class="my-order-error">' + escapeHTML(error.message || "সার্ভারের সঙ্গে সংযোগ হয়নি।") + '</p>';
-  } finally {
-    button.disabled = false;
+// Customer order cards and secure, payment-gated downloads.
+function renderMyOrderCard(order){
+  const ready=order.status==="paid"&&(order.downloads||[]).length>0;
+  const statusLabel=ready?"Download":order.status==="rejected"?"বাতিল":"Pending";
+  const statusClass=order.status==="paid"?"paid":order.status==="rejected"?"rejected":"";
+  const content=ready?(order.downloads||[]).map(file=>'<a class="my-order-download" href="'+escapeHTML(file.url)+'">↓ '+escapeHTML(file.name)+' ডাউনলোড করুন</a>').join(""):order.status==="rejected"?'<p class="my-order-pending">এই অর্ডারটি বাতিল করা হয়েছে। সহায়তার জন্য যোগাযোগ করুন।</p>':order.status==="paid"?'<p class="my-order-pending">পেমেন্ট সম্পন্ন, তবে ডাউনলোড ফাইল পাওয়া যায়নি। অনুগ্রহ করে যোগাযোগ করুন।</p>':'<p class="my-order-pending">পেমেন্ট যাচাই চলছে। যাচাই সম্পন্ন হলে এখানে Download দেখা যাবে।</p>';
+  return '<div class="my-order-card"><div class="my-order-card-head"><div><span>অর্ডার নম্বর</span><strong>#'+escapeHTML(order.id)+'</strong></div><span class="my-order-status '+statusClass+'">'+statusLabel+'</span></div><p class="my-order-items">'+(order.items||[]).map(item=>escapeHTML(item.product_name)+' × '+escapeHTML(item.quantity)).join(" · ")+'</p><div class="my-order-total"><span>অর্ডারের মোট</span><strong>'+money(order.total)+'</strong></div><div class="my-order-downloads">'+content+'</div></div>';
+}
+async function loadSavedCustomerOrders(){
+  const area=document.getElementById("mySavedOrders");if(!area)return;
+  let saved=[];try{saved=JSON.parse(localStorage.getItem(PURCHASE_STORAGE_KEY)||"[]");}catch{}
+  if(!saved.length){area.innerHTML='<p class="my-saved-orders-empty">এই ব্রাউজারে কোনো সংরক্ষিত অর্ডার নেই। অন্য ব্রাউজার বা ডিভাইস হলে নিচে অর্ডার নম্বর ও ইমেইল দিয়ে খুঁজুন।</p>';return;}
+  area.innerHTML='<p class="my-order-loading">আপনার অর্ডারগুলো খোঁজা হচ্ছে...</p>';
+  const cards=[];
+  for(const entry of saved.slice(0,30)){
+    if(!entry||!entry.orderId||!entry.email)continue;
+    try{const response=await fetch("/api/my-orders",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({orderId:entry.orderId,email:entry.email})});const data=await response.json();if(response.ok&&data.success)cards.push(renderMyOrderCard(data.order));}catch{}
   }
+  area.innerHTML=cards.length?cards.join(""):'<p class="my-order-error">অর্ডার পাওয়া যায়নি। নিচে অর্ডার নম্বর ও ইমেইল দিয়ে আবার খুঁজুন।</p>';
+}
+document.querySelector('a[href="#my-orders"]')?.addEventListener("click",()=>{loadSavedCustomerOrders();});
+document.getElementById("myOrderForm").addEventListener("submit",async(event)=>{
+  event.preventDefault();
+  const orderId=document.getElementById("lookupOrderId").value.trim(),email=document.getElementById("lookupOrderEmail").value.trim();
+  const button=document.getElementById("lookupOrderButton"),result=document.getElementById("myOrderResult");
+  button.disabled=true;result.innerHTML='<p class="my-order-loading">অর্ডার খোঁজা হচ্ছে...</p>';
+  try{const response=await fetch("/api/my-orders",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({orderId,email})});const data=await response.json();if(!response.ok||!data.success)throw new Error(data.message||"অর্ডার খুঁজে পাওয়া যায়নি।");result.innerHTML=renderMyOrderCard(data.order);}
+  catch(error){result.innerHTML='<p class="my-order-error">'+escapeHTML(error.message||"সার্ভারের সঙ্গে সংযোগ হয়নি।")+'</p>';}
+  finally{button.disabled=false;}
 });
+loadSavedCustomerOrders();
 
 async function refreshPurchasedProductStatuses(){
   let saved=[];try{saved=JSON.parse(localStorage.getItem(PURCHASE_STORAGE_KEY)||'[]');}catch{}
