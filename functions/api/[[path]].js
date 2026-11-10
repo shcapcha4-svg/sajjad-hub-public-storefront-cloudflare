@@ -395,6 +395,26 @@ export async function onRequest({ request, env }) {
         return new Response("ডাউনলোড লিংকটি অবৈধ।", { status: 404 });
       }
 
+      // প্রথমবার ডাউনলোড লিংক খোলার সময় থেকেই ২০ সেকেন্ডের মেয়াদ শুরু হবে।
+      // ফাইলটি ওই প্রথম রিকোয়েস্টে সম্পূর্ণ পাঠানো হবে; মেয়াদ শেষ হলে পরেরবার আর পাওয়া যাবে না।
+      await env.DB.prepare(
+        "CREATE TABLE IF NOT EXISTS download_expirations (token TEXT PRIMARY KEY, expires_at TEXT NOT NULL)"
+      ).run();
+      await env.DB.prepare(
+        "INSERT OR IGNORE INTO download_expirations(token,expires_at) VALUES(?,?)"
+      )
+        .bind(token, new Date(Date.now() + 20000).toISOString())
+        .run();
+
+      const expiry = await env.DB.prepare(
+        "SELECT expires_at FROM download_expirations WHERE token=?"
+      )
+        .bind(token)
+        .first();
+      if (!expiry || !expiry.expires_at || Date.parse(expiry.expires_at) <= Date.now()) {
+        return new Response("ডাউনলোডের সময় শেষ।", { status: 410 });
+      }
+
       const object = await b2Request(env, "GET", row.file_key);
 
       if (object.status === 404) {
@@ -472,8 +492,11 @@ export async function onRequest({ request, env }) {
           }
         }
 
+        await env.DB.prepare(
+          "CREATE TABLE IF NOT EXISTS download_expirations (token TEXT PRIMARY KEY, expires_at TEXT NOT NULL)"
+        ).run();
         const { results: tokens = [] } = await env.DB.prepare(
-          "SELECT t.token,t.product_id,p.name FROM download_tokens t JOIN products p ON p.id=t.product_id WHERE t.order_id=?"
+          "SELECT t.token,t.product_id,e.expires_at,p.name FROM download_tokens t JOIN products p ON p.id=t.product_id LEFT JOIN download_expirations e ON e.token=t.token WHERE t.order_id=?"
         )
           .bind(order.id)
           .all();
@@ -481,6 +504,7 @@ export async function onRequest({ request, env }) {
         downloads = tokens.map((token) => ({
           productId: token.product_id,
           name: token.name,
+          expiresAt: token.expires_at,
           url: `/api/download/${token.token}`,
         }));
       }
