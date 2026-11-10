@@ -448,6 +448,30 @@ export async function onRequest({ request, env }) {
 
       let downloads = [];
       if (order.status === "paid") {
+        // Repair missing download tokens for already-paid orders.
+        // This also covers orders approved before a token was created.
+        const { results: downloadableItems = [] } = await env.DB.prepare(
+          "SELECT oi.product_id,p.file_url AS file_key FROM order_items oi JOIN products p ON p.id=oi.product_id WHERE oi.order_id=? AND p.file_url IS NOT NULL AND p.file_url<>''"
+        )
+          .bind(order.id)
+          .all();
+
+        for (const item of downloadableItems) {
+          const existing = await env.DB.prepare(
+            "SELECT token FROM download_tokens WHERE order_id=? AND product_id=?"
+          )
+            .bind(order.id, item.product_id)
+            .first();
+
+          if (!existing) {
+            await env.DB.prepare(
+              "INSERT INTO download_tokens(token,order_id,product_id) VALUES(?,?,?)"
+            )
+              .bind(id().replaceAll("-", ""), order.id, item.product_id)
+              .run();
+          }
+        }
+
         const { results: tokens = [] } = await env.DB.prepare(
           "SELECT t.token,t.product_id,p.name FROM download_tokens t JOIN products p ON p.id=t.product_id WHERE t.order_id=?"
         )
