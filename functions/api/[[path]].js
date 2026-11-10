@@ -753,19 +753,15 @@ export async function onRequest({ request, env }) {
     message: "ডিজাইনটি সাইট থেকে লুকানো হয়েছে। পুরোনো অর্ডার ও ফাইল সংরক্ষিত আছে।"
   });
 }
-      const isPreviewDeployment = new URL(request.url).hostname !== "sajjadhub.pages.dev";
-
+      // Test Mode is available only inside authenticated Admin routes.
+      // It creates a clearly labelled TEST MODE order with no payment collection.
       if (route === "admin/test-mode" && method === "GET") {
-        return json({ success: true, enabled: isPreviewDeployment });
+        return json({ success: true, enabled: true });
       }
 
       if (route === "admin/test-orders" && method === "POST") {
-        if (!isPreviewDeployment) {
-          return json({ success: false, message: "Test Mode চালু নেই।" }, 403);
-        }
-
         const product = await env.DB.prepare(
-          "SELECT id,name,price,file_url FROM products WHERE file_url IS NOT NULL AND file_url != '' ORDER BY created_at DESC LIMIT 1"
+          "SELECT id,name,price,file_url FROM products WHERE is_active=1 AND file_url IS NOT NULL AND file_url != '' ORDER BY created_at DESC LIMIT 1"
         ).first();
 
         if (!product) {
@@ -851,7 +847,7 @@ export async function onRequest({ request, env }) {
         }
 
         const order = await env.DB.prepare(
-          "SELECT id FROM orders WHERE id=?"
+          "SELECT id,payment_method FROM orders WHERE id=?"
         )
           .bind(orderId)
           .first();
@@ -860,6 +856,12 @@ export async function onRequest({ request, env }) {
           return json(
             { success: false, message: "অর্ডার পাওয়া যায়নি।" },
             404
+          );
+        }
+        if (order.payment_method === "TEST MODE") {
+          return json(
+            { success: false, message: "ডেমো টেস্ট অর্ডারের পেমেন্ট স্ট্যাটাস পরিবর্তন করা যাবে না।" },
+            400
           );
         }
 
