@@ -441,7 +441,7 @@ export async function onRequest({ request, env }) {
       }
 
       const { results: items = [] } = await env.DB.prepare(
-        "SELECT product_name,quantity,unit_price FROM order_items WHERE order_id=?"
+        "SELECT product_id,product_name,quantity,unit_price FROM order_items WHERE order_id=?"
       )
         .bind(order.id)
         .all();
@@ -455,6 +455,7 @@ export async function onRequest({ request, env }) {
           .all();
 
         downloads = tokens.map((token) => ({
+          productId: token.product_id,
           name: token.name,
           url: `/api/download/${token.token}`,
         }));
