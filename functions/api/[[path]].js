@@ -69,10 +69,7 @@ const customerCookie = (value, maxAge) =>
 
 async function ensureCustomerTable(env) {
   await env.DB.prepare("CREATE TABLE IF NOT EXISTS customer_accounts (id TEXT NOT NULL UNIQUE, email TEXT PRIMARY KEY COLLATE NOCASE, name TEXT NOT NULL, password_hash TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)").run();
-  const columns = await env.DB.prepare("PRAGMA table_info(customer_accounts)").all();
-  if (!(columns.results || []).some((column) => column.name === "id")) await env.DB.prepare("ALTER TABLE customer_accounts ADD COLUMN id TEXT").run();
-  const legacy = await env.DB.prepare("SELECT email FROM customer_accounts WHERE id IS NULL").all();
-  for (const row of legacy.results || []) await env.DB.prepare("UPDATE customer_accounts SET id=? WHERE email=? AND id IS NULL").bind(id(), row.email).run();
+
   await env.DB.prepare("CREATE TABLE IF NOT EXISTS customer_order_links (order_id INTEGER PRIMARY KEY, customer_id TEXT NOT NULL)").run();
 }
 
