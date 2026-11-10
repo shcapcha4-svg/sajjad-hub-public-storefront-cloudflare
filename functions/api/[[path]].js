@@ -239,6 +239,12 @@ async function b2Request(env, method, key, body, contentType) {
   // A FixedLengthStream makes Workers send the exact Content-Length
   // expected by S3-compatible storage.
   if (method === "PUT" && body !== undefined && body !== null) {
+    console.log("B2_STREAM_DIAG_START", JSON.stringify({
+      method,
+      expectedBytes: body.byteLength,
+      bodyType: body.constructor?.name,
+      contentLengthHeaderBeforeFetch: headers.get("content-length"),
+    }));
     const fixedBody = new FixedLengthStream(body.byteLength);
     const uploadPromise = fetch(url, {
       method,
@@ -248,23 +254,50 @@ async function b2Request(env, method, key, body, contentType) {
 
     const writer = fixedBody.writable.getWriter();
     try {
-      await writer.write(body);
+      const writeResult = await writer.write(body);
+      console.log("B2_STREAM_DIAG_WRITE_DONE", JSON.stringify({
+        expectedBytes: body.byteLength,
+        writeResult: writeResult ?? null,
+      }));
       await writer.close();
+      console.log("B2_STREAM_DIAG_CLOSED", JSON.stringify({
+        expectedBytes: body.byteLength,
+      }));
     } catch (error) {
+      console.error("B2_STREAM_DIAG_WRITE_ERROR", String(error));
       try {
         await writer.abort(error);
       } catch {}
       throw error;
     }
 
-    return await uploadPromise;
+    const response = await uploadPromise;
+    console.log("B2_STREAM_DIAG_RESPONSE", JSON.stringify({
+      status: response.status,
+      expectedBytes: body.byteLength,
+      responseContentLength: response.headers.get("content-length"),
+    }));
+    return response;
   }
 
   return fetch(url, { method, headers });
 }
 
 async function putB2(env, key, file, contentType) {
+  console.log("B2_FILE_DIAG", JSON.stringify({
+    key,
+    fileSize: file.size,
+    fileType: file.type,
+    contentType,
+  }));
   const body = new Uint8Array(await file.arrayBuffer());
+  console.log("B2_BUFFER_DIAG", JSON.stringify({
+    key,
+    fileSize: file.size,
+    arrayBufferBytes: body.byteLength,
+    bufferLength: body.buffer.byteLength,
+    byteOffset: body.byteOffset,
+  }));
 
   if (body.byteLength !== file.size) {
     throw new Error("আপলোডের ফাইলের আকার মেলেনি। আবার ফাইল নির্বাচন করুন।");
