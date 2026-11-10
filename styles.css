@@ -371,3 +371,9 @@ body[data-theme="dark"] .category-menu-dropdown a:hover{background:#34451f;color
 body[data-theme="dark"] .my-order-form,body[data-theme="dark"] .my-order-card{background:var(--surface,#1f2937);border-color:#344054}
 body[data-theme="dark"] .my-order-form input{background:#111827;border-color:#475467;color:#f9fafb}
 @media(max-width:760px){.my-orders-section{padding:60px 18px}.my-order-form{grid-template-columns:1fr;padding:18px}.my-order-form .checkout-button{width:100%}.my-order-card{padding:17px}.my-order-card-head{align-items:flex-start;flex-direction:column}}
+
+/* Keep the checkout email field clear and easy to find */
+.checkout-email-field{display:block!important;visibility:visible!important;opacity:1!important;margin:12px 0!important}
+.checkout-email-field input{display:block!important;width:100%!important;min-height:48px!important}
+.checkout-email-field small{display:block;color:#667085;font-size:11px;margin-top:5px;line-height:1.6}
+body[data-theme="dark"] .checkout-email-field small{color:#cbd5e1}
