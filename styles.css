@@ -378,3 +378,6 @@ body[data-theme="dark"] .my-order-form input{background:#111827;border-color:#47
 .checkout-email-field small{display:block;color:#667085;font-size:11px;margin-top:5px;line-height:1.6}
 body[data-theme="dark"] .checkout-email-field small{color:#cbd5e1}
 
+
+
+.product-purchase-status{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:12px;padding:10px 12px;border-radius:10px;font-size:12px;font-weight:700}.product-purchase-status.is-pending{background:#fff7e6;color:#9a6700}.product-purchase-status.is-ready{background:#eaf8ef;color:#16703a}.product-download-link{display:inline-flex;align-items:center;padding:6px 10px;border-radius:7px;background:#16703a;color:#fff;text-decoration:none;font-weight:700}.product-download-link:hover{filter:brightness(.92)}body[data-theme="dark"] .product-purchase-status.is-pending{background:#473719;color:#ffdf91}body[data-theme="dark"] .product-purchase-status.is-ready{background:#173d2b;color:#a7f3c0}
