@@ -753,54 +753,6 @@ export async function onRequest({ request, env }) {
     message: "ডিজাইনটি সাইট থেকে লুকানো হয়েছে। পুরোনো অর্ডার ও ফাইল সংরক্ষিত আছে।"
   });
 }
-      // Test Mode is available only inside authenticated Admin routes.
-      // It creates a clearly labelled TEST MODE order with no payment collection.
-      if (route === "admin/test-mode" && method === "GET") {
-        return json({ success: true, enabled: true });
-      }
-
-      if (route === "admin/test-orders" && method === "POST") {
-        const product = await env.DB.prepare(
-          "SELECT id,name,price,file_url FROM products WHERE is_active=1 AND file_url IS NOT NULL AND file_url != '' ORDER BY created_at DESC LIMIT 1"
-        ).first();
-
-        if (!product) {
-          return json({ success: false, message: "ডাউনলোড ফাইল যুক্ত কোনো সক্রিয় পণ্য পাওয়া যায়নি।" }, 400);
-        }
-
-        const trx = "TEST-NO-PAYMENT-" + Date.now();
-        const inserted = await env.DB.prepare(
-          "INSERT INTO orders(customer_name,phone,product_id,product_name,quantity,total_amount,payment_method,transaction_id,payment_status,customer_email) VALUES(?,?,?,?,?,?,?,?,?,?)"
-        ).bind(
-          "TEST ORDER (NO PAYMENT)",
-          "00000000000",
-          product.id,
-          product.name,
-          1,
-          product.price,
-          "TEST MODE",
-          trx,
-          "paid",
-          "test@example.invalid"
-        ).run();
-
-        const orderId = inserted.meta.last_row_id;
-        await env.DB.prepare(
-          "INSERT INTO order_items(order_id,product_id,product_name,unit_price,quantity) VALUES(?,?,?,?,?)"
-        ).bind(orderId, product.id, product.name, product.price, 1).run();
-
-        const token = id().replaceAll("-", "");
-        await env.DB.prepare(
-          "INSERT INTO download_tokens(token,order_id,product_id) VALUES(?,?,?)"
-        ).bind(token, orderId, product.id).run();
-
-        return json({
-          success: true,
-          orderId,
-          message: "টেস্ট অর্ডার তৈরি হয়েছে। কোনো পেমেন্ট নেওয়া হয়নি।"
-        });
-      }
-
       if (route === "admin/orders" && method === "GET") {
         const { results = [] } = await env.DB.prepare(
           "SELECT *, customer_email AS buyer_email, phone AS sender_phone, transaction_id AS trx_id, total_amount AS total, payment_status AS status FROM orders ORDER BY created_at DESC LIMIT 200"
