@@ -52,19 +52,13 @@
 
     <section class="how-section" id="how"><div><span class="eyebrow">SIMPLE & QUICK</span><h2>কেনাকাটা হবে <em>সহজ।</em></h2></div><div class="steps"><article><span>01</span><h3>ডিজাইন বাছাই</h3><p>পছন্দের ডিজাইনটি দেখে কার্টে যোগ করুন।</p></article><article><span>02</span><h3>পেমেন্ট সম্পন্ন</h3><p>চেকআউটে গিয়ে পেমেন্টের ধাপ অনুসরণ করুন।</p></article><article><span>03</span><h3>ডাউনলোড</h3><p>পেমেন্ট যাচাই হলে আপনার ডিজাইনের ডাউনলোড লিংক পাবেন।</p></article></div></section>
     <section class="my-orders-section" id="my-orders">
-      <div class="my-orders-panel">\n      <div class="my-orders-heading">
-        <span class="eyebrow">YOUR DIGITAL PURCHASES</span>
-        <h2>আমার অর্ডার <em>/ ডাউনলোড</em></h2>
-        <p>অর্ডার নম্বর ও কেনার সময় দেওয়া ইমেইল দিয়ে অর্ডারের অবস্থা ও ডাউনলোড দেখুন।</p>
+      <div class="my-orders-panel">
+        <div class="my-orders-heading">
+          <h2>আমার অর্ডার</h2>
+        </div>
+        <div id="mySavedOrders" class="my-saved-orders" aria-live="polite"></div>
       </div>
-      <div id="mySavedOrders" class="my-saved-orders" aria-live="polite"></div>\n      <p class="my-order-lookup-title">অন্য ডিভাইস থেকে অর্ডার দেখতে অর্ডার নম্বর ও ইমেইল দিন</p>\n      <form id="myOrderForm" class="my-order-form">
-        <label>অর্ডার নম্বর<input id="lookupOrderId" type="text" inputmode="numeric" placeholder="রসিদে থাকা অর্ডার নম্বর" required></label>
-        <label>অর্ডারের সময় দেওয়া ইমেইল<input id="lookupOrderEmail" type="email" placeholder="name@example.com" required></label>
-        <button class="checkout-button" id="lookupOrderButton" type="submit">অর্ডার খুঁজুন <span>→</span></button>
-      </form>
-      <p class="my-order-help">অর্ডার নম্বরটি অর্ডার জমা দেওয়ার পর পাওয়া রসিদে আছে।</p>
-      <div id="myOrderResult" class="my-order-result" role="status" aria-live="polite"></div>
-      </div>\n    </section>
+    </section>
   </main>
 
   <footer id="contact">
