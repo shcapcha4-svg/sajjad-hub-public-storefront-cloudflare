@@ -57,6 +57,13 @@
           <h2>আমার অর্ডার</h2>
         </div>
         <div id="mySavedOrders" class="my-saved-orders" aria-live="polite"></div>
+        <form id="receiptOrderLookup" class="receipt-order-lookup">
+          <div><strong>রসিদ দিয়ে অর্ডার খুঁজুন</strong><small>আগের রসিদের অর্ডার নম্বর ও ইমেইল লিখে আবার Download চালু করুন।</small></div>
+          <label>অর্ডার নম্বর<input id="receiptOrderId" type="text" inputmode="numeric" placeholder="যেমন: 1001" required></label>
+          <label>রসিদের ইমেইল<input id="receiptOrderEmail" type="email" inputmode="email" placeholder="name@example.com" required></label>
+          <button id="receiptLookupButton" class="checkout-button" type="submit">অর্ডার খুঁজুন</button>
+          <p id="receiptLookupMessage" role="status" aria-live="polite"></p>
+        </form>
       </div>
     </section>
   </main>
