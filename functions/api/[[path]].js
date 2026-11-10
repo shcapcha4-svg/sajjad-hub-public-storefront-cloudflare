@@ -345,6 +345,7 @@ export async function onRequest({ request, env }) {
       });
     }    if (route === "checkout" && method === "POST") {
       const body = await request.json();
+      const customerName = String(body.customerName || "").trim().slice(0, 120);
       const email = String(body.email || "").trim().slice(0, 254);
       const phone = String(body.phone || "").trim().slice(0, 30);
       const trx = String(body.trxId || "").trim().slice(0, 100);
@@ -399,7 +400,7 @@ export async function onRequest({ request, env }) {
       const inserted = await env.DB.prepare(
         "INSERT INTO orders(customer_name,phone,product_id,product_name,quantity,total_amount,payment_method,transaction_id,payment_status,customer_email) VALUES(?,?,?,?,?,?,?,?,?,?)"
       )
-        .bind(email, phone, first.id, first.name, valid.reduce((sum, item) => sum + item.quantity, 0), total, "Nagad", trx, "pending", email)
+        .bind(customerName, phone, first.id, first.name, valid.reduce((sum, item) => sum + item.quantity, 0), total, "Nagad", trx, "pending", email)
         .run();
       const orderId = inserted.meta.last_row_id;
 
