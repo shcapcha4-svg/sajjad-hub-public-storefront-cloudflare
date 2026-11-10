@@ -386,7 +386,7 @@ export async function onRequest({ request, env }) {
     if (route.startsWith("download/") && method === "GET") {
       const token = decodeURIComponent(parts[1] || "");
       const row = await env.DB.prepare(
-        "SELECT t.*, p.file_url AS file_key, p.name FROM download_tokens t JOIN products p ON p.id=t.product_id WHERE t.token=?"
+        "SELECT t.*, p.file_url AS file_key, p.name FROM download_tokens t JOIN products p ON p.id=t.product_id JOIN orders o ON o.id=t.order_id AND o.payment_status='paid' WHERE t.token=?"
       )
         .bind(token)
         .first();
