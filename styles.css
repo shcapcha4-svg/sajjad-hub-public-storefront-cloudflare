@@ -409,3 +409,18 @@ body[data-theme="dark"] .my-orders-panel{background:linear-gradient(145deg,#202c
 body[data-theme="dark"] .my-order-simple-row+.my-order-simple-row{border-color:#374151}
 body[data-theme="dark"] .my-order-simple-status.is-pending{background:#59451b;color:#fde68a}
 @media(max-width:620px){.my-orders-section{padding:55px 18px}.my-order-card{padding:10px 12px}.my-order-product-name{font-size:13px}.my-order-simple-status{min-width:82px;padding:7px 11px}}
+
+
+/* Receipt-based order recovery and clear 20-second download state */
+.receipt-order-lookup{max-width:620px;margin:20px auto 0;padding:16px;border:1px solid var(--line,#e4e7ec);border-radius:14px;background:var(--surface,#fff);display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:end}
+.receipt-order-lookup>div{grid-column:1/-1;display:grid;gap:4px}
+.receipt-order-lookup>div strong{font-size:14px}
+.receipt-order-lookup>div small{font-size:12px;color:var(--muted,#667085);line-height:1.6}
+.receipt-order-lookup label{display:grid;gap:6px;font-size:12px;font-weight:700}
+.receipt-order-lookup input{width:100%;min-width:0;box-sizing:border-box;padding:11px 12px;border:1px solid var(--line,#d0d5dd);border-radius:9px;background:var(--background,#fff);color:inherit;font:inherit}
+.receipt-order-lookup button{grid-column:1/-1;width:100%;min-height:44px}
+.receipt-order-lookup p{grid-column:1/-1;margin:0;text-align:center;font-size:12px;line-height:1.6;color:var(--muted,#667085)}
+.my-order-simple-status.is-download-started{background:#eaf8ef;color:#16703a}
+body[data-theme="dark"] .receipt-order-lookup{background:var(--surface,#1f2937);border-color:#475569}
+body[data-theme="dark"] .receipt-order-lookup input{background:#111827;border-color:#475467;color:#f9fafb}
+@media(max-width:620px){.receipt-order-lookup{grid-template-columns:1fr;padding:13px}.receipt-order-lookup>div,.receipt-order-lookup button,.receipt-order-lookup p{grid-column:1}}
