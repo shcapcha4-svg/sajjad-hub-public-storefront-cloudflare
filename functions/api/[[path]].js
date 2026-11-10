@@ -551,12 +551,9 @@ export async function onRequest({ request, env }) {
     }
 
     if (route === "checkout" && method === "POST") {
-      const customer = await currentCustomer(request, env);
-      if (!customer) return json({ success: false, message: "অর্ডার করতে আগে ইমেইল ও পাসওয়ার্ড দিয়ে লগইন করুন।" }, 401);
-      await ensureCustomerSchema(env);
       const body = await request.json();
-      const customerName = customer.name;
-      const email = customer.email;
+      const customerName = String(body.customerName || "").trim().slice(0, 120);
+      const email = String(body.email || "").trim().toLowerCase().slice(0, 254);
       const phone = String(body.phone || "").trim().slice(0, 30);
       const trx = String(body.trxId || "").trim().slice(0, 100);
       const items = Array.isArray(body.items) ? body.items : [];
@@ -609,9 +606,9 @@ export async function onRequest({ request, env }) {
 
       const first = valid[0].product;
       const inserted = await env.DB.prepare(
-        "INSERT INTO orders(customer_name,phone,product_id,product_name,quantity,total_amount,payment_method,transaction_id,payment_status,customer_email,customer_id) VALUES(?,?,?,?,?,?,?,?,?,?,?)"
+        "INSERT INTO orders(customer_name,phone,product_id,product_name,quantity,total_amount,payment_method,transaction_id,payment_status,customer_email) VALUES(?,?,?,?,?,?,?,?,?,?)"
       )
-        .bind(customerName, phone, first.id, first.name, valid.reduce((sum, item) => sum + item.quantity, 0), total, "Nagad", trx, "pending", email, customer.id)
+        .bind(customerName, phone, first.id, first.name, valid.reduce((sum, item) => sum + item.quantity, 0), total, "Nagad", trx, "pending", email)
         .run();
       const orderId = inserted.meta.last_row_id;
 
