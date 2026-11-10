@@ -371,3 +371,31 @@ body[data-theme="dark"] .category-menu-dropdown a:hover{background:#34451f;color
 body[data-theme="dark"] .my-order-form,body[data-theme="dark"] .my-order-card{background:var(--surface,#1f2937);border-color:#344054}
 body[data-theme="dark"] .my-order-form input{background:#111827;border-color:#475467;color:#f9fafb}
 @media(max-width:760px){.my-orders-section{padding:60px 18px}.my-order-form{grid-template-columns:1fr;padding:18px}.my-order-form .checkout-button{width:100%}.my-order-card{padding:17px}.my-order-card-head{align-items:flex-start;flex-direction:column}}
+
+/* Customer account and inline purchase status */
+.customer-account-button{border:1px solid var(--line,#e4e7ec);background:transparent;color:inherit;border-radius:999px;padding:10px 16px;font:inherit;font-weight:700;cursor:pointer}
+.customer-account-dialog{border:0;padding:0;background:transparent;width:min(520px,calc(100% - 28px));max-width:520px}
+.customer-account-dialog::backdrop{background:#10182899;backdrop-filter:blur(4px)}
+.customer-account-modal{position:relative;padding:34px;border-radius:22px;background:var(--surface,#fff);color:var(--text,#101828);box-shadow:0 24px 80px #0003}
+.customer-account-modal h2{font-size:28px;margin:12px 0}.customer-account-modal h3{margin:22px 0 10px}
+.account-intro,.account-email{color:var(--muted,#667085);line-height:1.7}
+.customer-account-modal form{display:grid;gap:14px;margin-top:20px}
+.customer-account-modal label{display:grid;gap:7px;font-weight:600;font-size:14px}
+.customer-account-modal input{width:100%;box-sizing:border-box;padding:13px 14px;border:1px solid var(--line,#d0d5dd);border-radius:10px;background:var(--background,#fff);color:inherit;font:inherit}
+.account-mode-toggle,.account-logout-button{margin-top:14px;border:0;background:transparent;color:var(--accent,#9a642c);font:inherit;font-weight:700;cursor:pointer}
+.account-logout-button{color:#b42318}
+.customer-order-history{display:grid;gap:10px;max-height:300px;overflow:auto}
+.account-order{padding:13px;border:1px solid var(--line,#e4e7ec);border-radius:12px}
+.account-order>div{display:flex;justify-content:space-between;gap:10px;align-items:center}
+.account-order p{font-size:13px;color:var(--muted,#667085);line-height:1.6}
+.account-order-status{font-size:12px;font-weight:700}.account-order-status.paid{color:#067647}.account-order-status.pending{color:#9a6700}.account-order-status.rejected{color:#b42318}
+.account-download-link{display:inline-block;color:#087443;font-weight:700;text-decoration:none;font-size:13px;margin:4px 8px 0 0}
+.account-no-orders{font-size:14px;color:var(--muted,#667085);line-height:1.7}
+.product-purchase-state{display:grid;gap:6px;margin-top:12px;padding-top:10px;border-top:1px solid var(--line,#e4e7ec)}
+.product-purchase-state small{font-size:11px;line-height:1.5;color:var(--muted,#667085)}
+.purchase-pending,.purchase-paid,.purchase-rejected{font-size:12px;font-weight:800}
+.purchase-pending{color:#a15c00}.purchase-paid{color:#067647}.purchase-rejected{color:#b42318}
+.product-download-button{display:inline-flex;align-items:center;justify-content:center;padding:8px 13px;border-radius:8px;background:#087443;color:#fff;text-decoration:none;font-size:13px;font-weight:700;width:max-content}
+body[data-theme="dark"] .customer-account-modal{background:#1f2937;color:#f9fafb}
+body[data-theme="dark"] .customer-account-modal input{background:#111827;border-color:#475467;color:#f9fafb}
+@media(max-width:760px){.customer-account-button{padding:8px 11px;font-size:12px}.customer-account-modal{padding:25px 20px}}

@@ -31,6 +31,8 @@ const grid = document.getElementById("productGrid");
 const search = document.getElementById("searchInput");
 const filter = document.getElementById("categoryFilter");
 const productImageUrls = new Map();
+const purchaseStates = new Map();
+let currentCustomer = null;
 function escapeHTML(value="") { return String(value).replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch])); }
 function productArtwork(p, extraClass="") {
   if (p.imageUrl) return `<img class="${extraClass}" src="${escapeHTML(p.imageUrl)}" alt="${escapeHTML(p.name)}" loading="lazy">`;
@@ -39,7 +41,7 @@ function productArtwork(p, extraClass="") {
 function renderProducts(){
   const q=search.value.trim().toLowerCase(), c=filter.value;
   const shown=products.filter(p=>(c==="সব"||p.category===c)&&(p.name.toLowerCase().includes(q)||p.category.toLowerCase().includes(q)));
-  grid.innerHTML=shown.map(p=>`<article class="product-card" data-product="${escapeHTML(p.id)}" tabindex="0" role="button" aria-label="${escapeHTML(p.name)} বিস্তারিত দেখুন"><button class="product-open" type="button" data-detail="${escapeHTML(p.id)}" aria-label="${escapeHTML(p.name)} বিস্তারিত দেখুন"><div class="product-thumb" style="background:${escapeHTML(p.bg||"#e5e7eb")}">${productArtwork(p)}</div></button><div class="product-info"><div class="product-meta"><span>${escapeHTML(p.category)}</span><span>ডিজিটাল ফাইল</span></div><button class="product-title-button" type="button" data-detail="${escapeHTML(p.id)}"><h3>${escapeHTML(p.name)}</h3></button><div class="product-bottom"><span class="price">${money(p.price)}</span><button class="add-button" data-add="${escapeHTML(p.id)}">+ কার্টে যোগ</button></div><button class="details-link" type="button" data-detail="${escapeHTML(p.id)}">বিস্তারিত দেখুন →</button></div></article>`).join("");
+  grid.innerHTML=shown.map(p=>`<article class="product-card" data-product="${escapeHTML(p.id)}" tabindex="0" role="button" aria-label="${escapeHTML(p.name)} বিস্তারিত দেখুন"><button class="product-open" type="button" data-detail="${escapeHTML(p.id)}" aria-label="${escapeHTML(p.name)} বিস্তারিত দেখুন"><div class="product-thumb" style="background:${escapeHTML(p.bg||"#e5e7eb")}">${productArtwork(p)}</div></button><div class="product-info"><div class="product-meta"><span>${escapeHTML(p.category)}</span><span>ডিজিটাল ফাইল</span></div><button class="product-title-button" type="button" data-detail="${escapeHTML(p.id)}"><h3>${escapeHTML(p.name)}</h3></button><div class="product-bottom"><span class="price">${money(p.price)}</span><button class="add-button" data-add="${escapeHTML(p.id)}">+ কার্টে যোগ</button></div><button class="details-link" type="button" data-detail="${escapeHTML(p.id)}">বিস্তারিত দেখুন →</button>${purchaseStateMarkup(p.id)}</div></article>`).join("");
   const emptyState=document.getElementById("emptyState");emptyState.hidden=shown.length>0;emptyState.textContent=products.length?"এই নামে কোনো ডিজাইন পাওয়া যায়নি।":"এখনো কোনো ডিজাইন আপলোড করা হয়নি।";
 }
 function showProductDetails(id){
@@ -86,11 +88,12 @@ document.getElementById("closeCheckout").onclick=()=>document.getElementById("ch
 for(const dlg of [document.getElementById("checkoutDialog"),document.getElementById("productDialog")]) dlg.addEventListener("click",e=>{if(e.target===dlg)dlg.close();});
 document.getElementById("cartItems").addEventListener("click",e=>{const id=e.target.dataset.remove;if(!id)return;cart=cart.filter(x=>String(x.id)!==String(id));renderCart()});
 document.getElementById("openCart").onclick=openCart;document.getElementById("closeCart").onclick=closeCart;document.getElementById("backdrop").onclick=closeCart;
-document.getElementById("checkoutButton").onclick=()=>{closeCart();document.getElementById("checkoutDialog").showModal();document.getElementById("checkoutMessage").textContent=""};
+document.getElementById("checkoutButton").onclick=()=>{closeCart();document.getElementById("checkoutDialog").showModal();document.getElementById("checkoutMessage").textContent=currentCustomer?"":"অর্ডার করতে আগে কাস্টমার অ্যাকাউন্টে লগইন করুন।";};
 document.getElementById("copyNagad").onclick=async()=>{try{await navigator.clipboard.writeText("01951608000");document.getElementById("checkoutMessage").textContent="Nagad নম্বর কপি হয়েছে।"}catch{document.getElementById("checkoutMessage").textContent="Nagad নম্বর: 01951608000"}};
 document.getElementById("submitPayment").onclick=async()=>{
   const name=document.getElementById("buyerName"), email=document.getElementById("buyerEmail"), sender=document.getElementById("senderPhone"), trx=document.getElementById("trxId"), msg=document.getElementById("checkoutMessage"), btn=document.getElementById("submitPayment");
-  if(!name.reportValidity()||!email.reportValidity()||!sender.reportValidity()||!trx.reportValidity())return;
+  if(!currentCustomer){msg.textContent="অর্ডার করতে আগে লগইন করুন।";document.getElementById("customerAccountDialog").showModal();return;}
+  if(!name.reportValidity()||!sender.reportValidity()||!trx.reportValidity())return;
   if(!cart.length){msg.textContent="আপনার কার্ট খালি।";return;}
   btn.disabled=true;msg.textContent="অর্ডার জমা হচ্ছে...";
   try{
@@ -111,47 +114,23 @@ document.getElementById("submitPayment").onclick=async()=>{
       <table class="receipt-table"><thead><tr><th>পণ্য</th><th>পরিমাণ</th><th>মূল্য</th></tr></thead><tbody>${purchasedItems.map(item=>`<tr><td>${escapeHTML(item.name)}</td><td>${item.qty}</td><td>${money(item.price*item.qty)}</td></tr>`).join("")}</tbody></table>
       <div class="receipt-total"><span>সর্বমোট</span><strong>${money(receiptTotal)}</strong></div>
       <div class="receipt-payment"><p>পেমেন্ট মাধ্যম: Nagad Send Money</p><p>TrxID: ${escapeHTML(trx.value.trim())}</p><p>পেমেন্ট স্ট্যাটাস: <strong>Pending (যাচাই অপেক্ষমাণ)</strong></p></div>
-      <p class="receipt-note">এটি অর্ডার জমার রসিদ, পেমেন্ট সম্পন্ন হওয়ার প্রমাণ নয়। পেমেন্ট যাচাই হলে ওয়েবসাইটের “আমার অর্ডার / ডাউনলোড” অংশে অর্ডার নম্বর ও ইমেইল দিয়ে ডিজাইন ডাউনলোড করতে পারবেন।</p>
+      <p class="receipt-note">এটি অর্ডার জমার রসিদ, পেমেন্ট সম্পন্ন হওয়ার প্রমাণ নয়। ডিজাইনের নিচে Pending দেখাবে। যাচাইয়ে ২০–৩০ মিনিট লাগতে পারে। অনুমোদনের পর ডাউনলোড দেখতে পেজ রিফ্রেশ করুন।</p>
     `;
-    cart=[];renderCart();document.getElementById("checkoutDialog").close();document.getElementById("receiptDialog").showModal();
+    cart=[];renderCart();document.getElementById("checkoutDialog").close();document.getElementById("receiptDialog").showModal();refreshCustomerOrders();
   }catch(error){msg.textContent=error.message||'সার্ভারের সঙ্গে সংযোগ হয়নি। আবার চেষ্টা করুন।'}finally{btn.disabled=false}
 };
 
-// Customer order lookup and secure, payment-gated downloads.
-document.getElementById("myOrderForm").addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const orderId = document.getElementById("lookupOrderId").value.trim();
-  const email = document.getElementById("lookupOrderEmail").value.trim();
-  const button = document.getElementById("lookupOrderButton");
-  const result = document.getElementById("myOrderResult");
-  button.disabled = true;
-  result.innerHTML = '<p class="my-order-loading">অর্ডার খোঁজা হচ্ছে...</p>';
-  try {
-    const response = await fetch("/api/my-orders", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ orderId, email })
-    });
-    const data = await response.json();
-    if (!response.ok || !data.success) throw new Error(data.message || "অর্ডার খুঁজে পাওয়া যায়নি।");
-    const order = data.order;
-    const statusLabel = order.status === "paid" ? "পেমেন্ট সম্পন্ন" : order.status === "rejected" ? "অর্ডার বাতিল" : "পেমেন্ট যাচাই অপেক্ষমাণ";
-    const downloads = order.status === "paid"
-      ? (order.downloads || []).map(file => '<a class="my-order-download" href="' + escapeHTML(file.url) + '">↓ ' + escapeHTML(file.name) + ' ডাউনলোড করুন</a>').join("")
-      : "";
-    const content = order.status === "paid"
-      ? (downloads || '<p class="my-order-pending">পেমেন্ট সম্পন্ন, তবে এই অর্ডারের ডাউনলোড ফাইল পাওয়া যায়নি। অনুগ্রহ করে যোগাযোগ করুন।</p>')
-      : order.status === "rejected"
-        ? '<p class="my-order-pending">এই অর্ডারটি বাতিল করা হয়েছে। সহায়তার জন্য যোগাযোগ করুন।</p>'
-        : '<p class="my-order-pending">আপনার পেমেন্ট এখনো যাচাই করা হয়নি। Admin পেমেন্ট Paid করলেই এখানে ডাউনলোড বাটন দেখা যাবে।</p>';
-    result.innerHTML = '<div class="my-order-card"><div class="my-order-card-head"><div><span>অর্ডার নম্বর</span><strong>#' + escapeHTML(order.id) + '</strong></div><span class="my-order-status ' + escapeHTML(order.status) + '">' + statusLabel + '</span></div><p class="my-order-items">' + (order.items || []).map(item => escapeHTML(item.product_name) + ' × ' + escapeHTML(item.quantity)).join(" · ") + '</p><div class="my-order-total"><span>অর্ডারের মোট</span><strong>' + money(order.total) + '</strong></div><div class="my-order-downloads">' + content + '</div></div>';
-  } catch (error) {
-    result.innerHTML = '<p class="my-order-error">' + escapeHTML(error.message || "সার্ভারের সঙ্গে সংযোগ হয়নি।") + '</p>';
-  } finally {
-    button.disabled = false;
-  }
-});
-
+// Customer accounts and inline purchase status.
+function purchaseStateMarkup(productId){const state=purchaseStates.get(String(productId));if(!state)return "";if(state.status==="paid"&&state.downloadUrl)return '<div class="product-purchase-state"><span class="purchase-paid">পেমেন্ট সম্পন্ন</span><a class="product-download-button" href="'+escapeHTML(state.downloadUrl)+'">↓ ডাউনলোড</a></div>';if(state.status==="pending")return '<div class="product-purchase-state"><span class="purchase-pending">Pending · যাচাই চলছে</span><small>যাচাইয়ে ২০–৩০ মিনিট লাগতে পারে। অনুমোদনের পর ডাউনলোড দেখতে পেজ রিফ্রেশ করুন।</small></div>';if(state.status==="rejected")return '<div class="product-purchase-state"><span class="purchase-rejected">অর্ডার বাতিল</span></div>';return ""; }
+function renderCustomerHistory(orders=[]){const host=document.getElementById("customerOrderHistory");if(!host)return;if(!orders.length){host.innerHTML='<p class="account-no-orders">এখনো কোনো কেনাকাটা নেই। ডিজাইন কিনলে এখানে অর্ডার দেখা যাবে।</p>';return;}host.innerHTML=orders.map(order=>{const label=order.status==="paid"?"ডাউনলোড প্রস্তুত":order.status==="rejected"?"অর্ডার বাতিল":"Pending · যাচাই চলছে";const files=(order.items||[]).filter(item=>item.status==="paid"&&item.downloadUrl).map(item=>'<a class="account-download-link" href="'+escapeHTML(item.downloadUrl)+'">'+escapeHTML(item.product_name)+' · ডাউনলোড</a>').join("");return '<article class="account-order"><div><strong>অর্ডার #'+escapeHTML(order.id)+'</strong><span class="account-order-status '+escapeHTML(order.status)+'">'+label+'</span></div><p>'+(order.items||[]).map(item=>escapeHTML(item.product_name)+' × '+escapeHTML(item.quantity)).join(" · ")+'</p>'+files+'</article>';}).join("");}
+async function refreshCustomerOrders(){purchaseStates.clear();if(!currentCustomer){renderProducts();renderCustomerHistory([]);return;}try{const response=await fetch("/api/customer/orders");const data=await response.json();if(!response.ok||!data.success)throw new Error();(data.orders||[]).forEach(order=>(order.items||[]).forEach(item=>{const key=String(item.product_id);const existing=purchaseStates.get(key);if(item.status==="paid"&&item.downloadUrl)purchaseStates.set(key,{status:"paid",downloadUrl:item.downloadUrl});else if(!existing)purchaseStates.set(key,{status:item.status,downloadUrl:item.downloadUrl});}));renderCustomerHistory(data.orders||[]);renderProducts();}catch(error){const host=document.getElementById("customerOrderHistory");if(host)host.innerHTML='<p class="account-no-orders">অর্ডার লোড করা যায়নি। আবার চেষ্টা করুন।</p>';}}
+function setCustomer(customer){currentCustomer=customer||null;document.getElementById("customerAccountButton").textContent=currentCustomer?"আমার অ্যাকাউন্ট":"লগইন";document.getElementById("buyerEmail").value=currentCustomer?currentCustomer.email:"";document.getElementById("buyerEmail").readOnly=true;if(currentCustomer&&!document.getElementById("buyerName").value)document.getElementById("buyerName").value=currentCustomer.name||"";document.getElementById("customerLoggedOut").hidden=!!currentCustomer;document.getElementById("customerLoggedIn").hidden=!currentCustomer;document.getElementById("customerAccountEmail").textContent=currentCustomer?currentCustomer.email:"";refreshCustomerOrders();}
+const customerDialog=document.getElementById("customerAccountDialog");let customerAccountMode="login";
+function setCustomerAccountMode(mode){customerAccountMode=mode;const registering=mode==="register";document.getElementById("customerAccountTitle").textContent=registering?"নতুন অ্যাকাউন্ট খুলুন":"কাস্টমার লগইন";document.getElementById("customerNameField").hidden=!registering;document.getElementById("customerName").required=registering;document.getElementById("customerPassword").autocomplete=registering?"new-password":"current-password";document.getElementById("customerAccountSubmit").textContent=registering?"অ্যাকাউন্ট তৈরি করুন":"লগইন করুন";document.getElementById("toggleCustomerAccountMode").textContent=registering?"আগে অ্যাকাউন্ট আছে? লগইন করুন":"নতুন অ্যাকাউন্ট খুলুন";document.getElementById("customerAccountMessage").textContent="";}
+document.getElementById("customerAccountButton").addEventListener("click",()=>customerDialog.showModal());document.getElementById("closeCustomerAccount").addEventListener("click",()=>customerDialog.close());document.getElementById("toggleCustomerAccountMode").addEventListener("click",()=>setCustomerAccountMode(customerAccountMode==="login"?"register":"login"));
+document.getElementById("customerAccountForm").addEventListener("submit",async event=>{event.preventDefault();const message=document.getElementById("customerAccountMessage"),button=document.getElementById("customerAccountSubmit");const body={email:document.getElementById("customerEmail").value.trim(),password:document.getElementById("customerPassword").value};if(customerAccountMode==="register")body.name=document.getElementById("customerName").value.trim();button.disabled=true;message.textContent="একটু অপেক্ষা করুন...";try{const response=await fetch("/api/customer/"+customerAccountMode,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});const data=await response.json();if(!response.ok||!data.success)throw new Error(data.message||"লগইন করা যায়নি।");setCustomer(data.customer);customerDialog.close();document.getElementById("customerAccountForm").reset();setCustomerAccountMode("login");}catch(error){message.textContent=error.message||"সার্ভারের সঙ্গে সংযোগ হয়নি।";}finally{button.disabled=false;}});
+document.getElementById("customerLogout").addEventListener("click",async()=>{await fetch("/api/customer/logout",{method:"POST"});setCustomer(null);customerDialog.close();});
+(async()=>{try{const response=await fetch("/api/customer/me");const data=await response.json();setCustomer(data.customer||null);}catch(error){setCustomer(null);}})();
 search.addEventListener("input",renderProducts);filter.addEventListener("change",renderProducts);
 document.querySelector(".category-menu-dropdown")?.addEventListener("click",e=>{const link=e.target.closest("[data-category-link]");if(!link)return;const category=link.dataset.categoryLink;filter.value=category;document.querySelectorAll(".category-pills button").forEach(b=>b.classList.toggle("active",b.dataset.category===category));renderProducts();document.querySelector(".category-menu")?.removeAttribute("open")});
 document.getElementById("printReceipt").addEventListener("click",()=>window.print());
