@@ -496,12 +496,37 @@ export async function onRequest({ request, env }) {
           "CREATE TABLE IF NOT EXISTS download_expirations (token TEXT PRIMARY KEY, expires_at TEXT NOT NULL)"
         ).run();
         const { results: tokens = [] } = await env.DB.prepare(
-          "SELECT t.token,t.product_id,e.expires_at,p.name FROM download_tokens t JOIN products p ON p.id=t.product_id LEFT JOIN download_expirations e ON e.token=t.token WHERE t.order_id=?"
+          "SELECT t.token,t.product_id FROM download_tokens t JOIN products p ON p.id=t.product_id WHERE t.order_id=? AND p.file_url IS NOT NULL AND p.file_url<>''"
         )
           .bind(order.id)
           .all();
 
-        downloads = tokens.map((token) => ({
+        // Normal order refresh never reopens an expired link. Only receipt lookup (renew=true)
+        // explicitly grants a fresh 20-second download window after verifying order ID + email.
+        for (const token of tokens) {
+          const expiresAt = new Date(Date.now() + 20000).toISOString();
+          if (body.renew === true) {
+            await env.DB.prepare(
+              "INSERT INTO download_expirations(token,expires_at) VALUES(?,?) ON CONFLICT(token) DO UPDATE SET expires_at=excluded.expires_at"
+            )
+              .bind(token.token, expiresAt)
+              .run();
+          } else {
+            await env.DB.prepare(
+              "INSERT OR IGNORE INTO download_expirations(token,expires_at) VALUES(?,?)"
+            )
+              .bind(token.token, expiresAt)
+              .run();
+          }
+        }
+
+        const { results: tokensWithExpiry = [] } = await env.DB.prepare(
+          "SELECT t.token,t.product_id,e.expires_at,p.name FROM download_tokens t JOIN products p ON p.id=t.product_id LEFT JOIN download_expirations e ON e.token=t.token WHERE t.order_id=? AND p.file_url IS NOT NULL AND p.file_url<>''"
+        )
+          .bind(order.id)
+          .all();
+
+        downloads = tokensWithExpiry.map((token) => ({
           productId: token.product_id,
           name: token.name,
           expiresAt: token.expires_at,
