@@ -8,7 +8,8 @@ const defaultProducts = [
   {id:"p7",name:"ইনস্টাগ্রাম পোস্ট সেট",category:"সোশ্যাল মিডিয়া",price:130,tag:"5 TEMPLATES",bg:"#d4e9e8",ink:"#1b5554",title:"STAY<br>INSPIRED",sub:"SOCIAL MEDIA KIT"},
   {id:"p8",name:"ক্রিয়েটিভ মনোগ্রাম",category:"লোগো",price:190,tag:"CLASSIC",bg:"#e6d6c7",ink:"#634a35",title:"SH",sub:"MONOGRAM SERIES"}
 ];
-// Public storefront: products are defined in this file; no browser-local admin data is loaded.
+defaultProducts.forEach(product => { product.isSample = true; });
+// Public storefront: sample products remain visible, but only real D1 products can be purchased.
 let products = defaultProducts;
 const money = n => "৳" + Number(n).toLocaleString("bn-BD");
 let cart = [];
