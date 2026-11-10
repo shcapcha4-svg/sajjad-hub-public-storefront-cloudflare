@@ -64,33 +64,6 @@ async function isAdmin(request, env) {
 const cookie = (value, maxAge) =>
   `sh_admin=${value}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${maxAge}`;
 
-async function customerSessionCookie(customerId, secret) {
-  const payload = b64u(enc(JSON.stringify({ customerId, exp: Date.now() + 30 * 24 * 60 * 60 * 1000 })));
-  return `sh_customer=${payload}.${await sign(payload, secret)}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=2592000`;
-}
-async function currentCustomer(request, env) {
-  const match = (request.headers.get("Cookie") || "").match(/(?:^|; )sh_customer=([^;]+)/);
-  if (!match || !env.SESSION_SECRET) return null;
-  const [payload, signature] = match[1].split(".");
-  if (!payload || !signature || signature !== await sign(payload, env.SESSION_SECRET)) return null;
-  try {
-    const data = JSON.parse(new TextDecoder().decode(unb64u(payload)));
-    if (!data.customerId || data.exp <= Date.now()) return null;
-    return await env.DB.prepare("SELECT id,name,email FROM customer_accounts WHERE id=?").bind(data.customerId).first();
-  } catch { return null; }
-}
-async function ensureCustomerSchema(env) {
-  await env.DB.prepare("CREATE TABLE IF NOT EXISTS customer_accounts (id TEXT PRIMARY KEY, name TEXT NOT NULL, email TEXT NOT NULL UNIQUE COLLATE NOCASE, password_hash TEXT NOT NULL, password_salt TEXT NOT NULL, created_at TEXT DEFAULT CURRENT_TIMESTAMP)").run();
-  const columns = await env.DB.prepare("PRAGMA table_info(orders)").all();
-  if (!(columns.results || []).some(column => column.name === "customer_id")) {
-    await env.DB.prepare("ALTER TABLE orders ADD COLUMN customer_id TEXT").run();
-  }
-}
-async function hashCustomerPassword(password, salt) {
-  const key = await crypto.subtle.importKey("raw", enc(password), "PBKDF2", false, ["deriveBits"]);
-  const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", salt: enc(salt), iterations: 150000, hash: "SHA-256" }, key, 256);
-  return b64u(bits);
-}
 
 const safeProduct = (row) => ({
   id: row.id,
@@ -368,55 +341,6 @@ export async function onRequest({ request, env }) {
   const method = request.method;
 
   try {
-    if (route === "customer/register" && method === "POST") {
-      await ensureCustomerSchema(env);
-      const body = await request.json();
-      const name = String(body.name || "").trim().slice(0, 120);
-      const email = String(body.email || "").trim().toLowerCase().slice(0, 254);
-      const password = String(body.password || "");
-      if (!name || !/^\S+@\S+\.\S+$/.test(email) || password.length < 8 || password.length > 128) {
-        return json({ success: false, message: "নাম, সঠিক ইমেইল এবং কমপক্ষে ৮ অক্ষরের পাসওয়ার্ড দিন।" }, 400);
-      }
-      const exists = await env.DB.prepare("SELECT id FROM customer_accounts WHERE email=?").bind(email).first();
-      if (exists) return json({ success: false, message: "এই ইমেইলে অ্যাকাউন্ট আছে। লগইন করুন।" }, 409);
-      const customerId = id();
-      const salt = b64u(crypto.getRandomValues(new Uint8Array(16)));
-      const passwordHash = await hashCustomerPassword(password, salt);
-      await env.DB.prepare("INSERT INTO customer_accounts(id,name,email,password_hash,password_salt) VALUES(?,?,?,?,?)").bind(customerId, name, email, passwordHash, salt).run();
-      return new Response(JSON.stringify({ success: true, customer: { name, email } }), { headers: { "Content-Type": "application/json", "Set-Cookie": await customerSessionCookie(customerId, env.SESSION_SECRET), "Cache-Control": "no-store" } });
-    }
-    if (route === "customer/login" && method === "POST") {
-      await ensureCustomerSchema(env);
-      const body = await request.json();
-      const email = String(body.email || "").trim().toLowerCase().slice(0, 254);
-      const password = String(body.password || "");
-      const customer = await env.DB.prepare("SELECT * FROM customer_accounts WHERE email=?").bind(email).first();
-      const valid = customer && await hashCustomerPassword(password, customer.password_salt) === customer.password_hash;
-      if (!valid) return json({ success: false, message: "ইমেইল অথবা পাসওয়ার্ড সঠিক নয়।" }, 401);
-      return new Response(JSON.stringify({ success: true, customer: { name: customer.name, email: customer.email } }), { headers: { "Content-Type": "application/json", "Set-Cookie": await customerSessionCookie(customer.id, env.SESSION_SECRET), "Cache-Control": "no-store" } });
-    }
-    if (route === "customer/logout" && method === "POST") {
-      return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json", "Set-Cookie": "sh_customer=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0", "Cache-Control": "no-store" } });
-    }
-    if (route === "customer/me" && method === "GET") {
-      await ensureCustomerSchema(env);
-      const customer = await currentCustomer(request, env);
-      return json({ success: !!customer, customer: customer ? { name: customer.name, email: customer.email } : null });
-    }
-    if (route === "customer/orders" && method === "GET") {
-      await ensureCustomerSchema(env);
-      const customer = await currentCustomer(request, env);
-      if (!customer) return json({ success: false, message: "অ্যাকাউন্টে লগইন করুন।" }, 401);
-      const { results: orders = [] } = await env.DB.prepare("SELECT id,total_amount AS total,payment_status AS status,created_at FROM orders WHERE customer_id=? ORDER BY created_at DESC LIMIT 100").bind(customer.id).all();
-      const output = [];
-      for (const order of orders) {
-        const { results: items = [] } = await env.DB.prepare("SELECT product_id,product_name,quantity FROM order_items WHERE order_id=?").bind(order.id).all();
-        const { results: tokens = [] } = await env.DB.prepare("SELECT t.product_id,t.token,p.name FROM download_tokens t JOIN products p ON p.id=t.product_id WHERE t.order_id=?").bind(order.id).all();
-        output.push({ ...order, items, downloads: tokens.map(t => ({ productId: t.product_id, name: t.name, url: "/api/download/" + t.token })) });
-      }
-      return json({ success: true, orders: output });
-    }
-
     if (route === "health" && method === "GET") {
       return json({ success: true, message: "Sajjadhub API online" });
     }
