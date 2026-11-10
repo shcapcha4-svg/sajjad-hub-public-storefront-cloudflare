@@ -69,18 +69,16 @@ const safeProduct = (row) => ({
   name: row.name,
   category: row.category,
   price: row.price,
-  tag: row.tag || "",
+  tag: "",
   description: row.description || "",
-  fileType: row.file_type || "",
-  bg: row.bg || "#e5e7eb",
-  ink: row.ink || "#344054",
-  title: row.title || "DESIGN",
-  sub: row.sub || "DIGITAL DESIGN",
-  imageUrl: row.image_key
-    ? `/api/media/${encodeURIComponent(row.image_key)}`
-    : null,
-  hasFile: !!row.file_key,
-  active: !!row.active,
+  fileType: "",
+  bg: "#e5e7eb",
+  ink: "#344054",
+  title: "DESIGN",
+  sub: "DIGITAL DESIGN",
+  imageUrl: row.image_url ? `/api/media/${encodeURIComponent(row.image_url)}` : null,
+  hasFile: !!row.file_url,
+  active: !!row.is_active,
 });
 
 const id = () => crypto.randomUUID();
@@ -277,7 +275,7 @@ export async function onRequest({ request, env }) {
 
     if (route === "products" && method === "GET") {
       const { results = [] } = await env.DB.prepare(
-        "SELECT * FROM products WHERE active=1 ORDER BY created_at DESC"
+        "SELECT * FROM products WHERE is_active=1 ORDER BY created_at DESC"
       ).all();
 
       return json({
@@ -373,7 +371,7 @@ export async function onRequest({ request, env }) {
 
       for (const item of items) {
         const product = await env.DB.prepare(
-          "SELECT id, name, price FROM products WHERE id=? AND active=1"
+          "SELECT id, name, price FROM products WHERE id=? AND is_active=1"
         )
           .bind(String(item.id))
           .first();
