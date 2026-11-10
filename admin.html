@@ -34,6 +34,57 @@ body[data-theme="dark"] .order-card.paid .order-status{background:#214b30;color:
 body[data-theme="dark"] .order-card.rejected .order-status{background:#512d28;color:#ffc1b6}
 body[data-theme="dark"] .admin-list.list-view .admin-item{background:var(--admin-card)}
 \n[hidden]{display:none!important}
+
+/* Square image frames everywhere in Admin; always show the complete image */
+.upload-preview-image{
+  width:100%;
+  height:auto;
+  aspect-ratio:1 / 1;
+  min-height:0;
+  background:#f1f4ef;
+}
+.upload-preview-image img{
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:contain;
+  object-position:center;
+}
+.admin-item-image{
+  width:100%;
+  height:auto;
+  aspect-ratio:1 / 1;
+  min-height:0;
+  background:#f1f4ef;
+}
+.admin-item-image img{
+  display:block;
+  width:100%;
+  height:100%;
+  max-height:none;
+  object-fit:contain;
+  object-position:center;
+}
+.admin-list.list-view .admin-item-image{
+  height:auto;
+  min-height:0;
+  aspect-ratio:1 / 1;
+}
+.modal-product img{
+  display:block;
+  width:100%;
+  height:auto;
+  aspect-ratio:1 / 1;
+  max-height:none;
+  object-fit:contain;
+  object-position:center;
+}
+@media(max-width:620px){
+  .admin-item-image{height:auto;aspect-ratio:1 / 1}
+  .admin-list.list-view .admin-item-image{height:auto;min-height:0;aspect-ratio:1 / 1}
+  .modal-product img{max-height:none}
+}
+
 </style>
 </head>
 <body>
