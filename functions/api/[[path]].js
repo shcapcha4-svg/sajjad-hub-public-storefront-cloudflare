@@ -414,7 +414,66 @@ export async function onRequest({ request, env }) {
           "Cache-Control": "private, no-store",
         },
       });
-    }    if (route === "checkout" && method === "POST") {
+    }    if (route === "my-orders" && method === "POST") {
+      const body = await request.json();
+      const orderIdInput = String(body.orderId || "").trim().replace(/^#/, "");
+      const email = String(body.email || "").trim().slice(0, 254).toLowerCase();
+
+      if (!/^\\d{1,12}$/.test(orderIdInput) || !/^\\S+@\\S+\\.\\S+$/.test(email)) {
+        return json(
+          { success: false, message: "সঠিক অর্ডার নম্বর ও অর্ডারের সময় দেওয়া ইমেইল লিখুন।" },
+          400
+        );
+      }
+
+      const order = await env.DB.prepare(
+        "SELECT id,customer_name,total_amount AS total,payment_status AS status,created_at FROM orders WHERE id=? AND lower(customer_email)=? LIMIT 1"
+      )
+        .bind(Number(orderIdInput), email)
+        .first();
+
+      if (!order) {
+        return json(
+          { success: false, message: "এই অর্ডার নম্বর ও ইমেইল দিয়ে কোনো অর্ডার পাওয়া যায়নি।" },
+          404
+        );
+      }
+
+      const { results: items = [] } = await env.DB.prepare(
+        "SELECT product_name,quantity,unit_price FROM order_items WHERE order_id=?"
+      )
+        .bind(order.id)
+        .all();
+
+      let downloads = [];
+      if (order.status === "paid") {
+        const { results: tokens = [] } = await env.DB.prepare(
+          "SELECT t.token,p.name FROM download_tokens t JOIN products p ON p.id=t.product_id WHERE t.order_id=?"
+        )
+          .bind(order.id)
+          .all();
+
+        downloads = tokens.map((token) => ({
+          name: token.name,
+          url: `/api/download/${token.token}`,
+        }));
+      }
+
+      return json({
+        success: true,
+        order: {
+          id: order.id,
+          customerName: order.customer_name,
+          total: order.total,
+          status: order.status,
+          createdAt: order.created_at,
+          items,
+          downloads,
+        },
+      });
+    }
+
+    if (route === "checkout" && method === "POST") {
       const body = await request.json();
       const customerName = String(body.customerName || "").trim().slice(0, 120);
       const email = String(body.email || "").trim().slice(0, 254);
