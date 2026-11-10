@@ -265,14 +265,35 @@ async function b2Request(env, method, key, body, contentType) {
       throw error;
     }
 
-    // Build the Request only after the fixed-length stream is complete.
-    // This lets the Workers runtime attach the exact Content-Length before fetch.
+    // Construct the fixed-length Request first, then start fetch before
+    // writing so the readable side is consumed while bytes are produced.
     const uploadRequest = new Request(url, {
       method,
       headers,
       body: fixedBody.readable,
     });
-    const response = await fetch(uploadRequest);
+    const uploadPromise = fetch(uploadRequest);
+
+    const writer = fixedBody.writable.getWriter();
+    try {
+      const writeResult = await writer.write(body);
+      console.log("B2_STREAM_DIAG_WRITE_DONE", JSON.stringify({
+        expectedBytes: body.byteLength,
+        writeResult: writeResult ?? null,
+      }));
+      await writer.close();
+      console.log("B2_STREAM_DIAG_CLOSED", JSON.stringify({
+        expectedBytes: body.byteLength,
+      }));
+    } catch (error) {
+      console.error("B2_STREAM_DIAG_WRITE_ERROR", String(error));
+      try {
+        await writer.abort(error);
+      } catch {}
+      throw error;
+    }
+
+    const response = await uploadPromise;
     console.log("B2_STREAM_DIAG_RESPONSE", JSON.stringify({
       status: response.status,
       expectedBytes: body.byteLength,
