@@ -232,7 +232,7 @@ document.getElementById("mySavedOrders")?.addEventListener("click",event=>{
   pendingDownloadUrls.add(url);
   link.textContent="ডাউনলোড শুরু হয়েছে";
   link.classList.add("is-download-started");
-}
+});
 
 // স্বয়ংক্রিয় অর্ডার স্ট্যাটাস আপডেট: Admin Paid করলে ২০ সেকেন্ডের মধ্যে
 // পেজ রিফ্রেশ ছাড়াই Pending থেকে Download দেখাবে।
