@@ -1,3 +1,27 @@
+
+/* Persistent storefront appearance preference */
+(function(){
+  const button=document.getElementById("themeToggle");
+  const root=document.body;
+  if(!button)return;
+  let saved="light";
+  try{saved=localStorage.getItem("sajjadhub-theme")||"light"}catch(e){}
+  function applyTheme(mode){
+    const dark=mode==="dark";
+    root.dataset.theme=dark?"dark":"light";
+    button.textContent=dark?"☀ লাইট":"☾ ডার্ক";
+    button.setAttribute("aria-label",dark?"লাইট মোড চালু করুন":"ডার্ক মোড চালু করুন");
+    const meta=document.querySelector('meta[name="theme-color"]');
+    if(meta)meta.setAttribute("content",dark?"#111827":"#101828");
+  }
+  applyTheme(saved);
+  button.addEventListener("click",()=>{
+    const next=root.dataset.theme==="dark"?"light":"dark";
+    applyTheme(next);
+    try{localStorage.setItem("sajjadhub-theme",next)}catch(e){}
+  });
+})();
+
 const defaultProducts = [
   {id:"p1",name:"মডার্ন বিজনেস পোস্টার",category:"পোস্টার",price:150,tag:"BEST SELLER",bg:"#d9e7c4",ink:"#243b20",title:"GROW<br>YOUR<br>IDEA",sub:"BUSINESS / 2026"},
   {id:"p2",name:"ইসলামিক ইভেন্ট ব্যানার",category:"ব্যানার",price:200,tag:"NEW",bg:"#173c35",ink:"#f3e7c2",title:"نور<br>الإيمان",sub:"SPECIAL EVENT"},
