@@ -13,8 +13,10 @@
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="#"><span class="brand-mark">S</span><span>Sajjad<span class="brand-light">hub</span><small>ডিজাইন শপ</small></span></a>
+    <details class="category-menu"><summary class="category-menu-trigger">☷ ক্যাটাগরি <span>▾</span></summary><div class="category-menu-dropdown"><a href="#shop" data-category-link="পোস্টার">পোস্টার</a><a href="#shop" data-category-link="ব্যানার">ব্যানার</a><a href="#shop" data-category-link="সোশ্যাল মিডিয়া">সোশ্যাল মিডিয়া</a><a href="#shop" data-category-link="লোগো">লোগো</a><a href="#shop" data-category-link="ক্যাশ মেমো">ক্যাশ মেমো</a><a href="#shop" data-category-link="অন্যান্য">অন্যান্য</a></div></details>
+    <a class="brand" href="#" aria-label="Sajjadhub হোম"><img src="/sajjadhub-logo.svg" alt="Sajjadhub — Digital Design Store"></a>
     <nav><a href="#shop">ডিজাইন</a><a href="#how">কীভাবে কিনবেন</a><a href="#contact">যোগাযোগ</a></nav>
+    <button class="theme-toggle" id="themeToggle" type="button" aria-label="ডার্ক মোড চালু করুন">☾ ডার্ক</button>
     <button class="cart-button" id="openCart" aria-label="কার্ট খুলুন">কার্ট <span id="cartCount">0</span></button>
   </header>
 
@@ -35,13 +37,15 @@
       </div>
     </section>
 
+    <section class="moving-headline" aria-label="Sajjadhub বার্তা"><div class="moving-track"><span>✦ আপনার পছন্দের ডিজাইন, এখন এক জায়গায়</span><span>✦ পছন্দ করুন · অর্ডার করুন · ডাউনলোড করুন</span><span>✦ সৃজনশীলতার নতুন ঠিকানা Sajjadhub</span><span>✦ আপনার পছন্দের ডিজাইন, এখন এক জায়গায়</span></div></section>
+
     <section class="trust-strip">
       <div><b>01</b><span>পছন্দের ডিজাইন বাছাই</span></div><div><b>02</b><span>নিরাপদ পেমেন্ট</span></div><div><b>03</b><span>ডাউনলোড করে ব্যবহার</span></div>
     </section>
 
     <section class="shop-section" id="shop">
-      <div class="section-heading"><div><span class="eyebrow">THE COLLECTION</span><h2>এক্সপ্লোর করুন <em>ডিজাইন</em></h2></div><div class="shop-tools"><input id="searchInput" type="search" placeholder="ডিজাইন খুঁজুন..." aria-label="ডিজাইন খুঁজুন"><select id="categoryFilter" aria-label="ক্যাটাগরি"><option value="সব">সব ক্যাটাগরি</option><option>পোস্টার</option><option>ব্যানার</option><option>সোশ্যাল মিডিয়া</option><option>লোগো</option></select></div></div>
-      <div class="category-pills" id="categoryPills"><button class="active" data-category="সব">সব ডিজাইন</button><button data-category="পোস্টার">পোস্টার</button><button data-category="ব্যানার">ব্যানার</button><button data-category="সোশ্যাল মিডিয়া">সোশ্যাল মিডিয়া</button><button data-category="লোগো">লোগো</button></div>
+      <div class="section-heading"><div><span class="eyebrow">THE COLLECTION</span><h2>এক্সপ্লোর করুন <em>ডিজাইন</em></h2></div><div class="shop-tools"><input id="searchInput" type="search" placeholder="ডিজাইন খুঁজুন..." aria-label="ডিজাইন খুঁজুন"><select id="categoryFilter" aria-label="ক্যাটাগরি"><option value="সব">সব ক্যাটাগরি</option><option>পোস্টার</option><option>ব্যানার</option><option>সোশ্যাল মিডিয়া</option><option>লোগো</option><option>ক্যাশ মেমো</option><option>অন্যান্য</option></select></div></div>
+      <div class="category-pills" id="categoryPills"><button class="active" data-category="সব">সব ডিজাইন</button><button data-category="পোস্টার">পোস্টার</button><button data-category="ব্যানার">ব্যানার</button><button data-category="সোশ্যাল মিডিয়া">সোশ্যাল মিডিয়া</button><button data-category="লোগো">লোগো</button><button data-category="ক্যাশ মেমো">ক্যাশ মেমো</button><button data-category="অন্যান্য">অন্যান্য</button></div>
       <div class="product-grid" id="productGrid"></div>
       <p class="empty-state" id="emptyState" hidden>এই নামে কোনো ডিজাইন পাওয়া যায়নি।</p>
     </section>
@@ -49,7 +53,11 @@
     <section class="how-section" id="how"><div><span class="eyebrow">SIMPLE & QUICK</span><h2>কেনাকাটা হবে <em>সহজ।</em></h2></div><div class="steps"><article><span>01</span><h3>ডিজাইন বাছাই</h3><p>পছন্দের ডিজাইনটি দেখে কার্টে যোগ করুন।</p></article><article><span>02</span><h3>পেমেন্ট সম্পন্ন</h3><p>চেকআউটে গিয়ে পেমেন্টের ধাপ অনুসরণ করুন।</p></article><article><span>03</span><h3>ডাউনলোড</h3><p>পেমেন্ট যাচাই হলে আপনার ডিজাইনের ডাউনলোড লিংক পাবেন।</p></article></div></section>
   </main>
 
-  <footer id="contact"><a class="brand" href="#"><span class="brand-mark">S</span><span>Sajjad<span class="brand-light">hub</span><small>ডিজাইন শপ</small></span></a><p>আপনার সৃজনশীলতার ডিজিটাল ঠিকানা।</p><span>© <span id="year"></span> Sajjadhub. সর্বস্বত্ব সংরক্ষিত। · <a href="/admin.html">Admin</a></span></footer>
+  <footer id="contact">
+    <div class="footer-about"><a class="brand footer-brand" href="#" aria-label="Sajjadhub হোম"><img src="/sajjadhub-logo.svg" alt="Sajjadhub — Digital Design Store"></a><h3>আমাদের সম্পর্কে</h3><p>আপনার সৃজনশীলতার ডিজিটাল ঠিকানা। Sajjadhub-এ পছন্দের ডিজাইন কিনুন এবং সহজে ডাউনলোড করুন।</p></div>
+    <div class="footer-social"><h3>আমাদের সঙ্গে যুক্ত থাকুন</h3><div class="social-links"><a href="https://www.facebook.com/sh.shoheb.vai" target="_blank" rel="noopener noreferrer">Facebook ↗</a><a href="https://wa.me/8801951608000" target="_blank" rel="noopener noreferrer">WhatsApp ↗</a><a href="https://www.youtube.com/@hookbangla" target="_blank" rel="noopener noreferrer">YouTube ↗</a></div></div>
+    <div class="footer-bottom"><span>© <span id="year"></span> Sajjadhub. সর্বস্বত্ব সংরক্ষিত।</span><a href="/admin.html">Admin</a></div>
+  </footer>
 
   <div class="drawer-backdrop" id="backdrop"></div>
   <aside class="cart-drawer" id="cartDrawer" aria-label="শপিং কার্ট">
@@ -59,7 +67,16 @@
   </aside>
 
   <dialog id="productDialog" class="product-dialog"><div class="product-detail-modal"><button type="button" class="modal-close" id="closeProductDialog" aria-label="বন্ধ করুন">×</button><div id="productDetailContent"></div></div></dialog>
-  <dialog id="checkoutDialog"><form method="dialog" class="checkout-modal"><button type="button" class="modal-close" id="closeCheckout" aria-label="বন্ধ করুন">×</button><span class="eyebrow">MANUAL NAGAD PAYMENT</span><h2>অর্ডার সম্পন্ন করুন</h2><p>নিচের ব্যক্তিগত Nagad নম্বরে <b>Send Money</b> করে পেমেন্ট করুন। পেমেন্ট যাচাই না হওয়া পর্যন্ত অর্ডারটি Pending থাকবে।</p><div class="nagad-box"><small>পেমেন্ট পাঠানোর নম্বর</small><strong id="nagadNumber">01951608000</strong><button type="button" id="copyNagad" class="copy-button">নম্বর কপি করুন</button></div><label>আপনার ইমেইল<input id="buyerEmail" type="email" placeholder="name@example.com" required></label><label>যে নম্বর থেকে টাকা পাঠিয়েছেন<input id="senderPhone" type="tel" inputmode="numeric" placeholder="01XXXXXXXXX" required></label><label>Nagad TrxID<input id="trxId" type="text" placeholder="ট্রানজেকশন আইডি লিখুন" required></label><div class="total-row"><span>অর্ডারের মোট</span><strong id="dialogTotal">৳০</strong></div><button class="checkout-button" id="submitPayment" type="button">পেমেন্ট তথ্য কপি করুন</button><small>এই ডেমো সংস্করণে তথ্য সার্ভারে জমা হয় না। কপি করা অর্ডার তথ্য সাইট পরিচালকের কাছে পাঠাতে হবে; যাচাইয়ের পরই ডিজাইন দেওয়া যাবে।</small><p id="checkoutMessage" class="checkout-message" role="status"></p></form></dialog>
+  <dialog id="checkoutDialog"><form method="dialog" class="checkout-modal"><button type="button" class="modal-close" id="closeCheckout" aria-label="বন্ধ করুন">×</button><span class="eyebrow">MANUAL NAGAD PAYMENT</span><h2>অর্ডার সম্পন্ন করুন</h2><p>নিচের ব্যক্তিগত Nagad নম্বরে <b>Send Money</b> করে পেমেন্ট করুন। পেমেন্ট যাচাই না হওয়া পর্যন্ত অর্ডারটি Pending থাকবে।</p><div class="nagad-box"><small>পেমেন্ট পাঠানোর নম্বর</small><strong id="nagadNumber">01951608000</strong><button type="button" id="copyNagad" class="copy-button">নম্বর কপি করুন</button></div><label>আপনার নাম<input id="buyerName" type="text" placeholder="আপনার পূর্ণ নাম" required></label><label>আপনার ইমেইল<input id="buyerEmail" type="email" placeholder="name@example.com" required></label><label>যে নম্বর থেকে টাকা পাঠিয়েছেন<input id="senderPhone" type="tel" inputmode="numeric" placeholder="01XXXXXXXXX" required></label><label>Nagad TrxID<input id="trxId" type="text" placeholder="ট্রানজেকশন আইডি লিখুন" required></label><div class="total-row"><span>অর্ডারের মোট</span><strong id="dialogTotal">৳০</strong></div><button class="checkout-button" id="submitPayment" type="button">পেমেন্ট তথ্য কপি করুন</button><small>অর্ডারের তথ্য সার্ভারে জমা হবে। পেমেন্ট যাচাইয়ের পর Admin থেকে ডাউনলোড লিংক দেওয়া হবে।</small><p id="checkoutMessage" class="checkout-message" role="status"></p></form></dialog>
+  <dialog id="receiptDialog" class="receipt-dialog">
+    <div class="receipt-shell">
+      <div id="receiptContent"></div>
+      <div class="receipt-actions">
+        <button type="button" id="printReceipt" class="checkout-button">রসিদ প্রিন্ট / PDF সংরক্ষণ</button>
+        <button type="button" id="closeReceipt" class="receipt-close">বন্ধ করুন</button>
+      </div>
+    </div>
+  </dialog>
   <script src="app.js"></script>
 </body>
 </html>

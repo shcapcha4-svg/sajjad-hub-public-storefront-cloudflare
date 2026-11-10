@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1800 900">
+<defs>
+ <linearGradient id="sky" x2="0" y2="1"><stop stop-color="#bcecff"/><stop offset="1" stop-color="#f5fbf4"/></linearGradient>
+ <linearGradient id="sea" x2="0" y2="1"><stop stop-color="#54c5d5"/><stop offset="1" stop-color="#087d9c"/></linearGradient>
+ <linearGradient id="sand" x2="0" y2="1"><stop stop-color="#f3dfb6"/><stop offset="1" stop-color="#d9b987"/></linearGradient>
+</defs>
+<rect width="1800" height="900" fill="url(#sky)"/>
+<circle cx="1390" cy="180" r="90" fill="#fff4cf" opacity=".65"/>
+<path d="M0 390 Q220 330 420 385 T850 370 T1300 390 T1800 350 V900 H0Z" fill="#e5f4ed"/>
+<path d="M0 470 Q260 400 520 455 Q760 495 1010 430 Q1280 365 1510 425 Q1670 465 1800 410 V900 H0Z" fill="#347f67" opacity=".7"/>
+<path d="M0 520 Q280 470 560 520 Q820 565 1090 500 Q1380 430 1800 500 V900 H0Z" fill="#246d61" opacity=".55"/>
+<rect y="520" width="1800" height="380" fill="url(#sea)" opacity=".85"/>
+<path d="M0 590 Q250 550 470 590 T900 580 T1350 600 T1800 570" fill="none" stroke="#d8fbf5" stroke-width="8" opacity=".35"/>
+<path d="M0 720 Q320 650 620 720 Q920 790 1220 700 Q1510 630 1800 700 V900 H0Z" fill="url(#sand)" opacity=".92"/>
+<path d="M0 770 Q300 700 600 770 T1200 760 T1800 740" fill="none" stroke="#fff2d8" stroke-width="18" opacity=".7"/>
+<g fill="#145d4e" opacity=".9">
+ <path d="M150 520 Q130 350 85 255 Q165 305 190 390 Q180 275 255 205 Q225 315 205 405 Q270 315 350 300 Q260 385 210 470Z"/>
+ <path d="M1550 480 Q1530 335 1490 265 Q1560 300 1590 380 Q1590 285 1660 230 Q1630 340 1610 410 Q1690 340 1760 340 Q1675 410 1620 465Z"/>
+</g>
+<g stroke="#145d4e" stroke-width="12" fill="none" stroke-linecap="round"><path d="M180 600 Q185 435 175 320"/><path d="M1580 570 Q1590 425 1575 315"/></g>
+<g transform="translate(720 575)">
+ <path d="M0 55 Q125 90 260 48 L225 92 Q120 120 35 88Z" fill="#173d4c"/>
+ <path d="M40 48 L225 48 L205 66 L55 68Z" fill="#e85e38"/>
+ <path d="M125 45 L125 -55 L195 42Z" fill="#f6f0d8" stroke="#174b59" stroke-width="5"/>
+ <path d="M125 -55 L125 45 L65 45Z" fill="#f9fbef" stroke="#174b59" stroke-width="4"/>
+ <path d="M125 -60 L125 -88" stroke="#174b59" stroke-width="5"/>
+</g>
+<g fill="#fff" opacity=".8"><path d="M450 170 q28 -25 55 0 q-27 -10 -55 0"/><path d="M510 205 q20 -20 42 0 q-22 -8 -42 0"/><path d="M1120 150 q25 -22 48 0 q-25 -8 -48 0"/></g>
+</svg>
