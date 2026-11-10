@@ -392,8 +392,9 @@ export async function onRequest({ request, env }) {
         if (!name || !/^\S+@\S+\.\S+$/.test(email) || password.length < 8 || password.length > 128) return json({ success: false, message: "নাম, সঠিক ইমেইল ও কমপক্ষে ৮ অক্ষরের পাসওয়ার্ড দিন।" }, 400);
         const exists = await env.DB.prepare("SELECT email FROM customer_accounts WHERE lower(email)=?").bind(email).first();
         if (exists) return json({ success: false, message: "এই ইমেইলে অ্যাকাউন্ট আছে। লগইন করুন।" }, 409);
-        const pw = await passwordHash(password);\n        const customerId = id();
-        await env.DB.prepare("INSERT INTO customer_accounts(email,name,password_hash) VALUES(?,?,?)").bind(email, name, `pbkdf2${pw.salt}${pw.hash}`).run();
+        const pw = await passwordHash(password);
+        const customerId = id();
+        await env.DB.prepare("INSERT INTO customer_accounts(id,email,name,password_hash) VALUES(?,?,?,?)").bind(customerId, email, name, "pbkdf2$" + pw.salt + "$" + pw.hash).run();
         const session = await customerSessionCookie(customerId, env.SESSION_SECRET);
         return new Response(JSON.stringify({ success: true, customer: { email, name } }), { headers: { "Content-Type": "application/json; charset=utf-8", "Set-Cookie": customerCookie(session, 2592000), "Cache-Control": "no-store" } });
       }
