@@ -782,7 +782,7 @@ export async function onRequest({ request, env }) {
         }
 
         const product = await env.DB.prepare(
-          "SELECT id,name,price,file_url FROM products WHERE is_active=1 AND file_url IS NOT NULL ORDER BY created_at DESC LIMIT 1"
+          "SELECT id,name,price,file_url FROM products WHERE file_url IS NOT NULL AND file_url != '' ORDER BY created_at DESC LIMIT 1"
         ).first();
 
         if (!product) {
