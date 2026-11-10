@@ -244,7 +244,12 @@ async function b2Request(env, method, key, body, contentType) {
 }
 
 async function putB2(env, key, file, contentType) {
-  const body = await file.arrayBuffer();
+  const body = new Uint8Array(await file.arrayBuffer());
+
+  if (body.byteLength !== file.size) {
+    throw new Error("আপলোডের ফাইলের আকার মেলেনি। আবার ফাইল নির্বাচন করুন।");
+  }
+
   const response = await b2Request(env, "PUT", key, body, contentType);
 
   if (!response.ok) {
