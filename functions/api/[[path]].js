@@ -395,6 +395,28 @@ export async function onRequest({ request, env }) {
         return new Response("ডাউনলোড লিংকটি অবৈধ।", { status: 404 });
       }
 
+      // প্রথমবার ডাউনলোড লিংক খোলার সময় থেকেই ২০ সেকেন্ডের মেয়াদ শুরু হবে।
+      // ফাইলটি ওই প্রথম রিকোয়েস্টে সম্পূর্ণ পাঠানো হবে; মেয়াদ শেষ হলে পরেরবার আর পাওয়া যাবে না।
+      if (row.expires_at && Date.parse(row.expires_at) <= Date.now()) {
+        return new Response("ডাউনলোডের সময় শেষ।", { status: 410 });
+      }
+      if (!row.expires_at) {
+        await env.DB.prepare(
+          "UPDATE download_tokens SET expires_at=? WHERE token=? AND (expires_at IS NULL OR expires_at='')"
+        )
+          .bind(new Date(Date.now() + 20000).toISOString(), token)
+          .run();
+      }
+
+      const expiry = await env.DB.prepare(
+        "SELECT expires_at FROM download_tokens WHERE token=?"
+      )
+        .bind(token)
+        .first();
+      if (!expiry || !expiry.expires_at || Date.parse(expiry.expires_at) <= Date.now()) {
+        return new Response("ডাউনলোডের সময় শেষ।", { status: 410 });
+      }
+
       const object = await b2Request(env, "GET", row.file_key);
 
       if (object.status === 404) {
@@ -473,7 +495,7 @@ export async function onRequest({ request, env }) {
         }
 
         const { results: tokens = [] } = await env.DB.prepare(
-          "SELECT t.token,t.product_id,p.name FROM download_tokens t JOIN products p ON p.id=t.product_id WHERE t.order_id=?"
+          "SELECT t.token,t.product_id,t.expires_at,p.name FROM download_tokens t JOIN products p ON p.id=t.product_id WHERE t.order_id=?"
         )
           .bind(order.id)
           .all();
@@ -481,6 +503,7 @@ export async function onRequest({ request, env }) {
         downloads = tokens.map((token) => ({
           productId: token.product_id,
           name: token.name,
+          expiresAt: token.expires_at,
           url: `/api/download/${token.token}`,
         }));
       }
