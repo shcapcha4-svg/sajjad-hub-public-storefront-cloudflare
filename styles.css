@@ -381,3 +381,15 @@ body[data-theme="dark"] .checkout-email-field small{color:#cbd5e1}
 
 
 .product-purchase-status{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:12px;padding:10px 12px;border-radius:10px;font-size:12px;font-weight:700}.product-purchase-status.is-pending{background:#fff7e6;color:#9a6700}.product-purchase-status.is-ready{background:#eaf8ef;color:#16703a}.product-download-link{display:inline-flex;align-items:center;padding:6px 10px;border-radius:7px;background:#16703a;color:#fff;text-decoration:none;font-weight:700}.product-download-link:hover{filter:brightness(.92)}body[data-theme="dark"] .product-purchase-status.is-pending{background:#473719;color:#ffdf91}body[data-theme="dark"] .product-purchase-status.is-ready{background:#173d2b;color:#a7f3c0}
+
+
+/* Highlight My Orders navigation and group customer order tools */
+.topbar nav a[href="#my-orders"]{display:inline-flex;align-items:center;padding:9px 14px;border:1px solid #c7e49b;border-radius:24px;background:#f1f8e8;color:#45651d;font-weight:800;box-shadow:0 3px 10px #1822300d}
+.topbar nav a[href="#my-orders"]:hover{background:#e2f1ce;color:#304b12}
+.my-orders-panel{padding:30px 26px;border:1px solid #dce8ce;border-radius:24px;background:linear-gradient(145deg,#f8fbf3,#fff 65%);box-shadow:0 18px 45px #1822300d}
+.my-saved-orders{display:grid;gap:14px;max-width:760px;margin:0 auto 22px}
+.my-saved-orders-empty,.my-order-lookup-title{text-align:center;color:var(--muted,#667085);font-size:13px;line-height:1.7}
+.my-order-lookup-title{margin:24px auto 12px;font-weight:700}
+body[data-theme="dark"] .topbar nav a[href="#my-orders"]{background:#34451f;border-color:#526b35;color:#e2f6bd}
+body[data-theme="dark"] .my-orders-panel{background:linear-gradient(145deg,#202c25,#1f2937 70%);border-color:#475569}
+@media(max-width:760px){.my-orders-panel{padding:22px 14px;border-radius:18px}}
