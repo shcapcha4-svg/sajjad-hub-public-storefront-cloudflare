@@ -4,3 +4,6 @@
 
 <!-- Trigger a fresh Preview deployment after environment binding changes. -->
 Preview B2 configuration updated.
+
+## Customer downloads
+Customers can look up an order from the storefront using the order number shown on their receipt and the email address used at checkout. Download buttons are available only after an administrator verifies the payment and marks the order as paid.
