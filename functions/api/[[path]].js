@@ -419,7 +419,7 @@ export async function onRequest({ request, env }) {
       const orderIdInput = String(body.orderId || "").trim().replace(/^#/, "");
       const email = String(body.email || "").trim().slice(0, 254).toLowerCase();
 
-      if (!/^\\d{1,12}$/.test(orderIdInput) || !/^\\S+@\\S+\\.\\S+$/.test(email)) {
+      if (!/^\d{1,12}$/.test(orderIdInput) || !/^\S+@\S+\.\S+$/.test(email)) {
         return json(
           { success: false, message: "সঠিক অর্ডার নম্বর ও অর্ডারের সময় দেওয়া ইমেইল লিখুন।" },
           400
