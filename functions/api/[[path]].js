@@ -399,13 +399,14 @@ export async function onRequest({ request, env }) {
       return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json", "Set-Cookie": "sh_customer=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0", "Cache-Control": "no-store" } });
     }
     if (route === "customer/me" && method === "GET") {
+      await ensureCustomerSchema(env);
       const customer = await currentCustomer(request, env);
       return json({ success: !!customer, customer: customer ? { name: customer.name, email: customer.email } : null });
     }
     if (route === "customer/orders" && method === "GET") {
+      await ensureCustomerSchema(env);
       const customer = await currentCustomer(request, env);
       if (!customer) return json({ success: false, message: "অ্যাকাউন্টে লগইন করুন।" }, 401);
-      await ensureCustomerSchema(env);
       const { results: orders = [] } = await env.DB.prepare("SELECT id,total_amount AS total,payment_status AS status,created_at FROM orders WHERE customer_id=? ORDER BY created_at DESC LIMIT 100").bind(customer.id).all();
       const output = [];
       for (const order of orders) {
