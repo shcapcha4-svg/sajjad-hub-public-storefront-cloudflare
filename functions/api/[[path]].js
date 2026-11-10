@@ -697,28 +697,6 @@ export async function onRequest({ request, env }) {
 
   return json({ success: true });
 }
-        const productId = parts[2];
-
-        const old = await env.DB.prepare(
-          "SELECT image_url,file_url FROM products WHERE id=?"
-        )
-          .bind(productId)
-          .first();
-
-        if (!old) {
-          return json(
-            { success: false, message: "পণ্য পাওয়া যায়নি।" },
-            404
-          );
-        }
-
-        await env.DB.prepare("UPDATE products SET is_active=0 WHERE id=?")
-          .bind(productId)
-          .run();
-
-        return json({ success: true });
-      }
-
       if (route === "admin/orders" && method === "GET") {
         const { results = [] } = await env.DB.prepare(
           "SELECT *, customer_email AS buyer_email, phone AS sender_phone, transaction_id AS trx_id, total_amount AS total, payment_status AS status FROM orders ORDER BY created_at DESC LIMIT 200"
