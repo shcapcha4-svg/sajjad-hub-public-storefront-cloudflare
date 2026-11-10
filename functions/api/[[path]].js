@@ -64,6 +64,7 @@ async function isAdmin(request, env) {
 const cookie = (value, maxAge) =>
   `sh_admin=${value}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${maxAge}`;
 
+
 const safeProduct = (row) => ({
   id: row.id,
   name: row.name,
@@ -440,20 +441,45 @@ export async function onRequest({ request, env }) {
       }
 
       const { results: items = [] } = await env.DB.prepare(
-        "SELECT product_name,quantity,unit_price FROM order_items WHERE order_id=?"
+        "SELECT product_id,product_name,quantity,unit_price FROM order_items WHERE order_id=?"
       )
         .bind(order.id)
         .all();
 
       let downloads = [];
       if (order.status === "paid") {
+        // Repair missing download tokens for already-paid orders.
+        // This also covers orders approved before a token was created.
+        const { results: downloadableItems = [] } = await env.DB.prepare(
+          "SELECT oi.product_id,p.file_url AS file_key FROM order_items oi JOIN products p ON p.id=oi.product_id WHERE oi.order_id=? AND p.file_url IS NOT NULL AND p.file_url<>''"
+        )
+          .bind(order.id)
+          .all();
+
+        for (const item of downloadableItems) {
+          const existing = await env.DB.prepare(
+            "SELECT token FROM download_tokens WHERE order_id=? AND product_id=?"
+          )
+            .bind(order.id, item.product_id)
+            .first();
+
+          if (!existing) {
+            await env.DB.prepare(
+              "INSERT INTO download_tokens(token,order_id,product_id) VALUES(?,?,?)"
+            )
+              .bind(id().replaceAll("-", ""), order.id, item.product_id)
+              .run();
+          }
+        }
+
         const { results: tokens = [] } = await env.DB.prepare(
-          "SELECT t.token,p.name FROM download_tokens t JOIN products p ON p.id=t.product_id WHERE t.order_id=?"
+          "SELECT t.token,t.product_id,p.name FROM download_tokens t JOIN products p ON p.id=t.product_id WHERE t.order_id=?"
         )
           .bind(order.id)
           .all();
 
         downloads = tokens.map((token) => ({
+          productId: token.product_id,
           name: token.name,
           url: `/api/download/${token.token}`,
         }));
@@ -476,7 +502,7 @@ export async function onRequest({ request, env }) {
     if (route === "checkout" && method === "POST") {
       const body = await request.json();
       const customerName = String(body.customerName || "").trim().slice(0, 120);
-      const email = String(body.email || "").trim().slice(0, 254);
+      const email = String(body.email || "").trim().toLowerCase().slice(0, 254);
       const phone = String(body.phone || "").trim().slice(0, 30);
       const trx = String(body.trxId || "").trim().slice(0, 100);
       const items = Array.isArray(body.items) ? body.items : [];

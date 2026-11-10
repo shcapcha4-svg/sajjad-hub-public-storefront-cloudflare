@@ -371,3 +371,41 @@ body[data-theme="dark"] .category-menu-dropdown a:hover{background:#34451f;color
 body[data-theme="dark"] .my-order-form,body[data-theme="dark"] .my-order-card{background:var(--surface,#1f2937);border-color:#344054}
 body[data-theme="dark"] .my-order-form input{background:#111827;border-color:#475467;color:#f9fafb}
 @media(max-width:760px){.my-orders-section{padding:60px 18px}.my-order-form{grid-template-columns:1fr;padding:18px}.my-order-form .checkout-button{width:100%}.my-order-card{padding:17px}.my-order-card-head{align-items:flex-start;flex-direction:column}}
+
+/* Keep the checkout email field clear and easy to find */
+.checkout-email-field{display:block!important;visibility:visible!important;opacity:1!important;margin:12px 0!important}
+.checkout-email-field input{display:block!important;width:100%!important;min-height:48px!important}
+.checkout-email-field small{display:block;color:#667085;font-size:11px;margin-top:5px;line-height:1.6}
+body[data-theme="dark"] .checkout-email-field small{color:#cbd5e1}
+
+
+
+.product-purchase-status{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:12px;padding:10px 12px;border-radius:10px;font-size:12px;font-weight:700}.product-purchase-status.is-pending{background:#fff7e6;color:#9a6700}.product-purchase-status.is-ready{background:#eaf8ef;color:#16703a}.product-download-link{display:inline-flex;align-items:center;padding:6px 10px;border-radius:7px;background:#16703a;color:#fff;text-decoration:none;font-weight:700}.product-download-link:hover{filter:brightness(.92)}body[data-theme="dark"] .product-purchase-status.is-pending{background:#473719;color:#ffdf91}body[data-theme="dark"] .product-purchase-status.is-ready{background:#173d2b;color:#a7f3c0}
+
+
+/* Highlight My Orders navigation and group customer order tools */
+.topbar nav a[href="#my-orders"]{display:inline-flex;align-items:center;padding:9px 14px;border:1px solid #c7e49b;border-radius:24px;background:#f1f8e8;color:#45651d;font-weight:800;box-shadow:0 3px 10px #1822300d}
+.topbar nav a[href="#my-orders"]:hover{background:#e2f1ce;color:#304b12}
+.my-orders-panel{padding:30px 26px;border:1px solid #dce8ce;border-radius:24px;background:linear-gradient(145deg,#f8fbf3,#fff 65%);box-shadow:0 18px 45px #1822300d}
+.my-saved-orders{display:grid;gap:14px;max-width:760px;margin:0 auto 22px}
+.my-saved-orders-empty,.my-order-lookup-title{text-align:center;color:var(--muted,#667085);font-size:13px;line-height:1.7}
+.my-order-lookup-title{margin:24px auto 12px;font-weight:700}
+body[data-theme="dark"] .topbar nav a[href="#my-orders"]{background:#34451f;border-color:#526b35;color:#e2f6bd}
+body[data-theme="dark"] .my-orders-panel{background:linear-gradient(145deg,#202c25,#1f2937 70%);border-color:#475569}
+@media(max-width:760px){.my-orders-panel{padding:22px 14px;border-radius:18px}}
+
+
+/* Simplified customer order status */
+.my-orders-heading{margin:0 auto 18px}
+.my-orders-heading h2{margin:0;text-align:center;font-size:clamp(25px,3vw,34px)}
+.my-saved-orders{max-width:620px;margin:0 auto;gap:10px}
+.my-order-card{padding:12px 16px;border-radius:12px;box-shadow:none}
+.my-order-simple-row{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:10px 2px}
+.my-order-simple-row+.my-order-simple-row{border-top:1px solid var(--line,#e4e7ec)}
+.my-order-product-name{font-weight:600;font-size:14px}
+.my-order-simple-status{display:inline-flex;align-items:center;justify-content:center;min-width:92px;padding:8px 14px;border-radius:8px;font-size:13px;font-weight:800;text-decoration:none}
+.my-order-simple-status.is-pending{background:#fff4db;color:#9a6700}
+.my-order-simple-status.is-download{background:#087443;color:#fff}
+body[data-theme="dark"] .my-order-simple-row+.my-order-simple-row{border-color:#374151}
+body[data-theme="dark"] .my-order-simple-status.is-pending{background:#59451b;color:#fde68a}
+@media(max-width:620px){.my-orders-section{padding:55px 18px}.my-order-card{padding:10px 12px}.my-order-product-name{font-size:13px}.my-order-simple-status{min-width:82px;padding:7px 11px}}

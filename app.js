@@ -31,6 +31,8 @@ const grid = document.getElementById("productGrid");
 const search = document.getElementById("searchInput");
 const filter = document.getElementById("categoryFilter");
 const productImageUrls = new Map();
+const purchaseStatusByProduct = new Map();
+const PURCHASE_STORAGE_KEY = "sajjadhub-purchases";
 function escapeHTML(value="") { return String(value).replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch])); }
 function productArtwork(p, extraClass="") {
   if (p.imageUrl) return `<img class="${extraClass}" src="${escapeHTML(p.imageUrl)}" alt="${escapeHTML(p.name)}" loading="lazy">`;
@@ -78,15 +80,20 @@ function buyNow(id){
   cart=[{...p,qty:1}];renderCart();
   document.getElementById("productDialog").close();
   closeCart();
+  unlockCheckoutCustomerFields();
   document.getElementById("checkoutDialog").showModal();
   document.getElementById("checkoutMessage").textContent="";
 }
+function unlockCheckoutCustomerFields(){for(const id of ["buyerName","buyerEmail"]){const field=document.getElementById(id);if(!field)continue;field.disabled=false;field.readOnly=false;field.removeAttribute("disabled");field.removeAttribute("readonly");field.style.pointerEvents="auto";field.style.userSelect="text";}}
+const checkoutDialog=document.getElementById("checkoutDialog");
+checkoutDialog.addEventListener("show",unlockCheckoutCustomerFields);
+checkoutDialog.addEventListener("click",event=>{if(event.target.matches("#buyerName,#buyerEmail"))unlockCheckoutCustomerFields();});
 document.getElementById("closeProductDialog").onclick=()=>document.getElementById("productDialog").close();
 document.getElementById("closeCheckout").onclick=()=>document.getElementById("checkoutDialog").close();
 for(const dlg of [document.getElementById("checkoutDialog"),document.getElementById("productDialog")]) dlg.addEventListener("click",e=>{if(e.target===dlg)dlg.close();});
 document.getElementById("cartItems").addEventListener("click",e=>{const id=e.target.dataset.remove;if(!id)return;cart=cart.filter(x=>String(x.id)!==String(id));renderCart()});
 document.getElementById("openCart").onclick=openCart;document.getElementById("closeCart").onclick=closeCart;document.getElementById("backdrop").onclick=closeCart;
-document.getElementById("checkoutButton").onclick=()=>{closeCart();document.getElementById("checkoutDialog").showModal();document.getElementById("checkoutMessage").textContent=""};
+document.getElementById("checkoutButton").onclick=()=>{closeCart();unlockCheckoutCustomerFields();document.getElementById("checkoutDialog").showModal();document.getElementById("checkoutMessage").textContent=""};
 document.getElementById("copyNagad").onclick=async()=>{try{await navigator.clipboard.writeText("01951608000");document.getElementById("checkoutMessage").textContent="Nagad নম্বর কপি হয়েছে।"}catch{document.getElementById("checkoutMessage").textContent="Nagad নম্বর: 01951608000"}};
 document.getElementById("submitPayment").onclick=async()=>{
   const name=document.getElementById("buyerName"), email=document.getElementById("buyerEmail"), sender=document.getElementById("senderPhone"), trx=document.getElementById("trxId"), msg=document.getElementById("checkoutMessage"), btn=document.getElementById("submitPayment");
@@ -97,6 +104,8 @@ document.getElementById("submitPayment").onclick=async()=>{
     const response=await fetch('/api/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({customerName:name.value.trim(),email:email.value.trim(),phone:sender.value.trim(),trxId:trx.value.trim(),items:cart.map(x=>({id:x.id,qty:x.qty}))})});
     const data=await response.json();if(!response.ok||!data.success)throw new Error(data.message||'অর্ডার জমা হয়নি।');
     const purchasedItems=cart.map(item=>({...item}));
+    try{const saved=JSON.parse(localStorage.getItem(PURCHASE_STORAGE_KEY)||"[]");saved.unshift({orderId:String(data.orderId),email:email.value.trim()});localStorage.setItem(PURCHASE_STORAGE_KEY,JSON.stringify(saved.slice(0,30)));}catch{}
+    await loadSavedCustomerOrders();
     const receiptTotal=Number(data.total)||purchasedItems.reduce((sum,item)=>sum+item.price*item.qty,0);
     document.getElementById("receiptContent").innerHTML=`
       <div class="receipt-brand"><span class="brand-mark">S</span><strong>Sajjad<span>hub</span></strong></div>
@@ -117,40 +126,53 @@ document.getElementById("submitPayment").onclick=async()=>{
   }catch(error){msg.textContent=error.message||'সার্ভারের সঙ্গে সংযোগ হয়নি। আবার চেষ্টা করুন।'}finally{btn.disabled=false}
 };
 
-// Customer order lookup and secure, payment-gated downloads.
-document.getElementById("myOrderForm").addEventListener("submit", async (event) => {
-  event.preventDefault();
-  const orderId = document.getElementById("lookupOrderId").value.trim();
-  const email = document.getElementById("lookupOrderEmail").value.trim();
-  const button = document.getElementById("lookupOrderButton");
-  const result = document.getElementById("myOrderResult");
-  button.disabled = true;
-  result.innerHTML = '<p class="my-order-loading">অর্ডার খোঁজা হচ্ছে...</p>';
-  try {
-    const response = await fetch("/api/my-orders", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ orderId, email })
-    });
-    const data = await response.json();
-    if (!response.ok || !data.success) throw new Error(data.message || "অর্ডার খুঁজে পাওয়া যায়নি।");
-    const order = data.order;
-    const statusLabel = order.status === "paid" ? "পেমেন্ট সম্পন্ন" : order.status === "rejected" ? "অর্ডার বাতিল" : "পেমেন্ট যাচাই অপেক্ষমাণ";
-    const downloads = order.status === "paid"
-      ? (order.downloads || []).map(file => '<a class="my-order-download" href="' + escapeHTML(file.url) + '">↓ ' + escapeHTML(file.name) + ' ডাউনলোড করুন</a>').join("")
-      : "";
-    const content = order.status === "paid"
-      ? (downloads || '<p class="my-order-pending">পেমেন্ট সম্পন্ন, তবে এই অর্ডারের ডাউনলোড ফাইল পাওয়া যায়নি। অনুগ্রহ করে যোগাযোগ করুন।</p>')
-      : order.status === "rejected"
-        ? '<p class="my-order-pending">এই অর্ডারটি বাতিল করা হয়েছে। সহায়তার জন্য যোগাযোগ করুন।</p>'
-        : '<p class="my-order-pending">আপনার পেমেন্ট এখনো যাচাই করা হয়নি। Admin পেমেন্ট Paid করলেই এখানে ডাউনলোড বাটন দেখা যাবে।</p>';
-    result.innerHTML = '<div class="my-order-card"><div class="my-order-card-head"><div><span>অর্ডার নম্বর</span><strong>#' + escapeHTML(order.id) + '</strong></div><span class="my-order-status ' + escapeHTML(order.status) + '">' + statusLabel + '</span></div><p class="my-order-items">' + (order.items || []).map(item => escapeHTML(item.product_name) + ' × ' + escapeHTML(item.quantity)).join(" · ") + '</p><div class="my-order-total"><span>অর্ডারের মোট</span><strong>' + money(order.total) + '</strong></div><div class="my-order-downloads">' + content + '</div></div>';
-  } catch (error) {
-    result.innerHTML = '<p class="my-order-error">' + escapeHTML(error.message || "সার্ভারের সঙ্গে সংযোগ হয়নি।") + '</p>';
-  } finally {
-    button.disabled = false;
+// Customer order cards and secure, payment-gated downloads.
+function renderMyOrderCard(order){
+  const items=(order.items||[]).map(item=>{
+    const productId=String(item.product_id);
+    const paid=String(order.status||"").trim().toLowerCase()==="paid";
+    const file=(order.downloads||[]).find(download=>
+      String(download.productId??download.product_id??"")===productId && download.url
+    );
+    const status=paid&&file
+      ? '<a class="my-order-simple-status is-download" href="'+escapeHTML(file.url)+'">Download</a>'
+      : paid
+        ? '<span class="my-order-simple-status is-pending">ফাইল যুক্ত নেই</span>'
+        : '<span class="my-order-simple-status is-pending">Pending</span>';
+    return '<div class="my-order-simple-row"><span class="my-order-product-name">'+escapeHTML(item.product_name)+'</span>'+status+'</div>';
+  }).join("");
+  return '<div class="my-order-card">'+items+'</div>';
+}
+async function loadSavedCustomerOrders(){
+  const area=document.getElementById("mySavedOrders");if(!area)return;
+  let saved=[];try{saved=JSON.parse(localStorage.getItem(PURCHASE_STORAGE_KEY)||"[]");}catch{}
+  if(!saved.length){area.innerHTML='<p class="my-saved-orders-empty">এখনো কোনো অর্ডার নেই।</p>';return;}
+  area.innerHTML='<p class="my-order-loading">লোড হচ্ছে...</p>';
+  const cards=[];
+  for(const entry of saved.slice(0,30)){
+    if(!entry||!entry.orderId||!entry.email)continue;
+    try{
+      const response=await fetch("/api/my-orders",{method:"POST",cache:"no-store",headers:{"Content-Type":"application/json"},body:JSON.stringify({orderId:entry.orderId,email:entry.email})});
+      const data=await response.json();
+      if(response.ok&&data.success)cards.push(renderMyOrderCard(data.order));
+    }catch{}
   }
-});
+  area.innerHTML=cards.length?cards.join(""):'<p class="my-order-error">অর্ডার লোড করা যায়নি। আবার চেষ্টা করুন।</p>';
+}
+document.querySelector('a[href="#my-orders"]')?.addEventListener("click",()=>{loadSavedCustomerOrders();});
+loadSavedCustomerOrders();
+
+// স্বয়ংক্রিয় অর্ডার স্ট্যাটাস আপডেট: Admin Paid করলে ২০ সেকেন্ডের মধ্যে
+// পেজ রিফ্রেশ ছাড়াই Pending থেকে Download দেখাবে।
+let customerOrderRefreshBusy=false;
+async function refreshCustomerOrderStatus(){
+  if(customerOrderRefreshBusy||document.hidden)return;
+  customerOrderRefreshBusy=true;
+  try{await loadSavedCustomerOrders();}finally{customerOrderRefreshBusy=false;}
+}
+setInterval(refreshCustomerOrderStatus,20000);
+window.addEventListener("focus",refreshCustomerOrderStatus);
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)refreshCustomerOrderStatus();});
 
 search.addEventListener("input",renderProducts);filter.addEventListener("change",renderProducts);
 document.querySelector(".category-menu-dropdown")?.addEventListener("click",e=>{const link=e.target.closest("[data-category-link]");if(!link)return;const category=link.dataset.categoryLink;filter.value=category;document.querySelectorAll(".category-pills button").forEach(b=>b.classList.toggle("active",b.dataset.category===category));renderProducts();document.querySelector(".category-menu")?.removeAttribute("open")});
