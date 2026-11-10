@@ -64,6 +64,37 @@ async function isAdmin(request, env) {
 const cookie = (value, maxAge) =>
   `sh_admin=${value}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${maxAge}`;
 
+const customerCookie = (value, maxAge) =>
+  `sh_customer=${value}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${maxAge}`;
+
+async function ensureCustomerTable(env) {
+  await env.DB.prepare("CREATE TABLE IF NOT EXISTS customer_accounts (email TEXT PRIMARY KEY COLLATE NOCASE, name TEXT NOT NULL, password_hash TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)").run();
+}
+
+async function passwordHash(password, saltHex) {
+  const salt = saltHex ? Uint8Array.from(saltHex.match(/.{2}/g).map((byte) => parseInt(byte, 16))) : crypto.getRandomValues(new Uint8Array(16));
+  const key = await crypto.subtle.importKey("raw", enc(password), "PBKDF2", false, ["deriveBits"]);
+  const bits = await crypto.subtle.deriveBits({ name: "PBKDF2", hash: "SHA-256", salt, iterations: 100000 }, key, 256);
+  return { salt: hex(salt), hash: hex(bits) };
+}
+
+async function customerSessionCookie(email, secret) {
+  const payload = b64u(enc(JSON.stringify({ customer: true, email, exp: Date.now() + 30 * 24 * 60 * 60 * 1000 })));
+  return `${payload}.${await sign(payload, secret)}`;
+}
+
+async function getCustomer(request, env) {
+  const match = (request.headers.get("Cookie") || "").match(/(?:^|; )sh_customer=([^;]+)/);
+  if (!match || !env.SESSION_SECRET) return null;
+  const [payload, signature] = match[1].split(".");
+  if (!payload || !signature || signature !== await sign(payload, env.SESSION_SECRET)) return null;
+  try {
+    const session = JSON.parse(new TextDecoder().decode(unb64u(payload)));
+    if (session.customer !== true || session.exp <= Date.now()) return null;
+    return await env.DB.prepare("SELECT email,name,created_at FROM customer_accounts WHERE lower(email)=? LIMIT 1").bind(String(session.email || "").toLowerCase()).first();
+  } catch { return null; }
+}
+
 const safeProduct = (row) => ({
   id: row.id,
   name: row.name,
@@ -344,6 +375,58 @@ export async function onRequest({ request, env }) {
       return json({ success: true, message: "Sajjadhub API online" });
     }
 
+    if (route.startsWith("customer/")) {
+      await ensureCustomerTable(env);
+      if (!env.SESSION_SECRET) return json({ success: false, message: "সাইটের নিরাপত্তা সেটিংস প্রস্তুত নয়।" }, 503);
+
+      if (route === "customer/register" && method === "POST") {
+        const body = await request.json();
+        const name = String(body.name || "").trim().slice(0, 120);
+        const email = String(body.email || "").trim().slice(0, 254).toLowerCase();
+        const password = String(body.password || "");
+        if (!name || !/^\S+@\S+\.\S+$/.test(email) || password.length < 8 || password.length > 128) return json({ success: false, message: "নাম, সঠিক ইমেইল ও কমপক্ষে ৮ অক্ষরের পাসওয়ার্ড দিন।" }, 400);
+        const exists = await env.DB.prepare("SELECT email FROM customer_accounts WHERE lower(email)=?").bind(email).first();
+        if (exists) return json({ success: false, message: "এই ইমেইলে অ্যাকাউন্ট আছে। লগইন করুন।" }, 409);
+        const pw = await passwordHash(password);
+        await env.DB.prepare("INSERT INTO customer_accounts(email,name,password_hash) VALUES(?,?,?)").bind(email, name, `pbkdf2${pw.salt}${pw.hash}`).run();
+        const session = await customerSessionCookie(email, env.SESSION_SECRET);
+        return new Response(JSON.stringify({ success: true, customer: { email, name } }), { headers: { "Content-Type": "application/json; charset=utf-8", "Set-Cookie": customerCookie(session, 2592000), "Cache-Control": "no-store" } });
+      }
+
+      if (route === "customer/login" && method === "POST") {
+        const body = await request.json();
+        const email = String(body.email || "").trim().slice(0, 254).toLowerCase();
+        const password = String(body.password || "");
+        const account = await env.DB.prepare("SELECT email,name,password_hash FROM customer_accounts WHERE lower(email)=? LIMIT 1").bind(email).first();
+        if (!account) return json({ success: false, message: "ইমেইল বা পাসওয়ার্ড সঠিক নয়।" }, 401);
+        const [algorithm, salt, storedHash] = String(account.password_hash).split("$");
+        if (algorithm !== "pbkdf2" || !salt || !storedHash) return json({ success: false, message: "অ্যাকাউন্ট যাচাই করা যায়নি।" }, 401);
+        const calculated = await passwordHash(password, salt);
+        if (calculated.hash !== storedHash) return json({ success: false, message: "ইমেইল বা পাসওয়ার্ড সঠিক নয়।" }, 401);
+        const session = await customerSessionCookie(account.email, env.SESSION_SECRET);
+        return new Response(JSON.stringify({ success: true, customer: { email: account.email, name: account.name } }), { headers: { "Content-Type": "application/json; charset=utf-8", "Set-Cookie": customerCookie(session, 2592000), "Cache-Control": "no-store" } });
+      }
+
+      if (route === "customer/logout" && method === "POST") return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json; charset=utf-8", "Set-Cookie": customerCookie("", 0), "Cache-Control": "no-store" } });
+
+      if (route === "customer/me" && method === "GET") {
+        const customer = await getCustomer(request, env);
+        return json({ success: true, customer: customer ? { email: customer.email, name: customer.name } : null });
+      }
+
+      if (route === "customer/orders" && method === "GET") {
+        const customer = await getCustomer(request, env);
+        if (!customer) return json({ success: false, message: "অর্ডার দেখতে আগে লগইন করুন।" }, 401);
+        const { results = [] } = await env.DB.prepare("SELECT o.id,o.total,o.status,o.created_at,oi.product_id,oi.product_name,oi.quantity,t.token FROM orders o JOIN order_items oi ON oi.order_id=o.id LEFT JOIN download_tokens t ON t.order_id=o.id AND t.product_id=oi.product_id WHERE lower(o.buyer_email)=? AND datetime(o.created_at)>=datetime(?) ORDER BY datetime(o.created_at) DESC").bind(customer.email.toLowerCase(), customer.created_at).all();
+        const byOrder = new Map();
+        for (const row of results) {
+          if (!byOrder.has(row.id)) byOrder.set(row.id, { id: row.id, total: row.total, status: row.status, createdAt: row.created_at, items: [] });
+          byOrder.get(row.id).items.push({ product_id: row.product_id, product_name: row.product_name, quantity: row.quantity, status: row.status, downloadUrl: row.status === "paid" && row.token ? `/api/download/${row.token}` : null });
+        }
+        return json({ success: true, orders: Array.from(byOrder.values()) });
+      }
+    }
+
     if (route === "products" && method === "GET") {
       const { results = [] } = await env.DB.prepare(
         "SELECT * FROM products WHERE is_active=1 ORDER BY created_at DESC"
@@ -385,7 +468,7 @@ export async function onRequest({ request, env }) {
     if (route.startsWith("download/") && method === "GET") {
       const token = decodeURIComponent(parts[1] || "");
       const row = await env.DB.prepare(
-        "SELECT t.*, p.file_url AS file_key, p.name FROM download_tokens t JOIN products p ON p.id=t.product_id WHERE t.token=?"
+        "SELECT t.*, p.file_url AS file_key, p.name FROM download_tokens t JOIN products p ON p.id=t.product_id JOIN orders o ON o.id=t.order_id WHERE t.token=? AND o.status='paid'"
       )
         .bind(token)
         .first();
@@ -414,69 +497,13 @@ export async function onRequest({ request, env }) {
           "Cache-Control": "private, no-store",
         },
       });
-    }    if (route === "my-orders" && method === "POST") {
-      const body = await request.json();
-      const orderIdInput = String(body.orderId || "").trim().replace(/^#/, "");
-      const email = String(body.email || "").trim().slice(0, 254).toLowerCase();
-
-      if (!/^\d{1,12}$/.test(orderIdInput) || !/^\S+@\S+\.\S+$/.test(email)) {
-        return json(
-          { success: false, message: "সঠিক অর্ডার নম্বর ও অর্ডারের সময় দেওয়া ইমেইল লিখুন।" },
-          400
-        );
-      }
-
-      const order = await env.DB.prepare(
-        "SELECT id,customer_name,total_amount AS total,payment_status AS status,created_at FROM orders WHERE id=? AND lower(customer_email)=? LIMIT 1"
-      )
-        .bind(Number(orderIdInput), email)
-        .first();
-
-      if (!order) {
-        return json(
-          { success: false, message: "এই অর্ডার নম্বর ও ইমেইল দিয়ে কোনো অর্ডার পাওয়া যায়নি।" },
-          404
-        );
-      }
-
-      const { results: items = [] } = await env.DB.prepare(
-        "SELECT product_name,quantity,unit_price FROM order_items WHERE order_id=?"
-      )
-        .bind(order.id)
-        .all();
-
-      let downloads = [];
-      if (order.status === "paid") {
-        const { results: tokens = [] } = await env.DB.prepare(
-          "SELECT t.token,p.name FROM download_tokens t JOIN products p ON p.id=t.product_id WHERE t.order_id=?"
-        )
-          .bind(order.id)
-          .all();
-
-        downloads = tokens.map((token) => ({
-          name: token.name,
-          url: `/api/download/${token.token}`,
-        }));
-      }
-
-      return json({
-        success: true,
-        order: {
-          id: order.id,
-          customerName: order.customer_name,
-          total: order.total,
-          status: order.status,
-          createdAt: order.created_at,
-          items,
-          downloads,
-        },
-      });
-    }
-
-    if (route === "checkout" && method === "POST") {
+    }    if (route === "checkout" && method === "POST") {
+      await ensureCustomerTable(env);
+      const customer = await getCustomer(request, env);
+      if (!customer) return json({ success: false, message: "অর্ডার করতে আগে কাস্টমার অ্যাকাউন্টে লগইন করুন।" }, 401);
       const body = await request.json();
       const customerName = String(body.customerName || "").trim().slice(0, 120);
-      const email = String(body.email || "").trim().slice(0, 254);
+      const email = customer.email;
       const phone = String(body.phone || "").trim().slice(0, 30);
       const trx = String(body.trxId || "").trim().slice(0, 100);
       const items = Array.isArray(body.items) ? body.items : [];
