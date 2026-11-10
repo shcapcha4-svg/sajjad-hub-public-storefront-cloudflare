@@ -15,7 +15,7 @@
   <header class="topbar">
     <details class="category-menu"><summary class="category-menu-trigger">☷ ক্যাটাগরি <span>▾</span></summary><div class="category-menu-dropdown"><a href="#shop" data-category-link="পোস্টার">পোস্টার</a><a href="#shop" data-category-link="ব্যানার">ব্যানার</a><a href="#shop" data-category-link="সোশ্যাল মিডিয়া">সোশ্যাল মিডিয়া</a><a href="#shop" data-category-link="লোগো">লোগো</a><a href="#shop" data-category-link="ক্যাশ মেমো">ক্যাশ মেমো</a><a href="#shop" data-category-link="অন্যান্য">অন্যান্য</a></div></details>
     <a class="brand" href="#" aria-label="Sajjadhub হোম"><img src="/sajjadhub-logo.svg" alt="Sajjadhub — Digital Design Store"></a>
-    <nav><a href="#shop">ডিজাইন</a><a href="#how">কীভাবে কিনবেন</a><a href="#contact">যোগাযোগ</a></nav>
+    <nav><a href="#shop">ডিজাইন</a><a href="#how">কীভাবে কিনবেন</a><a href="#my-orders">আমার অর্ডার</a><a href="#contact">যোগাযোগ</a></nav>
     <button class="theme-toggle" id="themeToggle" type="button" aria-label="ডার্ক মোড চালু করুন">☾ ডার্ক</button>
     <button class="cart-button" id="openCart" aria-label="কার্ট খুলুন">কার্ট <span id="cartCount">0</span></button>
   </header>
@@ -51,6 +51,20 @@
     </section>
 
     <section class="how-section" id="how"><div><span class="eyebrow">SIMPLE & QUICK</span><h2>কেনাকাটা হবে <em>সহজ।</em></h2></div><div class="steps"><article><span>01</span><h3>ডিজাইন বাছাই</h3><p>পছন্দের ডিজাইনটি দেখে কার্টে যোগ করুন।</p></article><article><span>02</span><h3>পেমেন্ট সম্পন্ন</h3><p>চেকআউটে গিয়ে পেমেন্টের ধাপ অনুসরণ করুন।</p></article><article><span>03</span><h3>ডাউনলোড</h3><p>পেমেন্ট যাচাই হলে আপনার ডিজাইনের ডাউনলোড লিংক পাবেন।</p></article></div></section>
+    <section class="my-orders-section" id="my-orders">
+      <div class="my-orders-heading">
+        <span class="eyebrow">YOUR DIGITAL PURCHASES</span>
+        <h2>আমার অর্ডার <em>/ ডাউনলোড</em></h2>
+        <p>অর্ডার নম্বর ও কেনার সময় দেওয়া ইমেইল দিয়ে পেমেন্টের অবস্থা দেখুন এবং Paid হলে ডিজাইন ডাউনলোড করুন।</p>
+      </div>
+      <form id="myOrderForm" class="my-order-form">
+        <label>অর্ডার নম্বর<input id="lookupOrderId" type="text" inputmode="numeric" placeholder="রসিদে থাকা অর্ডার নম্বর" required></label>
+        <label>অর্ডারের সময় দেওয়া ইমেইল<input id="lookupOrderEmail" type="email" placeholder="name@example.com" required></label>
+        <button class="checkout-button" id="lookupOrderButton" type="submit">অর্ডার খুঁজুন <span>→</span></button>
+      </form>
+      <p class="my-order-help">অর্ডার নম্বরটি অর্ডার জমা দেওয়ার পর পাওয়া রসিদে আছে।</p>
+      <div id="myOrderResult" class="my-order-result" role="status" aria-live="polite"></div>
+    </section>
   </main>
 
   <footer id="contact">
@@ -67,7 +81,7 @@
   </aside>
 
   <dialog id="productDialog" class="product-dialog"><div class="product-detail-modal"><button type="button" class="modal-close" id="closeProductDialog" aria-label="বন্ধ করুন">×</button><div id="productDetailContent"></div></div></dialog>
-  <dialog id="checkoutDialog"><form method="dialog" class="checkout-modal"><button type="button" class="modal-close" id="closeCheckout" aria-label="বন্ধ করুন">×</button><span class="eyebrow">MANUAL NAGAD PAYMENT</span><h2>অর্ডার সম্পন্ন করুন</h2><p>নিচের ব্যক্তিগত Nagad নম্বরে <b>Send Money</b> করে পেমেন্ট করুন। পেমেন্ট যাচাই না হওয়া পর্যন্ত অর্ডারটি Pending থাকবে।</p><div class="nagad-box"><small>পেমেন্ট পাঠানোর নম্বর</small><strong id="nagadNumber">01951608000</strong><button type="button" id="copyNagad" class="copy-button">নম্বর কপি করুন</button></div><label>আপনার নাম<input id="buyerName" type="text" placeholder="আপনার পূর্ণ নাম" required></label><label>আপনার ইমেইল<input id="buyerEmail" type="email" placeholder="name@example.com" required></label><label>যে নম্বর থেকে টাকা পাঠিয়েছেন<input id="senderPhone" type="tel" inputmode="numeric" placeholder="01XXXXXXXXX" required></label><label>Nagad TrxID<input id="trxId" type="text" placeholder="ট্রানজেকশন আইডি লিখুন" required></label><div class="total-row"><span>অর্ডারের মোট</span><strong id="dialogTotal">৳০</strong></div><button class="checkout-button" id="submitPayment" type="button">পেমেন্ট তথ্য কপি করুন</button><small>অর্ডারের তথ্য সার্ভারে জমা হবে। পেমেন্ট যাচাইয়ের পর Admin থেকে ডাউনলোড লিংক দেওয়া হবে।</small><p id="checkoutMessage" class="checkout-message" role="status"></p></form></dialog>
+  <dialog id="checkoutDialog"><form method="dialog" class="checkout-modal"><button type="button" class="modal-close" id="closeCheckout" aria-label="বন্ধ করুন">×</button><span class="eyebrow">MANUAL NAGAD PAYMENT</span><h2>অর্ডার সম্পন্ন করুন</h2><p>নিচের ব্যক্তিগত Nagad নম্বরে <b>Send Money</b> করে পেমেন্ট করুন। পেমেন্ট যাচাই না হওয়া পর্যন্ত অর্ডারটি Pending থাকবে।</p><div class="nagad-box"><small>পেমেন্ট পাঠানোর নম্বর</small><strong id="nagadNumber">01951608000</strong><button type="button" id="copyNagad" class="copy-button">নম্বর কপি করুন</button></div><label>আপনার নাম<input id="buyerName" type="text" placeholder="আপনার পূর্ণ নাম" required></label><label>আপনার ইমেইল<input id="buyerEmail" type="email" placeholder="name@example.com" required></label><label>যে নম্বর থেকে টাকা পাঠিয়েছেন<input id="senderPhone" type="tel" inputmode="numeric" placeholder="01XXXXXXXXX" required></label><label>Nagad TrxID<input id="trxId" type="text" placeholder="ট্রানজেকশন আইডি লিখুন" required></label><div class="total-row"><span>অর্ডারের মোট</span><strong id="dialogTotal">৳০</strong></div><button class="checkout-button" id="submitPayment" type="button">পেমেন্ট তথ্য কপি করুন</button><small>অর্ডার নম্বর ও এই ইমেইলটি সংরক্ষণ করুন। পেমেন্ট যাচাই হলে ওয়েবসাইটের “আমার অর্ডার / ডাউনলোড” অংশ থেকে ডিজাইন ডাউনলোড করতে পারবেন।</small><p id="checkoutMessage" class="checkout-message" role="status"></p></form></dialog>
   <dialog id="receiptDialog" class="receipt-dialog">
     <div class="receipt-shell">
       <div id="receiptContent"></div>
