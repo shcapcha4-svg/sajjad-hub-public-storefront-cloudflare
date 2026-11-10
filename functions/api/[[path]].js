@@ -314,12 +314,12 @@ export async function onRequest({ request, env }) {
     if (route.startsWith("download/") && method === "GET") {
       const token = decodeURIComponent(parts[1] || "");
       const row = await env.DB.prepare(
-        "SELECT t.*, p.file_url, p.name FROM download_tokens t JOIN products p ON p.id=t.product_id WHERE t.token=?"
+        "SELECT t.*, p.file_url AS file_key, p.name FROM download_tokens t JOIN products p ON p.id=t.product_id WHERE t.token=?"
       )
         .bind(token)
         .first();
 
-      if (!row || !row.file_url) {
+      if (!row || !row.file_key) {
         return new Response("ডাউনলোড লিংকটি অবৈধ।", { status: 404 });
       }
 
@@ -691,19 +691,9 @@ export async function onRequest({ request, env }) {
     );
   }
 
-  await env.DB.prepare(
-    "DELETE FROM products WHERE id=?"
-  )
+  await env.DB.prepare("UPDATE products SET is_active=0 WHERE id=?")
     .bind(productId)
     .run();
-
-  if (old.image_url) {
-    await deleteB2(env, old.image_url);
-  }
-
-  if (old.file_url) {
-    await deleteB2(env, old.file_url);
-  }
 
   return json({ success: true });
 }
@@ -722,12 +712,9 @@ export async function onRequest({ request, env }) {
           );
         }
 
-        await env.DB.prepare("DELETE FROM products WHERE id=?")
+        await env.DB.prepare("UPDATE products SET is_active=0 WHERE id=?")
           .bind(productId)
           .run();
-
-        if (old.image_url) await deleteB2(env, old.image_url);
-        if (old.file_url) await deleteB2(env, old.file_url);
 
         return json({ success: true });
       }
