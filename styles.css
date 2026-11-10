@@ -278,3 +278,6 @@ body[data-theme="dark"] .footer-bottom{border-color:#374151}
   .moving-track{animation:none}
   .product-card,.product-thumb img,.social-links a{transition:none}
 }
+
+/* Sajjadhub logo in the header and footer */
+.brand img{display:block;width:190px;height:auto;max-height:58px;object-fit:contain}.footer-brand img{width:250px;max-height:76px}@media(max-width:620px){.brand img{width:145px;max-height:48px}.footer-brand img{width:210px;max-height:66px}}
