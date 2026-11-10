@@ -298,3 +298,7 @@ body[data-theme="dark"] .category-menu-dropdown{background:#1f2937;border-color:
 body[data-theme="dark"] .category-menu-dropdown a{color:#e5e7eb}
 body[data-theme="dark"] .category-menu-dropdown a:hover{background:#34451f;color:#e2f6bd}
 @media(max-width:620px){.category-menu-trigger{font-size:11px;padding:7px 9px;gap:5px}}
+
+/* Clear existing asset status in admin edit mode */
+.asset-status{margin:8px 0 12px;padding:13px;border:1px solid #dce8d0;background:#f7fbf2;border-radius:9px;color:#344054;font-size:13px}.asset-preview{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:8px 0}.asset-preview img{width:100px;height:75px;object-fit:contain;background:#fff;border:1px solid #e5e9e2;border-radius:6px}.asset-help{font-size:12px;color:#667085;margin:0 0 14px}.admin-no-image{height:125px;background:#eef2e8;border-radius:7px;display:grid;place-items:center;color:#667085;font-size:13px}
+.product-thumb img{object-fit:contain;background:#fff}
