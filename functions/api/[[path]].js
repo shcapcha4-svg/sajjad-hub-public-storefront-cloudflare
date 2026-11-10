@@ -275,7 +275,7 @@ export async function onRequest({ request, env }) {
 
     if (route === "products" && method === "GET") {
       const { results = [] } = await env.DB.prepare(
-        "SELECT * FROM products WHERE is_active=1 ORDER BY created_at DESC"
+        "SELECT * FROM products WHERE is_is_active=1 ORDER BY created_at DESC"
       ).all();
 
       return json({
@@ -314,12 +314,12 @@ export async function onRequest({ request, env }) {
     if (route.startsWith("download/") && method === "GET") {
       const token = decodeURIComponent(parts[1] || "");
       const row = await env.DB.prepare(
-        "SELECT t.*, p.file_key, p.name FROM download_tokens t JOIN products p ON p.id=t.product_id WHERE t.token=?"
+        "SELECT t.*, p.file_url, p.name FROM download_tokens t JOIN products p ON p.id=t.product_id WHERE t.token=?"
       )
         .bind(token)
         .first();
 
-      if (!row || !row.file_key) {
+      if (!row || !row.file_url) {
         return new Response("ডাউনলোড লিংকটি অবৈধ।", { status: 404 });
       }
 
@@ -496,7 +496,6 @@ export async function onRequest({ request, env }) {
 
       if (route === "admin/products" && method === "POST") {
         const form = await request.formData();
-        const productId = id();
         const name = String(form.get("name") || "").trim();
         const category = String(form.get("category") || "").trim();
         const price = Number(form.get("price"));
@@ -527,7 +526,7 @@ export async function onRequest({ request, env }) {
             );
           }
 
-          imageKey = `previews/${productId}/${id()}`;
+          imageKey = `previews/${id()}`;
           await putB2(env, imageKey, image, image.type);
         }
 
@@ -542,7 +541,7 @@ export async function onRequest({ request, env }) {
             );
           }
 
-          fileKey = `downloads/${productId}/${id()}`;
+          fileKey = `downloads/${id()}`;
           await putB2(
             env,
             fileKey,
@@ -551,27 +550,13 @@ export async function onRequest({ request, env }) {
           );
         }
 
-        await env.DB.prepare(
-          "INSERT INTO products(id,name,category,price,tag,description,file_type,bg,ink,title,sub,image_key,file_key,active) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,1)"
+        const inserted = await env.DB.prepare(
+          "INSERT INTO products(name,description,price,image_url,category,file_url,is_active) VALUES(?,?,?,?,?,?,1)"
         )
-          .bind(
-            productId,
-            name,
-            category,
-            Math.round(price),
-            String(form.get("tag") || ""),
-            String(form.get("description") || ""),
-            String(form.get("fileType") || ""),
-            String(form.get("bg") || "#e5e7eb"),
-            String(form.get("ink") || "#344054"),
-            String(form.get("title") || "DESIGN"),
-            String(form.get("sub") || "DIGITAL DESIGN"),
-            imageKey,
-            fileKey
-          )
+          .bind(name, String(form.get("description") || ""), Math.round(price), imageKey, category, fileKey)
           .run();
 
-        return json({ success: true, id: productId });
+        return json({ success: true, id: inserted.meta.last_row_id });
       }      if (parts[1] === "products" && parts[2] && method === "PUT") {
         const productId = parts[2];
         const form = await request.formData();
@@ -591,8 +576,8 @@ export async function onRequest({ request, env }) {
 
         const image = form.get("image");
         const file = form.get("file");
-        let imageKey = old.image_key;
-        let fileKey = old.file_key;
+        let imageKey = old.image_url;
+        let fileKey = old.file_url;
 
         if (image instanceof File && image.size) {
           if (
@@ -647,19 +632,13 @@ export async function onRequest({ request, env }) {
         }
 
         await env.DB.prepare(
-          "UPDATE products SET name=?,category=?,price=?,tag=?,description=?,file_type=?,bg=?,ink=?,title=?,sub=?,image_key=?,file_key=?,updated_at=CURRENT_TIMESTAMP WHERE id=?"
+          "UPDATE products SET name=?,category=?,price=?,description=?,image_url=?,file_url=? WHERE id=?"
         )
           .bind(
             value("name"),
             value("category"),
             Math.round(price),
-            value("tag"),
             value("description"),
-            value("fileType", "file_type"),
-            value("bg"),
-            value("ink"),
-            value("title"),
-            value("sub"),
             imageKey,
             fileKey,
             productId
@@ -667,10 +646,10 @@ export async function onRequest({ request, env }) {
           .run();
 
         // Remove replaced objects after the database update succeeds.
-        if (imageKey !== old.image_key && old.image_key) {
+        if (imageKey !== old.image_url && old.image_url) {
           await deleteB2(env, old.image_key);
         }
-        if (fileKey !== old.file_key && old.file_key) {
+        if (fileKey !== old.file_url && old.file_key) {
           await deleteB2(env, old.file_key);
         }
 
@@ -681,7 +660,7 @@ export async function onRequest({ request, env }) {
   const productId = parts[2];
 
   const old = await env.DB.prepare(
-    "SELECT image_key, file_key FROM products WHERE id=?"
+    "SELECT image_url, file_url FROM products WHERE id=?"
   )
     .bind(productId)
     .first();
@@ -734,7 +713,7 @@ export async function onRequest({ request, env }) {
         const productId = parts[2];
 
         const old = await env.DB.prepare(
-          "SELECT image_key,file_key FROM products WHERE id=?"
+          "SELECT image_url,file_url FROM products WHERE id=?"
         )
           .bind(productId)
           .first();
@@ -815,7 +794,7 @@ export async function onRequest({ request, env }) {
         }
 
         await env.DB.prepare(
-          "UPDATE orders SET status=?,updated_at=CURRENT_TIMESTAMP WHERE id=?"
+          "UPDATE orders SET payment_status=?,verified_at=CASE WHEN ?='paid' THEN CURRENT_TIMESTAMP ELSE verified_at END WHERE id=?"
         )
           .bind(status, orderId)
           .run();
