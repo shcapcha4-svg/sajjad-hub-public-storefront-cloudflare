@@ -80,15 +80,20 @@ function buyNow(id){
   cart=[{...p,qty:1}];renderCart();
   document.getElementById("productDialog").close();
   closeCart();
+  unlockCheckoutCustomerFields();
   document.getElementById("checkoutDialog").showModal();
   document.getElementById("checkoutMessage").textContent="";
 }
+function unlockCheckoutCustomerFields(){for(const id of ["buyerName","buyerEmail"]){const field=document.getElementById(id);if(!field)continue;field.disabled=false;field.readOnly=false;field.removeAttribute("disabled");field.removeAttribute("readonly");field.style.pointerEvents="auto";field.style.userSelect="text";}}
+const checkoutDialog=document.getElementById("checkoutDialog");
+checkoutDialog.addEventListener("show",unlockCheckoutCustomerFields);
+checkoutDialog.addEventListener("click",event=>{if(event.target.matches("#buyerName,#buyerEmail"))unlockCheckoutCustomerFields();});
 document.getElementById("closeProductDialog").onclick=()=>document.getElementById("productDialog").close();
 document.getElementById("closeCheckout").onclick=()=>document.getElementById("checkoutDialog").close();
 for(const dlg of [document.getElementById("checkoutDialog"),document.getElementById("productDialog")]) dlg.addEventListener("click",e=>{if(e.target===dlg)dlg.close();});
 document.getElementById("cartItems").addEventListener("click",e=>{const id=e.target.dataset.remove;if(!id)return;cart=cart.filter(x=>String(x.id)!==String(id));renderCart()});
 document.getElementById("openCart").onclick=openCart;document.getElementById("closeCart").onclick=closeCart;document.getElementById("backdrop").onclick=closeCart;
-document.getElementById("checkoutButton").onclick=()=>{closeCart();document.getElementById("checkoutDialog").showModal();document.getElementById("checkoutMessage").textContent=""};
+document.getElementById("checkoutButton").onclick=()=>{closeCart();unlockCheckoutCustomerFields();document.getElementById("checkoutDialog").showModal();document.getElementById("checkoutMessage").textContent=""};
 document.getElementById("copyNagad").onclick=async()=>{try{await navigator.clipboard.writeText("01951608000");document.getElementById("checkoutMessage").textContent="Nagad নম্বর কপি হয়েছে।"}catch{document.getElementById("checkoutMessage").textContent="Nagad নম্বর: 01951608000"}};
 document.getElementById("submitPayment").onclick=async()=>{
   const name=document.getElementById("buyerName"), email=document.getElementById("buyerEmail"), sender=document.getElementById("senderPhone"), trx=document.getElementById("trxId"), msg=document.getElementById("checkoutMessage"), btn=document.getElementById("submitPayment");
