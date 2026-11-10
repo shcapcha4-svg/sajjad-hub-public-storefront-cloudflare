@@ -74,12 +74,12 @@ document.getElementById("openCart").onclick=openCart;document.getElementById("cl
 document.getElementById("checkoutButton").onclick=()=>{closeCart();document.getElementById("checkoutDialog").showModal();document.getElementById("checkoutMessage").textContent=""};
 document.getElementById("copyNagad").onclick=async()=>{try{await navigator.clipboard.writeText("01951608000");document.getElementById("checkoutMessage").textContent="Nagad নম্বর কপি হয়েছে।"}catch{document.getElementById("checkoutMessage").textContent="Nagad নম্বর: 01951608000"}};
 document.getElementById("submitPayment").onclick=async()=>{
-  const email=document.getElementById("buyerEmail"), sender=document.getElementById("senderPhone"), trx=document.getElementById("trxId"), msg=document.getElementById("checkoutMessage"), btn=document.getElementById("submitPayment");
-  if(!email.reportValidity()||!sender.reportValidity()||!trx.reportValidity())return;
+  const name=document.getElementById("buyerName"), email=document.getElementById("buyerEmail"), sender=document.getElementById("senderPhone"), trx=document.getElementById("trxId"), msg=document.getElementById("checkoutMessage"), btn=document.getElementById("submitPayment");
+  if(!name.reportValidity()||!email.reportValidity()||!sender.reportValidity()||!trx.reportValidity())return;
   if(!cart.length){msg.textContent="আপনার কার্ট খালি।";return;}
   btn.disabled=true;msg.textContent="অর্ডার জমা হচ্ছে...";
   try{
-    const response=await fetch('/api/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:email.value.trim(),phone:sender.value.trim(),trxId:trx.value.trim(),items:cart.map(x=>({id:x.id,qty:x.qty}))})});
+    const response=await fetch('/api/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({customerName:name.value.trim(),email:email.value.trim(),phone:sender.value.trim(),trxId:trx.value.trim(),items:cart.map(x=>({id:x.id,qty:x.qty}))})});
     const data=await response.json();if(!response.ok||!data.success)throw new Error(data.message||'অর্ডার জমা হয়নি।');
     msg.textContent=`অর্ডার ${data.orderId} সফলভাবে জমা হয়েছে। পেমেন্ট যাচাই শেষে ডাউনলোডের ব্যবস্থা করা হবে।`;cart=[];renderCart();
   }catch(error){msg.textContent=error.message||'সার্ভারের সঙ্গে সংযোগ হয়নি। আবার চেষ্টা করুন।'}finally{btn.disabled=false}
