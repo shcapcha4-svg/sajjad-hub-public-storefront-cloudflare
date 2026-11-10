@@ -59,7 +59,8 @@ document.getElementById("productDetailContent").addEventListener("click",e=>{
   if(buy){buyNow(buy.dataset.detailBuy);}
 });
 function buyNow(id){
-  const p=products.find(x=>x.id===id);if(!p)return;
+  const p=products.find(x=>String(x.id)===String(id));if(!p)return;
+  if(p.isSample){alert("এটি শুধু নমুনা ডিজাইন। কেনার জন্য Admin Panel থেকে আসল পণ্য আপলোড করতে হবে।");return;}
   cart=[{...p,qty:1}];renderCart();
   document.getElementById("productDialog").close();
   closeCart();
