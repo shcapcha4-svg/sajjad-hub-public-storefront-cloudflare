@@ -397,19 +397,17 @@ export async function onRequest({ request, env }) {
 
       // প্রথমবার ডাউনলোড লিংক খোলার সময় থেকেই ২০ সেকেন্ডের মেয়াদ শুরু হবে।
       // ফাইলটি ওই প্রথম রিকোয়েস্টে সম্পূর্ণ পাঠানো হবে; মেয়াদ শেষ হলে পরেরবার আর পাওয়া যাবে না।
-      if (row.expires_at && Date.parse(row.expires_at) <= Date.now()) {
-        return new Response("ডাউনলোডের সময় শেষ।", { status: 410 });
-      }
-      if (!row.expires_at) {
-        await env.DB.prepare(
-          "UPDATE download_tokens SET expires_at=? WHERE token=? AND (expires_at IS NULL OR expires_at='')"
-        )
-          .bind(new Date(Date.now() + 20000).toISOString(), token)
-          .run();
-      }
+      await env.DB.prepare(
+        "CREATE TABLE IF NOT EXISTS download_expirations (token TEXT PRIMARY KEY, expires_at TEXT NOT NULL)"
+      ).run();
+      await env.DB.prepare(
+        "INSERT OR IGNORE INTO download_expirations(token,expires_at) VALUES(?,?)"
+      )
+        .bind(token, new Date(Date.now() + 20000).toISOString())
+        .run();
 
       const expiry = await env.DB.prepare(
-        "SELECT expires_at FROM download_tokens WHERE token=?"
+        "SELECT expires_at FROM download_expirations WHERE token=?"
       )
         .bind(token)
         .first();
@@ -494,8 +492,11 @@ export async function onRequest({ request, env }) {
           }
         }
 
+        await env.DB.prepare(
+          "CREATE TABLE IF NOT EXISTS download_expirations (token TEXT PRIMARY KEY, expires_at TEXT NOT NULL)"
+        ).run();
         const { results: tokens = [] } = await env.DB.prepare(
-          "SELECT t.token,t.product_id,t.expires_at,p.name FROM download_tokens t JOIN products p ON p.id=t.product_id WHERE t.order_id=?"
+          "SELECT t.token,t.product_id,e.expires_at,p.name FROM download_tokens t JOIN products p ON p.id=t.product_id LEFT JOIN download_expirations e ON e.token=t.token WHERE t.order_id=?"
         )
           .bind(order.id)
           .all();
