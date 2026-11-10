@@ -246,12 +246,6 @@ async function b2Request(env, method, key, body, contentType) {
       contentLengthHeaderBeforeFetch: headers.get("content-length"),
     }));
     const fixedBody = new FixedLengthStream(body.byteLength);
-    const uploadPromise = fetch(url, {
-      method,
-      headers,
-      body: fixedBody.readable,
-    });
-
     const writer = fixedBody.writable.getWriter();
     try {
       const writeResult = await writer.write(body);
@@ -271,7 +265,14 @@ async function b2Request(env, method, key, body, contentType) {
       throw error;
     }
 
-    const response = await uploadPromise;
+    // Build the Request only after the fixed-length stream is complete.
+    // This lets the Workers runtime attach the exact Content-Length before fetch.
+    const uploadRequest = new Request(url, {
+      method,
+      headers,
+      body: fixedBody.readable,
+    });
+    const response = await fetch(uploadRequest);
     console.log("B2_STREAM_DIAG_RESPONSE", JSON.stringify({
       status: response.status,
       expectedBytes: body.byteLength,
