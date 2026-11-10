@@ -374,7 +374,7 @@ export async function onRequest({ request, env }) {
       const name = String(body.name || "").trim().slice(0, 120);
       const email = String(body.email || "").trim().toLowerCase().slice(0, 254);
       const password = String(body.password || "");
-      if (!name || !/^\\S+@\\S+\\.\\S+$/.test(email) || password.length < 8 || password.length > 128) {
+      if (!name || !/^\S+@\S+\.\S+$/.test(email) || password.length < 8 || password.length > 128) {
         return json({ success: false, message: "নাম, সঠিক ইমেইল এবং কমপক্ষে ৮ অক্ষরের পাসওয়ার্ড দিন।" }, 400);
       }
       const exists = await env.DB.prepare("SELECT id FROM customer_accounts WHERE email=?").bind(email).first();
@@ -557,9 +557,6 @@ export async function onRequest({ request, env }) {
       const body = await request.json();
       const customerName = customer.name;
       const email = customer.email;
-      /* authenticated account supplies the checkout identity */
-      /* */
-      const unusedCustomerName = String(body.customerName || "").trim().slice(0, 120);
       const phone = String(body.phone || "").trim().slice(0, 30);
       const trx = String(body.trxId || "").trim().slice(0, 100);
       const items = Array.isArray(body.items) ? body.items : [];
