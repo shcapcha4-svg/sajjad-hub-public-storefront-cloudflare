@@ -702,7 +702,7 @@ export async function onRequest({ request, env }) {
         }
 
         await env.DB.prepare(
-          "UPDATE products SET name=?,category=?,price=?,description=?,image_url=?,file_url=? WHERE id=?"
+          "UPDATE products SET name=?,category=?,price=?,description=?,image_url=?,file_url=?,is_active=1 WHERE id=?"
         )
           .bind(
             value("name"),
