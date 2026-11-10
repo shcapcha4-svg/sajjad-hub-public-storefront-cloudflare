@@ -449,7 +449,7 @@ export async function onRequest({ request, env }) {
       let downloads = [];
       if (order.status === "paid") {
         const { results: tokens = [] } = await env.DB.prepare(
-          "SELECT t.token,p.name FROM download_tokens t JOIN products p ON p.id=t.product_id WHERE t.order_id=?"
+          "SELECT t.token,t.product_id,p.name FROM download_tokens t JOIN products p ON p.id=t.product_id WHERE t.order_id=?"
         )
           .bind(order.id)
           .all();
