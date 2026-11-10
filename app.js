@@ -116,6 +116,7 @@ document.getElementById("submitPayment").onclick=async()=>{
     const data=await response.json();if(!response.ok||!data.success)throw new Error(data.message||'অর্ডার জমা হয়নি।');
     const purchasedItems=cart.map(item=>({...item}));
     try{const saved=JSON.parse(localStorage.getItem(PURCHASE_STORAGE_KEY)||"[]");saved.unshift({orderId:String(data.orderId),email:email.value.trim()});localStorage.setItem(PURCHASE_STORAGE_KEY,JSON.stringify(saved.slice(0,30)));}catch{}
+    await refreshPurchasedProductStatuses();
     const receiptTotal=Number(data.total)||purchasedItems.reduce((sum,item)=>sum+item.price*item.qty,0);
     document.getElementById("receiptContent").innerHTML=`
       <div class="receipt-brand"><span class="brand-mark">S</span><strong>Sajjad<span>hub</span></strong></div>
