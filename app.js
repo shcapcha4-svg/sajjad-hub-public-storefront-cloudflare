@@ -130,10 +130,15 @@ document.getElementById("submitPayment").onclick=async()=>{
 function renderMyOrderCard(order){
   const items=(order.items||[]).map(item=>{
     const productId=String(item.product_id);
-    const file=(order.downloads||[]).find(download=>String(download.productId)===productId);
-    const status=order.status==="paid"&&file
+    const paid=String(order.status||"").trim().toLowerCase()==="paid";
+    const file=(order.downloads||[]).find(download=>
+      String(download.productId??download.product_id??"")===productId && download.url
+    );
+    const status=paid&&file
       ? '<a class="my-order-simple-status is-download" href="'+escapeHTML(file.url)+'">Download</a>'
-      : '<span class="my-order-simple-status is-pending">Pending</span>';
+      : paid
+        ? '<span class="my-order-simple-status is-pending">ফাইল যুক্ত নেই</span>'
+        : '<span class="my-order-simple-status is-pending">Pending</span>';
     return '<div class="my-order-simple-row"><span class="my-order-product-name">'+escapeHTML(item.product_name)+'</span>'+status+'</div>';
   }).join("");
   return '<div class="my-order-card">'+items+'</div>';
@@ -147,7 +152,7 @@ async function loadSavedCustomerOrders(){
   for(const entry of saved.slice(0,30)){
     if(!entry||!entry.orderId||!entry.email)continue;
     try{
-      const response=await fetch("/api/my-orders",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({orderId:entry.orderId,email:entry.email})});
+      const response=await fetch("/api/my-orders",{method:"POST",cache:"no-store",headers:{"Content-Type":"application/json"},body:JSON.stringify({orderId:entry.orderId,email:entry.email})});
       const data=await response.json();
       if(response.ok&&data.success)cards.push(renderMyOrderCard(data.order));
     }catch{}
