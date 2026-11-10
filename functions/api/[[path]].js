@@ -155,14 +155,16 @@ async function b2Request(env, method, key, body, contentType) {
 
   const signedHeaders = "host;x-amz-content-sha256;x-amz-date";
 
+  const canonicalHeaders =
+    `host:${url.host}\n` +
+    `x-amz-content-sha256:${payloadHash}\n` +
+    `x-amz-date:${amzDate}\n`;
+
   const canonicalRequest = [
     method,
     url.pathname,
     "",
-    `host:${url.host}`,
-    `x-amz-content-sha256:${payloadHash}`,
-    `x-amz-date:${amzDate}`,
-    "",
+    canonicalHeaders,
     signedHeaders,
     payloadHash,
   ].join("\n");
@@ -246,7 +248,10 @@ async function putB2(env, key, file, contentType) {
   const response = await b2Request(env, "PUT", key, body, contentType);
 
   if (!response.ok) {
-    throw new Error(`B2 upload ব্যর্থ হয়েছে (${response.status})।`);
+    const detail = (await response.text()).slice(0, 300);
+    throw new Error(
+      `B2 upload ব্যর্থ হয়েছে (${response.status})। ${detail}`
+    );
   }
 }
 
@@ -801,7 +806,10 @@ export async function onRequest({ request, env }) {
     return json(
       {
         success: false,
-        message: "সার্ভারে সমস্যা হয়েছে।",
+        message:
+          error instanceof Error && error.message.startsWith("B2 upload ব্যর্থ হয়েছে")
+            ? error.message
+            : "সার্ভারে সমস্যা হয়েছে।",
         detail:
           env.ENVIRONMENT === "development"
             ? String(error)
