@@ -11,6 +11,7 @@
     root.dataset.theme=dark?"dark":"light";
     button.textContent=dark?"☀ লাইট":"☾ ডার্ক";
     button.setAttribute("aria-label",dark?"লাইট মোড চালু করুন":"ডার্ক মোড চালু করুন");
+    document.querySelectorAll(".brand img").forEach(img=>{img.src=dark?"/sajjadhub-logo-dark.svg":"/sajjadhub-logo.svg"});
     const meta=document.querySelector('meta[name="theme-color"]');
     if(meta)meta.setAttribute("content",dark?"#111827":"#101828");
   }
@@ -117,7 +118,7 @@ document.getElementById("submitPayment").onclick=async()=>{
 };
 
 search.addEventListener("input",renderProducts);filter.addEventListener("change",renderProducts);
-document.querySelector("[data-category-link]")?.addEventListener("click",()=>{filter.value="ক্যাশ মেমো";document.querySelectorAll(".category-pills button").forEach(b=>b.classList.toggle("active",b.dataset.category==="ক্যাশ মেমো"));renderProducts()});
+document.querySelector(".category-menu-dropdown")?.addEventListener("click",e=>{const link=e.target.closest("[data-category-link]");if(!link)return;const category=link.dataset.categoryLink;filter.value=category;document.querySelectorAll(".category-pills button").forEach(b=>b.classList.toggle("active",b.dataset.category===category));renderProducts();document.querySelector(".category-menu")?.removeAttribute("open")});
 document.getElementById("printReceipt").addEventListener("click",()=>window.print());
 document.getElementById("closeReceipt").addEventListener("click",()=>document.getElementById("receiptDialog").close());
 document.getElementById("categoryPills").addEventListener("click",e=>{const c=e.target.dataset.category;if(!c)return;filter.value=c;document.querySelectorAll(".category-pills button").forEach(b=>b.classList.toggle("active",b.dataset.category===c));renderProducts()});
