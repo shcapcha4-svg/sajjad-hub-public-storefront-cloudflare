@@ -13,8 +13,40 @@ function showDashboard(){ $('#loginView').hidden=true;$('#dashboard').hidden=fal
 async function check(){try{const d=await api('/api/admin/me');if(d.success){showDashboard();return}}catch{}$('#loginView').hidden=false}
 $('#loginForm').addEventListener('submit',async e=>{e.preventDefault();message($('#loginMessage'),'লগইন হচ্ছে...');try{await api('/api/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:$('#password').value})});showDashboard()}catch(err){message($('#loginMessage'),err.message,true)}});
 $('#logout').onclick=async()=>{try{await api('/api/admin/logout',{method:'POST'})}finally{location.reload()}};
-async function loadAll(){await Promise.allSettled([loadProducts(),loadOrders(),loadNotifications(),loadCustomers()])}
-async function loadProducts(){const d=await api('/api/admin/products');products=d.products||[];renderProducts()}
+async function loadAll(){try{await loadProducts()}catch(error){message($('#productMessage'),error.message,true)}await Promise.allSettled([loadHeroDesigns(),loadOrders(),loadNotifications(),loadCustomers()])}
+async function loadProducts(){const d=await api('/api/admin/products');products=d.products||[];renderProducts();renderHeroDesignOptions()}
+function renderHeroDesignOptions(){
+  const first=$('#heroDesignOne').value,second=$('#heroDesignTwo').value;
+  const options='<option value="">ডিজাইন নির্বাচন করুন</option>'+products.filter(p=>p.active&&p.imageUrl).map(p=>'<option value="'+esc(p.id)+'">'+esc(p.name)+' · #'+esc(p.id)+'</option>').join('');
+  $('#heroDesignOne').innerHTML=options;$('#heroDesignTwo').innerHTML=options;
+  if(products.some(p=>p.active&&p.imageUrl&&String(p.id)===first))$('#heroDesignOne').value=first;
+  if(products.some(p=>p.active&&p.imageUrl&&String(p.id)===second))$('#heroDesignTwo').value=second;
+  renderHeroDesignPreviews();
+}
+function renderHeroDesignPreviews(){
+  const ids=[$('#heroDesignOne').value,$('#heroDesignTwo').value];
+  $('#heroAdminPreviews').innerHTML=ids.map((id,index)=>{const p=products.find(item=>String(item.id)===String(id));return p?'<div class="hero-admin-preview"><img src="'+esc(p.imageUrl)+'" alt="'+esc(p.name)+'"><strong>'+(index===0?'পেছনের ডিজাইন: ':'সামনের ডিজাইন: ')+esc(p.name)+'</strong></div>':'<div class="hero-admin-preview">'+(index===0?'প্রথম ডিজাইন নির্বাচন করুন':'দ্বিতীয় ডিজাইন নির্বাচন করুন')+'</div>'}).join('');
+}
+async function loadHeroDesigns(){
+  renderHeroDesignOptions();
+  const d=await api('/api/admin/hero-designs');
+  $('#heroDesignOne').value=String(d.designs?.firstId||'');
+  $('#heroDesignTwo').value=String(d.designs?.secondId||'');
+  renderHeroDesignPreviews();
+  message($('#heroDesignMessage'),'সংরক্ষিত হোমপেজ ডিজাইন লোড হয়েছে।');
+}
+$('#heroDesignOne').addEventListener('change',renderHeroDesignPreviews);
+$('#heroDesignTwo').addEventListener('change',renderHeroDesignPreviews);
+$('#refreshHeroDesigns').addEventListener('click',()=>loadHeroDesigns().catch(error=>message($('#heroDesignMessage'),error.message,true)));
+$('#heroDesignsForm').addEventListener('submit',async e=>{
+  e.preventDefault();
+  const firstId=$('#heroDesignOne').value,secondId=$('#heroDesignTwo').value,button=$('#saveHeroDesigns');
+  if(!firstId||!secondId||firstId===secondId){message($('#heroDesignMessage'),'দুটি আলাদা ডিজাইন নির্বাচন করুন।',true);return;}
+  button.disabled=true;message($('#heroDesignMessage'),'হোমপেজের ডিজাইন সংরক্ষণ হচ্ছে...');
+  try{await api('/api/admin/hero-designs',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({firstId,secondId})});message($('#heroDesignMessage'),'সফল! হোমপেজের দুটি ডিজাইন সংরক্ষণ হয়েছে।');renderHeroDesignPreviews();}
+  catch(error){message($('#heroDesignMessage'),error.message,true)}
+  finally{button.disabled=false}
+});
 function filteredProducts(){const q=$('#productSearch').value.trim().toLowerCase(),f=$('#productFilter').value;return products.filter(p=>{const matches=String(p.name||'').toLowerCase().includes(q)||String(p.category||'').toLowerCase().includes(q)||String(p.tag||'').toLowerCase().includes(q);const state=f==='active'?p.active:f==='hidden'?!p.active:f==='file'?p.hasFile:f==='missing'?!p.hasFile:true;return matches&&state})}
 function productTagList(value){return String(value||'').split(',').map(x=>x.trim()).filter(Boolean)}
 function productPriceMarkup(p){const offer=Number(p.offerPrice);return p.offerPrice!==null&&p.offerPrice!==''&&Number.isFinite(offer)&&offer>=0&&offer<Number(p.price)?'<span class="admin-old-price">'+money(p.price)+'</span><strong class="admin-offer-price">'+money(offer)+'</strong>':money(p.price)}

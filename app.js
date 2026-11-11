@@ -33,6 +33,19 @@ const filter = document.getElementById("categoryFilter");
 const productImageUrls = new Map();
 const purchaseStatusByProduct = new Map();
 function escapeHTML(value="") { return String(value).replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch])); }
+function applyHeroFeaturedDesigns(settings){
+  const first=products.find(p=>String(p.id)===String(settings?.firstId));
+  const second=products.find(p=>String(p.id)===String(settings?.secondId));
+  const apply=(selector,product)=>{
+    const poster=document.querySelector(selector);
+    if(!poster||!product?.imageUrl)return;
+    poster.innerHTML='<img class="hero-feature-image" src="'+escapeHTML(product.imageUrl)+'" alt="'+escapeHTML(product.name)+'"><span class="hero-feature-caption">'+escapeHTML(product.name)+'</span>';
+    poster.classList.add("has-featured-design");
+    poster.setAttribute("aria-label",product.name);
+  };
+  apply(".poster-back",first);
+  apply(".poster-front",second);
+}
 function productArtwork(p, extraClass="") {
   if (p.imageUrl) return `<img class="${extraClass}" src="${escapeHTML(p.imageUrl)}" alt="${escapeHTML(p.name)}" loading="lazy">`;
   return `<div class="sample-art ${extraClass}" style="background:${escapeHTML(p.bg||"#e5e7eb")};color:${escapeHTML(p.ink||"#344054")}"><small>${escapeHTML(p.tag||"SAJJADHUB")}</small><strong>${p.title||"DESIGN"}</strong><small>${escapeHTML(p.sub||"DIGITAL DESIGN")}</small></div>`;
@@ -235,5 +248,5 @@ document.querySelector("[data-offers-link]")?.addEventListener("click",()=>docum
 filter.addEventListener("change",()=>document.querySelectorAll(".category-pills button").forEach(b=>b.classList.toggle("active",b.dataset.category===filter.value)));
 document.getElementById("year").textContent=new Date().getFullYear();
 renderProducts();renderCart();
-(async()=>{try{const r=await fetch('/api/products');const d=await r.json();if(r.ok&&d.success){products=d.products;const availableIds=new Set(products.map(p=>String(p.id)));favoriteIds=favoriteIds.filter(id=>availableIds.has(id));saveFavorites();renderProducts();renderFavorites();const requestedProduct=new URLSearchParams(location.search).get("product");if(requestedProduct){const selected=products.find(p=>String(p.id)===String(requestedProduct));if(selected){showProductDetails(selected.id);document.getElementById("productDetailContent").insertAdjacentHTML("beforeend",'<p class="product-seo-link"><a href="/product/'+encodeURIComponent(selected.id)+'">এই ডিজাইনের শেয়ারযোগ্য পেজ দেখুন ↗</a></p>');}}}}catch(e){console.warn('Products API unavailable; no sample products are shown.',e)}})();
+(async()=>{try{const r=await fetch('/api/products');const d=await r.json();if(r.ok&&d.success){products=d.products;try{const heroResponse=await fetch('/api/hero-designs');const heroData=await heroResponse.json();if(heroResponse.ok&&heroData.success)applyHeroFeaturedDesigns(heroData.designs);}catch(heroError){console.warn('Featured hero designs unavailable.',heroError)}const availableIds=new Set(products.map(p=>String(p.id)));favoriteIds=favoriteIds.filter(id=>availableIds.has(id));saveFavorites();renderProducts();renderFavorites();const requestedProduct=new URLSearchParams(location.search).get("product");if(requestedProduct){const selected=products.find(p=>String(p.id)===String(requestedProduct));if(selected){showProductDetails(selected.id);document.getElementById("productDetailContent").insertAdjacentHTML("beforeend",'<p class="product-seo-link"><a href="/product/'+encodeURIComponent(selected.id)+'">এই ডিজাইনের শেয়ারযোগ্য পেজ দেখুন ↗</a></p>');}}}}catch(e){console.warn('Products API unavailable; no sample products are shown.',e)}})();
 // Product SEO deep links are initialized after the live product catalog loads.

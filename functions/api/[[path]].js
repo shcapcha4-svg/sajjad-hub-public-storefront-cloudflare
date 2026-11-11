@@ -435,6 +435,14 @@ export async function onRequest({ request, env }) {
       return new Response(JSON.stringify({success:true}),{headers:{"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store","Set-Cookie":memberCookie("",0)}});
     }
 
+    if (route === "hero-designs" && method === "GET") {
+      await env.DB.prepare("CREATE TABLE IF NOT EXISTS store_settings (setting_key TEXT PRIMARY KEY, setting_value TEXT NOT NULL, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)").run();
+      const setting = await env.DB.prepare("SELECT setting_value FROM store_settings WHERE setting_key='hero_designs'").first();
+      let designs = { firstId: "", secondId: "" };
+      try { if (setting?.setting_value) designs = { ...designs, ...JSON.parse(setting.setting_value) }; } catch {}
+      return json({ success: true, designs });
+    }
+
     if (route === "health" && method === "GET") {
       return json({ success: true, message: "Sajjadhub API online" });
     }
@@ -735,6 +743,34 @@ export async function onRequest({ request, env }) {
           { success: false, message: "অনুমতি নেই। আবার লগইন করুন।" },
           401
         );
+      }
+
+      if (route === "admin/hero-designs" && method === "GET") {
+        await env.DB.prepare("CREATE TABLE IF NOT EXISTS store_settings (setting_key TEXT PRIMARY KEY, setting_value TEXT NOT NULL, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)").run();
+        const setting = await env.DB.prepare("SELECT setting_value FROM store_settings WHERE setting_key='hero_designs'").first();
+        let designs = { firstId: "", secondId: "" };
+        try { if (setting?.setting_value) designs = { ...designs, ...JSON.parse(setting.setting_value) }; } catch {}
+        return json({ success: true, designs });
+      }
+
+      if (route === "admin/hero-designs" && method === "PUT") {
+        const body = await request.json();
+        const firstId = String(body.firstId || "").trim();
+        const secondId = String(body.secondId || "").trim();
+        if (!firstId || !secondId || firstId === secondId) {
+          return json({ success: false, message: "দুটি আলাদা ডিজাইন নির্বাচন করুন।" }, 400);
+        }
+        const selected = await env.DB.prepare(
+          "SELECT id FROM products WHERE id IN (?,?) AND is_active=1 AND COALESCE(is_deleted,0)=0 AND image_url IS NOT NULL"
+        ).bind(firstId, secondId).all();
+        if ((selected.results || []).length !== 2) {
+          return json({ success: false, message: "নির্বাচিত দুটি ডিজাইনই প্রকাশিত ও প্রিভিউ ছবি-সহ থাকতে হবে।" }, 400);
+        }
+        await env.DB.prepare("CREATE TABLE IF NOT EXISTS store_settings (setting_key TEXT PRIMARY KEY, setting_value TEXT NOT NULL, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)").run();
+        await env.DB.prepare(
+          "INSERT INTO store_settings(setting_key,setting_value,updated_at) VALUES('hero_designs',?,CURRENT_TIMESTAMP) ON CONFLICT(setting_key) DO UPDATE SET setting_value=excluded.setting_value,updated_at=CURRENT_TIMESTAMP"
+        ).bind(JSON.stringify({ firstId, secondId })).run();
+        return json({ success: true, designs: { firstId, secondId }, message: "হোমপেজের দুটি ফিচার্ড ডিজাইন সংরক্ষণ হয়েছে।" });
       }
 
       if (route === "admin/customers" && method === "GET") {
