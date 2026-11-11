@@ -5,5 +5,3 @@ Disallow: /admin.html
 Disallow: /api/
 
 Sitemap: https://sajjadhub.pages.dev/sitemap.xml
-
-Sitemap: https://sajjadhub.pages.dev/sitemap.xml
