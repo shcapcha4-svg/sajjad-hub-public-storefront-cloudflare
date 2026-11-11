@@ -15,7 +15,7 @@ export async function onRequest({ env }) {
   }
 
   return new Response(
-    \`google.com, \${publisherId}, DIRECT, f08c47fec0942fa0\n\`,
+    "google.com, " + publisherId + ", DIRECT, f08c47fec0942fa0\n",
     {
       status: 200,
       headers: {
