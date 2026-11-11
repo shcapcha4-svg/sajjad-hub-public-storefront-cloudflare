@@ -36,15 +36,15 @@ function escapeHTML(value="") { return String(value).replace(/[&<>"']/g, ch => (
 function applyHeroFeaturedDesigns(settings){
   const first=products.find(p=>String(p.id)===String(settings?.firstId));
   const second=products.find(p=>String(p.id)===String(settings?.secondId));
-  const apply=(selector,product)=>{
+  const apply=(selector,product,imageUrl)=>{
     const poster=document.querySelector(selector);
-    if(!poster||!product?.imageUrl)return;
-    poster.innerHTML='<img class="hero-feature-image" src="'+escapeHTML(product.imageUrl)+'" alt="'+escapeHTML(product.name)+'"><span class="hero-feature-caption">'+escapeHTML(product.name)+'</span>';
+    if(!poster||!product||!imageUrl)return;
+    poster.innerHTML='<img class="hero-feature-image" src="'+escapeHTML(imageUrl)+'" alt="'+escapeHTML(product.name)+'"><span class="hero-feature-caption">'+escapeHTML(product.name)+'</span>';
     poster.classList.add("has-featured-design");
     poster.setAttribute("aria-label",product.name);
   };
-  apply(".poster-back",first);
-  apply(".poster-front",second);
+  apply(".poster-back",first,settings?.firstImageUrl);
+  apply(".poster-front",second,settings?.secondImageUrl);
 }
 function productArtwork(p, extraClass="") {
   if (p.imageUrl) return `<img class="${extraClass}" src="${escapeHTML(p.imageUrl)}" alt="${escapeHTML(p.name)}" loading="lazy">`;
