@@ -15,6 +15,14 @@ $('#loginForm').addEventListener('submit',async e=>{e.preventDefault();message($
 $('#logout').onclick=async()=>{try{await api('/api/admin/logout',{method:'POST'})}finally{location.reload()}};
 async function loadAll(){try{await loadProducts()}catch(error){message($('#productMessage'),error.message,true)}await Promise.allSettled([loadHeroDesigns(),loadOrders(),loadNotifications(),loadCustomers()])}
 async function loadProducts(){const d=await api('/api/admin/products');products=d.products||[];renderProducts();renderHeroDesignOptions()}
+async function inspectHeroArtwork(file){
+  if(file.size>2*1024*1024)throw new Error("ছবির ফাইল ২ MB-এর মধ্যে হতে হবে।");
+  let width=0,height=0;
+  if("createImageBitmap" in window){const bitmap=await createImageBitmap(file);width=bitmap.width;height=bitmap.height;bitmap.close();}
+  else{const url=URL.createObjectURL(file);try{const image=new Image();await new Promise((resolve,reject)=>{image.onload=resolve;image.onerror=reject;image.src=url});width=image.naturalWidth;height=image.naturalHeight}finally{URL.revokeObjectURL(url)}}
+  if(width!==1200||height!==1600)throw new Error("ছবির মাপ অবশ্যই 1200 × 1600 px হতে হবে।");
+  return {width,height};
+}
 function renderHeroDesignOptions(){
   const first=$('#heroDesignOne').value,second=$('#heroDesignTwo').value;
   const options='<option value="">ডিজাইন নির্বাচন করুন</option>'+products.filter(p=>p.active&&p.imageUrl).map(p=>'<option value="'+esc(p.id)+'">'+esc(p.name)+' · #'+esc(p.id)+'</option>').join('');
@@ -49,8 +57,9 @@ async function loadHeroDesigns(){
 }
 $('#heroDesignOne').addEventListener('change',renderHeroDesignPreviews);
 $('#heroDesignTwo').addEventListener('change',renderHeroDesignPreviews);
-$('#heroImageOne').addEventListener('change',()=>{$('#heroImageOneName').textContent=$('#heroImageOne').files[0]?.name||'আগের ছবি অপরিবর্তিত থাকবে';renderHeroDesignPreviews()});
-$('#heroImageTwo').addEventListener('change',()=>{$('#heroImageTwoName').textContent=$('#heroImageTwo').files[0]?.name||'আগের ছবি অপরিবর্তিত থাকবে';renderHeroDesignPreviews()});
+async function handleHeroArtworkChange(input,nameEl){const file=input.files[0];if(file){try{await inspectHeroArtwork(file);nameEl.textContent=file.name+" · 1200 × 1600 px"}catch(error){input.value="";nameEl.textContent=error.message;message($('#heroDesignMessage'),error.message,true)}}else{nameEl.textContent='আগের ছবি অপরিবর্তিত থাকবে'}renderHeroDesignPreviews()}
+$('#heroImageOne').addEventListener('change',()=>handleHeroArtworkChange($('#heroImageOne'),$('#heroImageOneName')));
+$('#heroImageTwo').addEventListener('change',()=>handleHeroArtworkChange($('#heroImageTwo'),$('#heroImageTwoName')));
 $('#refreshHeroDesigns').addEventListener('click',()=>loadHeroDesigns().catch(error=>message($('#heroDesignMessage'),error.message,true)));
 $('#heroDesignsForm').addEventListener('submit',async e=>{
   e.preventDefault();
