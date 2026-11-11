@@ -361,8 +361,18 @@ async function requireAdmin(request, env) {
 }
 
 async function ensureCustomerTables(env) {
+  if (!env.DB) throw new Error("CUSTOMER_DB_BINDING_MISSING");
   await env.DB.prepare("CREATE TABLE IF NOT EXISTS customer_members (id TEXT PRIMARY KEY, username TEXT NOT NULL, username_normalized TEXT NOT NULL UNIQUE, password_hash TEXT NOT NULL, password_salt TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, last_login_at TEXT, is_active INTEGER NOT NULL DEFAULT 1)").run();
   await env.DB.prepare("CREATE TABLE IF NOT EXISTS customer_auth_attempts (username_normalized TEXT PRIMARY KEY, attempts INTEGER NOT NULL DEFAULT 0, window_started_at INTEGER NOT NULL, locked_until INTEGER NOT NULL DEFAULT 0)").run();
+  const members = await env.DB.prepare("PRAGMA table_info(customer_members)").all();
+  const required = ["id", "username", "username_normalized", "password_hash", "password_salt", "created_at", "last_login_at", "is_active"];
+  const present = new Set((members.results || []).map((column) => column.name));
+  if (required.some((name) => !present.has(name))) throw new Error("CUSTOMER_MEMBERS_SCHEMA_INVALID");
+  const attempts = await env.DB.prepare("PRAGMA table_info(customer_auth_attempts)").all();
+  const attemptColumns = new Set((attempts.results || []).map((column) => column.name));
+  if (["username_normalized", "attempts", "window_started_at", "locked_until"].some((name) => !attemptColumns.has(name))) {
+    throw new Error("CUSTOMER_AUTH_SCHEMA_INVALID");
+  }
 }
 const memberCookie = (value, maxAge) => "sh_member="+value+"; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age="+maxAge;
 async function createMemberSession(memberId, secret) { const payload=b64u(enc(JSON.stringify({memberId,exp:Date.now()+30*24*60*60*1000}))); return payload+"."+await sign(payload,secret); }
@@ -396,13 +406,14 @@ export async function onRequest({ request, env }) {
 
 
     if (route === "customers/me" && method === "GET") {
+      if (!env.SESSION_SECRET) return json({ success: true, member: null, authUnavailable: true });
       await ensureCustomerTables(env);
       const member=await currentMember(request,env);
       return json({success:true,member:member?{username:member.username,createdAt:member.created_at}:null});
     }
     if (route === "customers/register" && method === "POST") {
+      if (!env.SESSION_SECRET) return json({ success: false, message: "সদস্য অ্যাকাউন্ট ব্যবস্থা এখন প্রস্তুত নয়। সাইট পরিচালকের সঙ্গে যোগাযোগ করুন।" }, 503);
       await ensureCustomerTables(env);
-      if(!env.SESSION_SECRET)return json({success:false,message:"সদস্য লগইন ব্যবস্থা এখন প্রস্তুত নয়।"},503);
       const body=await request.json(),username=String(body.username||"").trim(),normalized=username.toLowerCase(),password=String(body.password||"");
       if(!validUsername(username))return json({success:false,message:"ইউজারনেম ৩–২৪ অক্ষরের হতে হবে; ইংরেজি অক্ষর, সংখ্যা, ডট, হাইফেন বা আন্ডারস্কোর ব্যবহার করুন।"},400);
       if(password.length<8||password.length>128)return json({success:false,message:"পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের হতে হবে।"},400);
@@ -416,8 +427,8 @@ export async function onRequest({ request, env }) {
       return new Response(JSON.stringify({success:true,member:{username,createdAt:new Date().toISOString()}}),{headers:{"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store","Set-Cookie":memberCookie(session,2592000)}});
     }
     if (route === "customers/login" && method === "POST") {
+      if (!env.SESSION_SECRET) return json({ success: false, message: "সদস্য লগইন ব্যবস্থা এখন প্রস্তুত নয়। সাইট পরিচালকের সঙ্গে যোগাযোগ করুন।" }, 503);
       await ensureCustomerTables(env);
-      if(!env.SESSION_SECRET)return json({success:false,message:"সদস্য লগইন ব্যবস্থা এখন প্রস্তুত নয়।"},503);
       const body=await request.json(),normalized=String(body.username||"").trim().toLowerCase().slice(0,24),password=String(body.password||"");
       if(!normalized||!password)return json({success:false,message:"ইউজারনেম ও পাসওয়ার্ড লিখুন।"},400);
       const attempt=await env.DB.prepare("SELECT attempts,window_started_at,locked_until FROM customer_auth_attempts WHERE username_normalized=?").bind(normalized).first();
@@ -1220,6 +1231,18 @@ export async function onRequest({ request, env }) {
     }
   } catch (error) {
     console.error("API ERROR:", error);
+    if (route.startsWith("customers/")) {
+      if (!env.DB || error?.message === "CUSTOMER_DB_BINDING_MISSING") {
+        return json({ success: false, message: "সদস্য ডাটাবেসের সংযোগ পাওয়া যাচ্ছে না। সাইট পরিচালকের কাছে DB সংযোগটি যাচাই করতে বলুন।" }, 503);
+      }
+      if (!env.SESSION_SECRET) {
+        return json({ success: false, message: "সদস্য লগইন ব্যবস্থা এখন প্রস্তুত নয়। সাইট পরিচালকের SESSION_SECRET সেটিং যাচাই করা প্রয়োজন।" }, 503);
+      }
+      if (error?.message === "CUSTOMER_MEMBERS_SCHEMA_INVALID" || error?.message === "CUSTOMER_AUTH_SCHEMA_INVALID") {
+        return json({ success: false, message: "সদস্য ডাটাবেসের কাঠামোতে সমস্যা হয়েছে। সাইট পরিচালকের সহায়তা প্রয়োজন।" }, 503);
+      }
+      return json({ success: false, message: "সদস্য অ্যাকাউন্ট সেবায় সাময়িক ডাটাবেস সমস্যা হয়েছে। কিছুক্ষণ পর আবার চেষ্টা করুন।" }, 503);
+    }
     return json(
       {
         success: false,
