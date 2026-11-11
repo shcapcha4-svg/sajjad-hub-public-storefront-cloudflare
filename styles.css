@@ -726,3 +726,17 @@ body[data-theme="dark"] .member-form input{background:#101a16;border-color:#3a51
 body[data-theme="dark"] .member-signed-in p{color:#b4c3b6}
 @media(max-width:620px){.member-login-button{animation-duration:3.8s}.member-login-orb{width:22px;height:22px}.member-login-orb svg{width:17px;height:17px}.member-hero{padding:25px 21px 20px}.member-body{padding:19px 18px 21px}}
 @media(prefers-reduced-motion:reduce){.member-login-button{animation:none}}
+
+
+/* Favorites are displayed in a separate dialog opened from the top navigation */
+.favorites-dialog{width:min(1120px,calc(100% - 28px));max-width:1120px;max-height:min(88vh,900px);padding:0;border:1px solid #e4e7ec;border-radius:22px;background:#fbfcf9;color:#101828;box-shadow:0 24px 80px #10182840;overflow:auto}
+.favorites-dialog::backdrop{background:#10182899;backdrop-filter:blur(4px)}
+.favorites-dialog-inner{position:relative;padding:42px clamp(18px,4vw,48px) 34px}
+.favorites-dialog .section-heading{margin:0 48px 24px 0}
+.favorites-dialog .favorites-intro{margin-top:9px}
+.favorites-dialog .favorites-empty{margin:0}
+.favorites-dialog .dialog-close{position:absolute;top:15px;right:18px;z-index:5;width:40px;height:40px;border:1px solid #e4e7ec;border-radius:50%;background:#fff;color:#344054;font-size:28px;line-height:1;cursor:pointer}
+body[data-theme="dark"] .favorites-dialog{background:#111d18;color:#f9fafb;border-color:#34483b}
+body[data-theme="dark"] .favorites-dialog .favorites-empty{background:#1f2937;border-color:#405746;color:#cbd5e1}
+body[data-theme="dark"] .favorites-dialog .dialog-close{background:#1f2937;color:#f9fafb;border-color:#405746}
+@media(max-width:620px){.favorites-dialog{width:calc(100% - 16px);max-height:92vh;border-radius:17px}.favorites-dialog-inner{padding:48px 14px 22px}.favorites-dialog .section-heading{margin-right:0}}
