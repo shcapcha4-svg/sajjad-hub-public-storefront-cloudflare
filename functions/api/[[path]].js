@@ -65,6 +65,20 @@ const cookie = (value, maxAge) =>
   `sh_admin=${value}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${maxAge}`;
 
 
+
+async function ensureNotificationTable(env) {
+  await ensureNotificationTable(env);
+  const columns = await env.DB.prepare("PRAGMA table_info(customer_notifications)").all();
+  if (!(columns.results || []).some((column) => column.name === "target_order_id")) {
+    try {
+      await env.DB.prepare("ALTER TABLE customer_notifications ADD COLUMN target_order_id INTEGER").run();
+    } catch (error) {
+      const refreshed = await env.DB.prepare("PRAGMA table_info(customer_notifications)").all();
+      if (!(refreshed.results || []).some((column) => column.name === "target_order_id")) throw error;
+    }
+  }
+}
+
 async function ensureProductColumns(env) {
   const columns = [["tag", "ALTER TABLE products ADD COLUMN tag TEXT NOT NULL DEFAULT ''"], ["offer_price", "ALTER TABLE products ADD COLUMN offer_price INTEGER"], ["is_deleted", "ALTER TABLE products ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0"]];
   let { results = [] } = await env.DB.prepare("PRAGMA table_info(products)").all();
@@ -354,7 +368,7 @@ export async function onRequest({ request, env }) {
 
   try {
     if (route === "notifications" && method === "GET") {
-      await env.DB.prepare("CREATE TABLE IF NOT EXISTS customer_notifications (id TEXT PRIMARY KEY, title TEXT NOT NULL, message TEXT NOT NULL, type TEXT NOT NULL DEFAULT 'info', target_email TEXT, target_order_id INTEGER, link_url TEXT, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, is_active INTEGER NOT NULL DEFAULT 1)").run();
+      await ensureNotificationTable(env);
       const email = String(url.searchParams.get("email") || "").trim().toLowerCase().slice(0, 254);
       const orderIdInput = String(url.searchParams.get("orderId") || "").trim().replace(/^#/, "");
       const orderIdValue = /^\d{1,12}$/.test(orderIdInput) ? Number(orderIdInput) : 0;
@@ -667,7 +681,7 @@ export async function onRequest({ request, env }) {
       }
 
       if (route.startsWith("admin/notifications")) {
-        await env.DB.prepare("CREATE TABLE IF NOT EXISTS customer_notifications (id TEXT PRIMARY KEY, title TEXT NOT NULL, message TEXT NOT NULL, type TEXT NOT NULL DEFAULT 'info', target_email TEXT, link_url TEXT, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, is_active INTEGER NOT NULL DEFAULT 1)").run();
+        await ensureNotificationTable(env);
 
         if (route === "admin/notifications" && method === "GET") {
           const { results = [] } = await env.DB.prepare(
@@ -996,7 +1010,7 @@ export async function onRequest({ request, env }) {
         }
 
         const order = await env.DB.prepare(
-          "SELECT id,payment_method FROM orders WHERE id=?"
+          "SELECT id,payment_method,payment_status,customer_email FROM orders WHERE id=?"
         )
           .bind(orderId)
           .first();
@@ -1047,6 +1061,26 @@ export async function onRequest({ request, env }) {
                 )
                 .run();
             }
+          }
+
+          // Create a private customer notification only on the first approval.
+          if (order.payment_status !== "paid" && order.customer_email) {
+            await ensureNotificationTable(env);
+            const notificationTitle = "আপনার ডিজাইন প্রস্তুত!";
+            const notificationMessage = `আপনার অর্ডার #${orderId} অনুমোদিত হয়েছে। আপনার ডিজাইন এখন ডাউনলোডের জন্য প্রস্তুত। সাইটের “আমার অর্ডার” থেকে রসিদ নম্বর ও ইমেইল দিয়ে ডাউনলোড করুন।`;
+            await env.DB.prepare(
+              "INSERT INTO customer_notifications(id,title,message,type,target_email,target_order_id,link_url) VALUES(?,?,?,?,?,?,?)"
+            )
+              .bind(
+                id(),
+                notificationTitle,
+                notificationMessage,
+                "order",
+                String(order.customer_email).trim().toLowerCase(),
+                Number(orderId),
+                "/"
+              )
+              .run();
           }
         }
 
