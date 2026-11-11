@@ -1241,7 +1241,9 @@ export async function onRequest({ request, env }) {
       if (error?.message === "CUSTOMER_MEMBERS_SCHEMA_INVALID" || error?.message === "CUSTOMER_AUTH_SCHEMA_INVALID") {
         return json({ success: false, message: "সদস্য ডাটাবেসের কাঠামোতে সমস্যা হয়েছে। সাইট পরিচালকের সহায়তা প্রয়োজন।" }, 503);
       }
-      return json({ success: false, message: "সদস্য অ্যাকাউন্ট সেবায় সাময়িক ডাটাবেস সমস্যা হয়েছে। কিছুক্ষণ পর আবার চেষ্টা করুন।" }, 503);
+      const diagnostic = String(error?.message || "Unknown database error").replace(/[\\r\\n\\t]+/g, " ").slice(0, 220);
+      console.error("CUSTOMER_ACCOUNT_DATABASE_FAILURE:", diagnostic);
+      return json({ success: false, message: "সদস্য অ্যাকাউন্ট সেবায় ডাটাবেস ত্রুটি হয়েছে। সহায়তার জন্য এই ত্রুটি কোডটি জানান।", errorCode: "CUSTOMER_DB_ERROR", diagnostic }, 503);
     }
     return json(
       {
