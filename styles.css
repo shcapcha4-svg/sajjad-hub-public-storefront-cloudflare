@@ -692,3 +692,37 @@ body[data-theme="dark"] .favorites-intro{color:#cbd5e1}
 body[data-theme="dark"] .favorites-empty{background:#1f2937;border-color:#405746;color:#cbd5e1}
 body[data-theme="dark"] .favorites-nav-link:hover{background:#432b32!important}
 @media(max-width:620px){.favorites-section{padding:42px 18px 18px}.favorite-heart{top:9px;right:9px;width:35px;height:35px}.favorite-heart svg{width:18px;height:18px}}
+
+/* Floating 3D customer membership control */
+.member-login-button{position:relative;isolation:isolate;overflow:visible!important;border-color:#c8d9b7!important;background:linear-gradient(145deg,#fff,#e9f4df)!important;color:#245b38!important;perspective:500px;transform-style:preserve-3d;animation:member-float 3.2s ease-in-out infinite;box-shadow:0 7px 0 #b6cda4,0 11px 18px #1c49352b!important}
+.member-login-button:before{content:"";position:absolute;inset:4px;border-radius:10px;background:linear-gradient(135deg,#ffffffaa,#b8d99b55);transform:translateZ(-7px);z-index:-1}
+.member-login-orb{width:25px;height:25px;display:grid;place-items:center;border-radius:9px;background:linear-gradient(145deg,#ffffff,#d7edc7);box-shadow:inset 1px 1px 2px #fff,2px 3px 5px #426b3b45;transform:translateZ(12px) rotateY(-10deg)}
+.member-login-orb svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.member-login-button:hover{animation-play-state:paused;transform:translateY(-3px) rotateX(10deg) rotateY(-12deg) scale(1.06);box-shadow:0 10px 0 #b6cda4,0 15px 23px #1c49353b!important}
+@keyframes member-float{0%,100%{transform:translateY(0) rotateX(0) rotateY(-7deg)}50%{transform:translateY(-3px) rotateX(7deg) rotateY(8deg)}}
+.member-dialog{width:min(470px,calc(100% - 22px));max-width:470px;max-height:92dvh;overflow:auto;padding:0;border:0;border-radius:23px;background:#f7faf4;color:#203428;box-shadow:0 28px 90px #071b1680}
+.member-dialog::backdrop{background:#071b16b8;backdrop-filter:blur(5px)}
+.member-modal{position:relative}.member-hero{padding:28px 27px 23px;background:radial-gradient(circle at 95% 0,#b7dc8055,transparent 36%),linear-gradient(135deg,#123a2c,#286044);color:#fff}
+.member-hero h2{margin:7px 0 5px;font-size:25px;color:#fff}.member-hero p{margin:0;color:#e0eddf;font-size:12px;line-height:1.7}
+.member-hero-icon{display:grid;place-items:center;width:42px;height:42px;margin-bottom:12px;border:1px solid #e0f3c477;border-radius:14px;background:#d7edb922;color:#e4f5c8;font-size:22px}
+.member-body{padding:22px 26px 24px}.member-tabs{display:grid;grid-template-columns:1fr 1fr;gap:7px;padding:4px;border-radius:12px;background:#eaf1e5;margin-bottom:18px}
+.member-tabs button{min-height:38px;border:0;border-radius:9px;background:transparent;color:#60715f;font:700 13px inherit;cursor:pointer}.member-tabs button.active{background:#fff;color:#205b36;box-shadow:0 2px 8px #183c2418}
+.member-form{display:grid;gap:12px}.member-form[hidden]{display:none}.member-form label{display:grid;gap:6px;color:#405747;font-size:12px;font-weight:800}
+.member-form input{width:100%;box-sizing:border-box;min-height:45px;padding:10px 12px;border:1px solid #d9e5d5;border-radius:10px;background:#fff;color:#203428;font:500 14px inherit;outline:none}
+.member-form input:focus{border-color:#65a34b;box-shadow:0 0 0 4px #78a95b20}
+.member-submit{width:100%;min-height:45px;margin-top:3px;border:0;border-radius:11px;background:linear-gradient(135deg,#247849,#145538);color:#fff;font:800 14px inherit;cursor:pointer;box-shadow:0 7px 15px #14553824}
+.member-submit:disabled{opacity:.6;cursor:wait}.member-message{min-height:20px;margin:12px 0 0;text-align:center;color:#17733b;font-size:12px;font-weight:700}.member-message.error{color:#bd3e2e}
+.member-footnote{margin:8px 0 0;text-align:center;color:#8b998c;font-size:10px;line-height:1.6}
+.member-signed-in{text-align:center;padding:10px 0}.member-avatar{display:grid;place-items:center;width:58px;height:58px;margin:auto;border-radius:50%;background:#e2f3d8;color:#277340;font-size:27px;font-weight:900;box-shadow:0 5px 15px #2b67301c}.member-signed-in h3{margin:12px 0 4px;font-size:20px}.member-signed-in p{margin:0 0 16px;color:#728174;font-size:12px}
+body[data-theme="dark"] .member-login-button{background:linear-gradient(145deg,#324b35,#243d2e)!important;color:#d8efb8!important;border-color:#58784c!important;box-shadow:0 7px 0 #1b3024,0 11px 18px #0005!important}
+body[data-theme="dark"] .member-login-orb{background:linear-gradient(145deg,#486348,#263e2c);box-shadow:inset 1px 1px 2px #9fbd8c55,2px 3px 5px #0006}
+body[data-theme="dark"] .member-dialog{background:#17251f;color:#edf5ec}
+body[data-theme="dark"] .member-body{background:#17251f}
+body[data-theme="dark"] .member-tabs{background:#26382d}
+body[data-theme="dark"] .member-tabs button{color:#b6c7b8}
+body[data-theme="dark"] .member-tabs button.active{background:#405744;color:#e8f5e3}
+body[data-theme="dark"] .member-form label{color:#d1e1d1}
+body[data-theme="dark"] .member-form input{background:#101a16;border-color:#3a5143;color:#f2f7ef}
+body[data-theme="dark"] .member-signed-in p{color:#b4c3b6}
+@media(max-width:620px){.member-login-button{animation-duration:3.8s}.member-login-orb{width:22px;height:22px}.member-login-orb svg{width:17px;height:17px}.member-hero{padding:25px 21px 20px}.member-body{padding:19px 18px 21px}}
+@media(prefers-reduced-motion:reduce){.member-login-button{animation:none}}
