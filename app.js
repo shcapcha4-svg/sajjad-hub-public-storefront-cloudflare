@@ -25,6 +25,7 @@
 
 // আগের আটটি নমুনা পণ্য সরানো হয়েছে; এখন শুধু Admin থেকে আপলোড করা পণ্য দেখাবে।
 let products = [];
+let newCollectionMode = false;
 const money = n => "৳" + Number(n).toLocaleString("bn-BD");
 let cart = [];
 const grid = document.getElementById("productGrid");
@@ -83,13 +84,24 @@ function productCardMarkup(p){return '<article class="product-card" data-product
 function renderFavorites(){const list=document.getElementById("favoriteProductGrid"),empty=document.getElementById("favoriteEmptyState"),count=document.getElementById("favoriteCount");if(!list||!empty)return;const saved=products.filter(p=>isFavorite(p.id));list.innerHTML=saved.map(productCardMarkup).join("");empty.hidden=saved.length>0;count.textContent=String(saved.length);count.hidden=saved.length===0;}
 function toggleFavorite(id){const key=String(id);favoriteIds=isFavorite(key)?favoriteIds.filter(x=>x!==key):[...favoriteIds,key];saveFavorites();renderProducts();renderFavorites();}
 
+function bangladeshDateParts(value){
+ const date=value instanceof Date?value:new Date(String(value||"").replace(" ","T")+"Z");if(Number.isNaN(date.getTime()))return null;
+ const parts=new Intl.DateTimeFormat("en-GB",{timeZone:"Asia/Dhaka",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(date);
+ const result={};for(const part of parts)if(part.type!=="literal")result[part.type]=Number(part.value);return result;
+}
+function isUploadedThisWeek(product){
+ const uploaded=bangladeshDateParts(product.createdAt),now=bangladeshDateParts(new Date());if(!uploaded||!now)return false;
+ const today=Date.UTC(now.year,now.month-1,now.day),uploadedDay=Date.UTC(uploaded.year,uploaded.month-1,uploaded.day),weekday=new Date(today).getUTCDay(),monday=today-((weekday+6)%7)*86400000;
+ return uploadedDay>=monday&&uploadedDay<monday+7*86400000;
+}
 function renderProducts(){
   const q=search.value.trim().toLowerCase(), c=filter.value, isOfferView=c==="অফার";
-  const shown=products.filter(p=>(isOfferView?hasOffer(p):(c==="সব"||p.category===c))&&(p.name.toLowerCase().includes(q)||p.category.toLowerCase().includes(q)||String(p.tag||"").toLowerCase().includes(q)));
+  const source=newCollectionMode?products.filter(isUploadedThisWeek):products;
+  const shown=source.filter(p=>(newCollectionMode?true:(isOfferView?hasOffer(p):(c==="সব"||p.category===c)))&&(p.name.toLowerCase().includes(q)||p.category.toLowerCase().includes(q)||String(p.tag||"").toLowerCase().includes(q)));
   grid.innerHTML=shown.map(productCardMarkup).join("");renderFavorites();
-  const heading=document.getElementById("shopHeading");if(heading)heading.innerHTML=isOfferView?'বিশেষ <em>অফার</em>':'এক্সপ্লোর করুন <em>ডিজাইন</em>';
-  const eyebrow=document.getElementById("shopEyebrow");if(eyebrow)eyebrow.textContent=isOfferView?'SPECIAL OFFERS':'THE COLLECTION';
-  const emptyState=document.getElementById("emptyState");emptyState.hidden=shown.length>0;emptyState.textContent=isOfferView?"এখন কোনো অফার চলছে না।":products.length?"এই নামে কোনো ডিজাইন পাওয়া যায়নি।":"এখনো কোনো ডিজাইন আপলোড করা হয়নি।";
+  const heading=document.getElementById("shopHeading");if(heading)heading.innerHTML=newCollectionMode?'নতুন <em>কালেকশন</em>':isOfferView?'বিশেষ <em>অফার</em>':'এক্সপ্লোর করুন <em>ডিজাইন</em>';
+  const eyebrow=document.getElementById("shopEyebrow");if(eyebrow)eyebrow.textContent=newCollectionMode?"THIS WEEK'S NEW COLLECTION":isOfferView?'SPECIAL OFFERS':'THE COLLECTION';
+  const emptyState=document.getElementById("emptyState");emptyState.hidden=shown.length>0;emptyState.textContent=newCollectionMode?"এই সপ্তাহে এখনো নতুন কোনো ডিজাইন আপলোড করা হয়নি।":isOfferView?"এখন কোনো অফার চলছে না।":products.length?"এই নামে কোনো ডিজাইন পাওয়া যায়নি।":"এখনো কোনো ডিজাইন আপলোড করা হয়নি।";
 }
 function showProductDetails(id){
   const p=products.find(x=>String(x.id)===String(id)); if(!p)return;
@@ -267,11 +279,12 @@ document.getElementById("submitPayment").onclick=async()=>{
   }catch(error){msg.textContent=error.message||'সার্ভারের সঙ্গে সংযোগ হয়নি। আবার চেষ্টা করুন।'}finally{btn.disabled=false}
 };
 
-search.addEventListener("input",renderProducts);filter.addEventListener("change",renderProducts);
-document.querySelector(".category-menu-dropdown")?.addEventListener("click",e=>{const link=e.target.closest("[data-category-link]");if(!link)return;const category=link.dataset.categoryLink;filter.value=category;document.querySelectorAll(".category-pills button").forEach(b=>b.classList.toggle("active",b.dataset.category===category));renderProducts();document.querySelector(".category-menu")?.removeAttribute("open")});
+search.addEventListener("input",()=>{newCollectionMode=false;renderProducts()});filter.addEventListener("change",()=>{newCollectionMode=false;renderProducts()});
+document.getElementById("openNewCollection")?.addEventListener("click",()=>{newCollectionMode=true;search.value="";filter.value="সব";document.querySelectorAll(".category-pills button").forEach(button=>button.classList.remove("active"));renderProducts();document.getElementById("shop").scrollIntoView({behavior:"smooth",block:"start"})});
+document.querySelector(".category-menu-dropdown")?.addEventListener("click",e=>{const link=e.target.closest("[data-category-link]");if(!link)return;newCollectionMode=false;const category=link.dataset.categoryLink;filter.value=category;document.querySelectorAll(".category-pills button").forEach(b=>b.classList.toggle("active",b.dataset.category===category));renderProducts();document.querySelector(".category-menu")?.removeAttribute("open")});
 document.getElementById("printReceipt").addEventListener("click",()=>window.print());
 document.getElementById("closeReceipt").addEventListener("click",()=>document.getElementById("receiptDialog").close());
-document.getElementById("categoryPills").addEventListener("click",e=>{const b=e.target.closest("button[data-category]");if(!b)return;const c=b.dataset.category;filter.value=c;document.querySelectorAll(".category-pills button").forEach(x=>x.classList.toggle("active",x===b));renderProducts()});
+document.getElementById("categoryPills").addEventListener("click",e=>{const b=e.target.closest("button[data-category]");if(!b)return;newCollectionMode=false;const c=b.dataset.category;filter.value=c;document.querySelectorAll(".category-pills button").forEach(x=>x.classList.toggle("active",x===b));renderProducts()});
 document.querySelector("[data-offers-link]")?.addEventListener("click",()=>document.querySelector('#categoryPills [data-category="অফার"]')?.click());
 filter.addEventListener("change",()=>document.querySelectorAll(".category-pills button").forEach(b=>b.classList.toggle("active",b.dataset.category===filter.value)));
 document.getElementById("year").textContent=new Date().getFullYear();
