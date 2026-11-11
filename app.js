@@ -209,15 +209,15 @@ document.getElementById("receiptLookupResult")?.addEventListener("click",event=>
   if(!link)return;
   if(link.dataset.busy==="true"){event.preventDefault();return;}
   link.dataset.busy="true";
+  const originalText=link.textContent;
   link.textContent="ডাউনলোড শুরু হয়েছে";
   const previous=receiptDownloadTimers.get(link);
   if(previous)clearTimeout(previous);
   const timer=setTimeout(()=>{
     link.dataset.busy="false";
-    link.textContent="ডাউনলোড করুন · "+(link.dataset.label||"ডিজাইন");
+    link.textContent=originalText;
     receiptDownloadTimers.delete(link);
   },20000);
-  link.dataset.label=link.textContent.replace(/^ডাউনলোড শুরু হয়েছে$/,"ডিজাইন");
   receiptDownloadTimers.set(link,timer);
 });
 
