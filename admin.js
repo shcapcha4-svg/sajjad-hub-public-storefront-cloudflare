@@ -1,5 +1,6 @@
 const $=s=>document.querySelector(s);
 let products=[],orders=[],notifications=[],objectPreviewUrl=null;
+let members=[];
 const money=n=>'৳'+Number(n||0).toLocaleString('bn-BD');
 const bn=n=>Number(n||0).toLocaleString('bn-BD');
 function esc(s=''){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
@@ -12,7 +13,7 @@ function showDashboard(){ $('#loginView').hidden=true;$('#dashboard').hidden=fal
 async function check(){try{const d=await api('/api/admin/me');if(d.success){showDashboard();return}}catch{}$('#loginView').hidden=false}
 $('#loginForm').addEventListener('submit',async e=>{e.preventDefault();message($('#loginMessage'),'লগইন হচ্ছে...');try{await api('/api/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:$('#password').value})});showDashboard()}catch(err){message($('#loginMessage'),err.message,true)}});
 $('#logout').onclick=async()=>{try{await api('/api/admin/logout',{method:'POST'})}finally{location.reload()}};
-async function loadAll(){await Promise.allSettled([loadProducts(),loadOrders(),loadNotifications()])}
+async function loadAll(){await Promise.allSettled([loadProducts(),loadOrders(),loadNotifications(),loadCustomers()])}
 async function loadProducts(){const d=await api('/api/admin/products');products=d.products||[];renderProducts()}
 function filteredProducts(){const q=$('#productSearch').value.trim().toLowerCase(),f=$('#productFilter').value;return products.filter(p=>{const matches=String(p.name||'').toLowerCase().includes(q)||String(p.category||'').toLowerCase().includes(q)||String(p.tag||'').toLowerCase().includes(q);const state=f==='active'?p.active:f==='hidden'?!p.active:f==='file'?p.hasFile:f==='missing'?!p.hasFile:true;return matches&&state})}
 function productTagList(value){return String(value||'').split(',').map(x=>x.trim()).filter(Boolean)}
@@ -44,3 +45,9 @@ $('#orderSearch').addEventListener('input',renderOrders);$('#orderFilter').addEv
 document.addEventListener('click',e=>{const b=e.target.closest('[data-close]');if(b)$('#'+b.dataset.close).close()});
 $('#productModal').addEventListener('click',e=>{if(e.target===$('#productModal'))$('#productModal').close()});
 check();
+
+async function loadCustomers(){const d=await api('/api/admin/customers');members=d.members||[];$('#totalMembers').textContent=bn(d.total??members.length);$('#activeMembers').textContent=bn(members.filter(m=>m.is_active).length);renderCustomers()}
+function renderCustomers(){const q=$('#memberSearch').value.trim().toLowerCase(),list=members.filter(m=>String(m.username||'').toLowerCase().includes(q));$('#members').innerHTML=list.map(m=>'<article class="order-card '+(m.is_active?'paid':'rejected')+'"><div class="order-card-head"><h3>'+esc(m.username)+'</h3><span class="order-status">'+(m.is_active?'সক্রিয় সদস্য':'নিষ্ক্রিয়')+'</span></div><p><b>যোগদানের তারিখ:</b> '+esc(m.created_at||'তথ্য নেই')+'</p><p><b>সর্বশেষ লগইন:</b> '+esc(m.last_login_at||'এখনো লগইন করেননি')+'</p></article>').join('')||'<div class="admin-empty">কোনো সদস্য পাওয়া যায়নি।</div>'}
+$('#memberSearch').addEventListener('input',renderCustomers);
+$('#refreshMembers').addEventListener('click',()=>loadCustomers().catch(e=>alert(e.message)));
+

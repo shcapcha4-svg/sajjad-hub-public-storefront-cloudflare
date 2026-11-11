@@ -360,6 +360,22 @@ async function requireAdmin(request, env) {
   return isAdmin(request, env);
 }
 
+async function ensureCustomerTables(env) {
+  await env.DB.prepare("CREATE TABLE IF NOT EXISTS customer_members (id TEXT PRIMARY KEY, username TEXT NOT NULL, username_normalized TEXT NOT NULL UNIQUE, password_hash TEXT NOT NULL, password_salt TEXT NOT NULL, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, last_login_at TEXT, is_active INTEGER NOT NULL DEFAULT 1)").run();
+  await env.DB.prepare("CREATE TABLE IF NOT EXISTS customer_auth_attempts (username_normalized TEXT PRIMARY KEY, attempts INTEGER NOT NULL DEFAULT 0, window_started_at INTEGER NOT NULL, locked_until INTEGER NOT NULL DEFAULT 0)").run();
+}
+const memberCookie = (value, maxAge) => "sh_member="+value+"; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age="+maxAge;
+async function createMemberSession(memberId, secret) { const payload=b64u(enc(JSON.stringify({memberId,exp:Date.now()+30*24*60*60*1000}))); return payload+"."+await sign(payload,secret); }
+async function currentMember(request, env) {
+  if(!env.SESSION_SECRET)return null; const header=request.headers.get("Cookie")||"",match=header.match(/(?:^|; )sh_member=([^;]+)/); if(!match)return null;
+  const parts=match[1].split("."),payload=parts[0],signature=parts[1]; if(!payload||!signature)return null; const expected=await sign(payload,env.SESSION_SECRET);
+  if(signature.length!==expected.length||![...signature].every((ch,i)=>ch===expected[i]))return null;
+  try { const data=JSON.parse(new TextDecoder().decode(unb64u(payload))); if(!data.memberId||data.exp<=Date.now())return null; return await env.DB.prepare("SELECT id,username,created_at FROM customer_members WHERE id=? AND is_active=1").bind(data.memberId).first(); } catch { return null; }
+}
+async function passwordDigest(password,salt) { const key=await crypto.subtle.importKey("raw",enc(password),"PBKDF2",false,["deriveBits"]); const bits=await crypto.subtle.deriveBits({name:"PBKDF2",salt,iterations:210000,hash:"SHA-256"},key,256); return hex(bits); }
+function validUsername(value){return /^[A-Za-z0-9_.-]{3,24}$/.test(value);}
+async function failedMemberLogin(env,username) { const now=Date.now(),old=await env.DB.prepare("SELECT attempts,window_started_at FROM customer_auth_attempts WHERE username_normalized=?").bind(username).first(); const fresh=!old||now-Number(old.window_started_at)>900000,attempts=fresh?1:Number(old.attempts)+1,window=fresh?now:Number(old.window_started_at),locked=attempts>=8?now+900000:0; await env.DB.prepare("INSERT INTO customer_auth_attempts(username_normalized,attempts,window_started_at,locked_until) VALUES(?,?,?,?) ON CONFLICT(username_normalized) DO UPDATE SET attempts=excluded.attempts,window_started_at=excluded.window_started_at,locked_until=excluded.locked_until").bind(username,attempts,window,locked).run(); }
+
 export async function onRequest({ request, env }) {
   const url = new URL(request.url);
   const parts = url.pathname.split("/").filter(Boolean).slice(1);
@@ -376,6 +392,47 @@ export async function onRequest({ request, env }) {
         "SELECT id,title,message,type,link_url,created_at FROM customer_notifications WHERE is_active=1 AND (target_email IS NULL OR target_email='' OR (lower(target_email)=? AND target_order_id=?)) ORDER BY created_at DESC, rowid DESC LIMIT 50"
       ).bind(email, orderIdValue).all();
       return json({ success: true, notifications: results });
+    }
+
+
+    if (route === "customers/me" && method === "GET") {
+      await ensureCustomerTables(env);
+      const member=await currentMember(request,env);
+      return json({success:true,member:member?{username:member.username,createdAt:member.created_at}:null});
+    }
+    if (route === "customers/register" && method === "POST") {
+      await ensureCustomerTables(env);
+      if(!env.SESSION_SECRET)return json({success:false,message:"সদস্য লগইন ব্যবস্থা এখন প্রস্তুত নয়।"},503);
+      const body=await request.json(),username=String(body.username||"").trim(),normalized=username.toLowerCase(),password=String(body.password||"");
+      if(!validUsername(username))return json({success:false,message:"ইউজারনেম ৩–২৪ অক্ষরের হতে হবে; ইংরেজি অক্ষর, সংখ্যা, ডট, হাইফেন বা আন্ডারস্কোর ব্যবহার করুন।"},400);
+      if(password.length<8||password.length>128)return json({success:false,message:"পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের হতে হবে।"},400);
+      const existing=await env.DB.prepare("SELECT id FROM customer_members WHERE username_normalized=?").bind(normalized).first();
+      if(existing)return json({success:false,message:"এই ইউজারনেমটি আগে থেকেই ব্যবহার করা হয়েছে।"},409);
+      const salt=crypto.getRandomValues(new Uint8Array(16)),hash=await passwordDigest(password,salt),memberId=id();
+      try{await env.DB.prepare("INSERT INTO customer_members(id,username,username_normalized,password_hash,password_salt) VALUES(?,?,?,?,?)").bind(memberId,username,normalized,hash,hex(salt)).run();}
+      catch(error){const again=await env.DB.prepare("SELECT id FROM customer_members WHERE username_normalized=?").bind(normalized).first();if(again)return json({success:false,message:"এই ইউজারনেমটি আগে থেকেই ব্যবহার করা হয়েছে।"},409);throw error;}
+      await env.DB.prepare("UPDATE customer_members SET last_login_at=CURRENT_TIMESTAMP WHERE id=?").bind(memberId).run();
+      const session=await createMemberSession(memberId,env.SESSION_SECRET);
+      return new Response(JSON.stringify({success:true,member:{username,createdAt:new Date().toISOString()}}),{headers:{"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store","Set-Cookie":memberCookie(session,2592000)}});
+    }
+    if (route === "customers/login" && method === "POST") {
+      await ensureCustomerTables(env);
+      if(!env.SESSION_SECRET)return json({success:false,message:"সদস্য লগইন ব্যবস্থা এখন প্রস্তুত নয়।"},503);
+      const body=await request.json(),normalized=String(body.username||"").trim().toLowerCase().slice(0,24),password=String(body.password||"");
+      if(!normalized||!password)return json({success:false,message:"ইউজারনেম ও পাসওয়ার্ড লিখুন।"},400);
+      const attempt=await env.DB.prepare("SELECT attempts,window_started_at,locked_until FROM customer_auth_attempts WHERE username_normalized=?").bind(normalized).first();
+      if(attempt&&Number(attempt.locked_until)>Date.now())return json({success:false,message:"অনেকবার ভুল চেষ্টা হয়েছে। ১৫ মিনিট পর আবার চেষ্টা করুন।"},429);
+      const member=await env.DB.prepare("SELECT id,username,password_hash,password_salt FROM customer_members WHERE username_normalized=? AND is_active=1").bind(normalized).first();
+      let valid=false;
+      if(member&&password.length<=128){const salt=Uint8Array.from(member.password_salt.match(/.{2}/g).map(x=>parseInt(x,16)));const actual=await passwordDigest(password,salt);valid=actual.length===member.password_hash.length&&[...actual].every((ch,i)=>ch===member.password_hash[i]);}
+      if(!valid){await failedMemberLogin(env,normalized);return json({success:false,message:"ইউজারনেম অথবা পাসওয়ার্ড সঠিক নয়।"},401);}
+      await env.DB.prepare("DELETE FROM customer_auth_attempts WHERE username_normalized=?").bind(normalized).run();
+      await env.DB.prepare("UPDATE customer_members SET last_login_at=CURRENT_TIMESTAMP WHERE id=?").bind(member.id).run();
+      const session=await createMemberSession(member.id,env.SESSION_SECRET);
+      return new Response(JSON.stringify({success:true,member:{username:member.username}}),{headers:{"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store","Set-Cookie":memberCookie(session,2592000)}});
+    }
+    if (route === "customers/logout" && method === "POST") {
+      return new Response(JSON.stringify({success:true}),{headers:{"Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store","Set-Cookie":memberCookie("",0)}});
     }
 
     if (route === "health" && method === "GET") {
@@ -678,6 +735,15 @@ export async function onRequest({ request, env }) {
           { success: false, message: "অনুমতি নেই। আবার লগইন করুন।" },
           401
         );
+      }
+
+      if (route === "admin/customers" && method === "GET") {
+        await ensureCustomerTables(env);
+        const [{results:members=[]},{results:totals=[]}] = await Promise.all([
+          env.DB.prepare("SELECT id,username,created_at,last_login_at,is_active FROM customer_members ORDER BY created_at DESC LIMIT 500").all(),
+          env.DB.prepare("SELECT COUNT(*) AS total FROM customer_members").all()
+        ]);
+        return json({success:true,total:Number(totals[0]?.total||0),members});
       }
 
       if (route.startsWith("admin/notifications")) {
