@@ -94,6 +94,7 @@ document.getElementById("cartItems").addEventListener("click",e=>{const id=e.tar
 document.getElementById("openCart").onclick=openCart;document.getElementById("closeCart").onclick=closeCart;document.getElementById("backdrop").onclick=closeCart;
 const myOrdersDialog=document.getElementById("myOrdersDialog");
 document.getElementById("openMyOrders").addEventListener("click",()=>{document.getElementById("myOrderLookupMessage").textContent="";document.getElementById("myOrderLookupResult").innerHTML="";myOrdersDialog.showModal();});
+document.getElementById("openOrderNotice").addEventListener("click",()=>{document.getElementById("myOrderLookupMessage").textContent="রশিদ নম্বর ও অর্ডারের সময় দেওয়া ইমেইল দিয়ে আপনার অর্ডারের অবস্থা দেখুন।";document.getElementById("myOrderLookupResult").innerHTML="";myOrdersDialog.showModal();});
 document.getElementById("closeMyOrders").addEventListener("click",()=>myOrdersDialog.close());
 myOrdersDialog.addEventListener("click",event=>{if(event.target===myOrdersDialog)myOrdersDialog.close();});
 document.getElementById("lookupMyOrder").addEventListener("click",async()=>{
@@ -105,7 +106,7 @@ document.getElementById("lookupMyOrder").addEventListener("click",async()=>{
   const data=await response.json();if(!response.ok||!data.success)throw new Error(data.message||"অর্ডার পাওয়া যায়নি।");
   const order=data.order;const items=(order.items||[]).map(item=>`<li>${escapeHTML(item.product_name)} × ${Number(item.quantity)||1}</li>`).join("");
   let statusText="আপনার অর্ডারটি পেন্ডিং আছে। পেমেন্ট যাচাই চলছে।";let downloads="";
-  if(order.status==="paid"){statusText="আপনার অর্ডার অনুমোদিত হয়েছে। নিচে আপনার ডিজাইন ডাউনলোড করুন।";downloads=(order.downloads||[]).map(file=>`<a class="my-order-download" href="${escapeHTML(file.url)}">${escapeHTML(file.name)} — ডাউনলোড</a>`).join("")||"<p>ডাউনলোড ফাইল এখনো যুক্ত করা হয়নি।</p>";}
+  if(order.status==="paid"){statusText="আপনার ডিজাইন অনুমোদিত হয়েছে। রশিদ নম্বর ও এই ইমেইল দিয়ে অর্ডার খুঁজে এখন ডিজাইন ডাউনলোড করতে পারবেন।";downloads=(order.downloads||[]).map(file=>`<a class="my-order-download" href="${escapeHTML(file.url)}">${escapeHTML(file.name)} — ডাউনলোড</a>`).join("")||"<p>ডাউনলোড ফাইল এখনো যুক্ত করা হয়নি।</p>";}
   else if(order.status==="rejected")statusText="দুঃখিত, আপনার পেমেন্ট অনুমোদিত হয়নি। সহায়তার জন্য যোগাযোগ করুন।";
   result.innerHTML=`<section class="my-order-result-card"><strong>অর্ডার #${escapeHTML(order.id)}</strong><p>${statusText}</p><ul>${items}</ul><div class="my-order-result-total">মোট: ${money(order.total)}</div>${downloads}</section>`;
   message.textContent="";
