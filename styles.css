@@ -669,3 +669,26 @@ body[data-theme="dark"] .header-icon-button.my-orders-button{background:#263a2c;
 body[data-theme="dark"] .offer-nav-link,body[data-theme="dark"] .offer-filter-button{background:#432b23!important;border-color:#744331!important;color:#ffbd91!important}
 body[data-theme="dark"] .offer-filter-button.active,body[data-theme="dark"] .offer-filter-button:hover{background:#a7441f!important;color:#fff!important}
 body[data-theme="dark"] .offer-product-badge{background:#432b23;color:#ffbd91}
+
+
+/* Customer favorites / wishlist */
+.favorites-section{padding:58px max(7vw,24px) 24px;background:#fbfcf9;scroll-margin-top:24px}
+.favorites-section .section-heading{margin-bottom:22px}
+.favorites-intro{margin:9px 0 0;color:#667085;font-size:14px;line-height:1.7}
+.favorites-empty{border:1px dashed #d8e2d2;border-radius:14px;background:#fff;margin:0;padding:28px 18px;color:#74816e}
+.favorites-nav-link{display:inline-flex;align-items:center;gap:6px;color:#a8324a!important;font-weight:700}
+.favorites-nav-link:hover{background:#fff0f2!important}
+.favorites-nav-link #favoriteCount{display:inline-grid;place-items:center;min-width:19px;height:19px;padding:0 5px;border-radius:20px;background:#e54865;color:#fff;font:700 10px Inter,sans-serif}
+.product-visual{position:relative}
+.product-visual .product-open{width:100%}
+.favorite-heart{position:absolute;z-index:3;top:12px;right:12px;width:39px;height:39px;display:grid;place-items:center;border:1px solid #ffffffd9;border-radius:50%;background:#ffffffed;color:#7b8794;box-shadow:0 4px 15px #10182820;cursor:pointer;transition:transform .18s,background .18s,color .18s}
+.favorite-heart:hover{transform:scale(1.09);background:#fff0f2;color:#e54865}
+.favorite-heart svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.favorite-heart.is-favorite{background:#fff0f2;color:#e54865;border-color:#ffd0d9}
+.favorite-heart.is-favorite svg{fill:#e54865;stroke:#e54865}
+.favorite-heart:focus-visible,.favorites-nav-link:focus-visible{outline:3px solid #e54865;outline-offset:3px}
+body[data-theme="dark"] .favorites-section{background:#111d18}
+body[data-theme="dark"] .favorites-intro{color:#cbd5e1}
+body[data-theme="dark"] .favorites-empty{background:#1f2937;border-color:#405746;color:#cbd5e1}
+body[data-theme="dark"] .favorites-nav-link:hover{background:#432b32!important}
+@media(max-width:620px){.favorites-section{padding:42px 18px 18px}.favorite-heart{top:9px;right:9px;width:35px;height:35px}.favorite-heart svg{width:18px;height:18px}}
