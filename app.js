@@ -126,16 +126,12 @@ document.getElementById("submitPayment").onclick=async()=>{
   }catch(error){msg.textContent=error.message||'সার্ভারের সঙ্গে সংযোগ হয়নি। আবার চেষ্টা করুন।'}finally{btn.disabled=false}
 };
 
-// Customer order cards: show guidance first, then reveal downloads after receipt verification.
+// “আমার অর্ডার” অংশে শুধু একটি সরল নির্দেশনা থাকবে—কোনো লোডিং/ফাইল-স্ট্যাটাস/ডাউনলোড লিংক নয়।
 function renderMyOrderCard(order){
-  const items=(order.items||[]).map(item=>
-    '<div class="my-order-simple-row"><span class="my-order-product-name">'+escapeHTML(item.product_name)+'</span><span class="my-order-item-qty">× '+Number(item.quantity||1)+'</span></div>'
-  ).join("");
   const paid=String(order.status||"").trim().toLowerCase()==="paid";
-  const message=paid
-    ? '<div class="my-order-guidance is-approved">আপনার অর্ডার অনুমোদিত হয়েছে। আপনার রশিদ ও Gmail দিয়ে আপনার ডিজাইন ডাউনলোড করুন।</div>'
-    : '<div class="my-order-guidance is-pending">আপনার অর্ডারটি পেন্ডিং আছে। পেমেন্ট যাচাই চলছে।</div>';
-  return '<div class="my-order-card">'+(items?'<div class="my-order-products">'+items+'</div>':"")+message+'</div>';
+  return paid
+    ? '<p class="my-order-guidance">আপনার অর্ডার অনুমোদিত হয়েছে। আপনার রশিদ ও Gmail দিয়ে আপনার ডিজাইন ডাউনলোড করুন।</p>'
+    : '<p class="my-order-guidance">আপনার অর্ডারটি পেন্ডিং আছে। পেমেন্ট যাচাই চলছে।</p>';
 }
 async function requestCustomerOrder(entry){
   const response=await fetch("/api/my-orders",{method:"POST",cache:"no-store",headers:{"Content-Type":"application/json"},body:JSON.stringify({orderId:entry.orderId,email:entry.email})});
@@ -172,7 +168,7 @@ function renderReceiptDownloadResult(order){
   const paid=String(order.status||"").trim().toLowerCase()==="paid";
   const downloads=(order.downloads||[]).filter(file=>file.url);
   if(!paid)return '<div class="receipt-download-message is-pending">আপনার অর্ডার পাওয়া গেছে, কিন্তু পেমেন্ট এখনো অনুমোদিত হয়নি। অনুমোদনের পর আবার রসিদ ও Gmail দিয়ে খুঁজুন।</div>';
-  if(!downloads.length)return '<div class="receipt-download-message is-pending">আপনার অর্ডার অনুমোদিত হয়েছে। ডিজাইন ডাউনলোডের জন্য প্রস্তুত হলে এখানে দেখানো হবে।</div>';
+  if(!downloads.length)return "";
   return '<div class="receipt-download-box"><strong>আপনার ডিজাইন ডাউনলোডের জন্য প্রস্তুত</strong><p>নিচের বাটনে ক্লিক করে ফাইল সংগ্রহ করুন।</p>'+downloads.map(file=>'<a class="receipt-download-link" data-receipt-download href="'+escapeHTML(file.url)+'" target="_blank" rel="noopener">ডাউনলোড করুন · '+escapeHTML(file.name||"ডিজাইন")+'</a>').join("")+'</div>';
 }
 const receiptLookupForm=document.getElementById("receiptOrderLookup");
