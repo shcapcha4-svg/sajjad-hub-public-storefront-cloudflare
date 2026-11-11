@@ -72,11 +72,14 @@
       <div><b>01</b><span>পছন্দের ডিজাইন বাছাই</span></div><div><b>02</b><span>নিরাপদ পেমেন্ট</span></div><div><b>03</b><span>ডাউনলোড করে ব্যবহার</span></div>
     </section>
 
-    <section class="favorites-section" id="favorites">
-      <div class="section-heading"><div><span class="eyebrow">YOUR SAVED DESIGNS</span><h2>আপনার <em>পছন্দের ডিজাইন</em></h2><p class="favorites-intro">যে ডিজাইনগুলো ভালো লাগে, ছবির কোণের হৃদয় চিহ্নে চাপ দিয়ে এখানে জমা রাখুন।</p></div></div>
-      <div class="product-grid" id="favoriteProductGrid"></div>
-      <p class="empty-state favorites-empty" id="favoriteEmptyState">এখনো পছন্দের কোনো ডিজাইন নেই। পণ্যের ছবির কোণের ♡ চিহ্নে চাপ দিয়ে এখানে জমা রাখুন।</p>
-    </section>
+    <dialog class="favorites-dialog" id="favoritesDialog" aria-labelledby="favoritesDialogTitle">
+      <div class="favorites-dialog-inner">
+        <button class="dialog-close" id="closeFavorites" type="button" aria-label="বন্ধ করুন">×</button>
+        <div class="section-heading"><div><span class="eyebrow">YOUR SAVED DESIGNS</span><h2 id="favoritesDialogTitle">আপনার <em>পছন্দের ডিজাইন</em></h2><p class="favorites-intro">আপনার পছন্দের তালিকায় রাখা ডিজাইনগুলো এখানে দেখতে পাবেন।</p></div></div>
+        <div class="product-grid" id="favoriteProductGrid"></div>
+        <p class="empty-state favorites-empty" id="favoriteEmptyState">এখনো পছন্দের কোনো ডিজাইন নেই। পণ্যের ছবির কোণের ♡ চিহ্নে চাপ দিয়ে এখানে জমা রাখুন।</p>
+      </div>
+    </dialog>
 
     <section class="shop-section" id="shop">
       <div class="section-heading"><div><span class="eyebrow" id="shopEyebrow">THE COLLECTION</span><h2 id="shopHeading">এক্সপ্লোর করুন <em>ডিজাইন</em></h2></div><div class="shop-tools"><input id="searchInput" type="search" placeholder="ডিজাইন খুঁজুন..." aria-label="ডিজাইন খুঁজুন"><select id="categoryFilter" aria-label="ক্যাটাগরি"><option value="সব">সব ক্যাটাগরি</option><option value="অফার">শুধু অফার</option><option>পোস্টার</option><option>ভিজিটিং কার্ড</option><option>ব্যানার</option><option>PNG</option><option>সোশ্যাল মিডিয়া</option><option>লোগো</option><option>ক্যাশ মেমো</option><option>অন্যান্য</option></select></div></div>
