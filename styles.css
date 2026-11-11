@@ -656,3 +656,6 @@ body[data-theme="dark"] .product-tag-chip{background:#263f2b;border-color:#3c5d4
   .header-icon-button.cart-button{padding:0 6px}
 }
 body[data-theme="dark"] .header-icon-button.my-orders-button{background:#263a2c;border-color:#405746;color:#d8efb8}
+
+/* Sajjadhub offer price presentation */
+.product-prices{display:inline-flex;align-items:baseline;gap:8px;flex-wrap:wrap}.old-price,.admin-old-price{font:500 12px Inter,sans-serif;color:#98a2b3;text-decoration:line-through}.offer-price,.admin-offer-price{font:800 17px Inter,sans-serif;color:#dc4b3e}.detail-price.product-prices{font-size:inherit}.detail-price .old-price{font-size:15px}.detail-price .offer-price{font-size:25px}.admin-price .admin-old-price{font-size:12px;margin-right:7px}.admin-price .admin-offer-price{font-size:18px}body[data-theme="dark"] .old-price,body[data-theme="dark"] .admin-old-price{color:#9aa99d}body[data-theme="dark"] .offer-price,body[data-theme="dark"] .admin-offer-price{color:#ff9588}
