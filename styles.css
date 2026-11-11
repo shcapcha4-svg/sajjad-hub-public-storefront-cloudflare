@@ -486,3 +486,16 @@ body[data-theme="dark"] .my-order-result-card>p{background:#344a35;color:#d8efc2
 @media(max-width:430px){.orders-hero{padding:29px 21px 22px}.orders-form-body{padding:23px 20px}.orders-steps{gap:6px;font-size:9px}.orders-steps b{width:19px;height:19px}}
 
 /* Demo preview refresh: premium My Orders design verification 2026-11-11 */
+
+/* Demo: order status shortcut and free WhatsApp support */
+.order-notice-button{border:1px solid #dce7cf;background:#f3f8eb;color:#35551c;padding:10px 14px;border-radius:24px;font-weight:700;cursor:pointer;white-space:nowrap}
+.order-notice-button:hover{background:#e5f0d6}
+.floating-whatsapp-chat{position:fixed;right:22px;bottom:22px;z-index:20;display:flex;align-items:center;gap:10px;padding:11px 16px 11px 12px;border-radius:999px;background:#16834a;color:#fff;box-shadow:0 10px 30px #102a1b35;transition:transform .18s,box-shadow .18s}
+.floating-whatsapp-chat:hover{transform:translateY(-3px);box-shadow:0 14px 34px #102a1b45}
+.floating-whatsapp-chat .chat-icon{width:38px;height:38px;display:grid;place-items:center;border-radius:50%;background:#ffffff25;font-size:22px}
+.floating-whatsapp-chat strong,.floating-whatsapp-chat small{display:block;line-height:1.25}
+.floating-whatsapp-chat strong{font-size:14px}
+.floating-whatsapp-chat small{font-size:10px;opacity:.85;margin-top:2px}
+.my-order-result-card>p{line-height:1.8}
+@media(max-width:620px){.order-notice-button{padding:8px 10px;font-size:12px}.floating-whatsapp-chat{right:13px;bottom:13px;padding:8px 13px 8px 9px}.floating-whatsapp-chat .chat-icon{width:34px;height:34px}.floating-whatsapp-chat strong{font-size:12px}.floating-whatsapp-chat small{font-size:9px}}
+body[data-theme="dark"] .order-notice-button{background:#263523;color:#d8efb8;border-color:#465b3c}
