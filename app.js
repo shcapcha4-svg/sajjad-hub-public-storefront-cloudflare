@@ -94,7 +94,40 @@ document.getElementById("cartItems").addEventListener("click",e=>{const id=e.tar
 document.getElementById("openCart").onclick=openCart;document.getElementById("closeCart").onclick=closeCart;document.getElementById("backdrop").onclick=closeCart;
 const myOrdersDialog=document.getElementById("myOrdersDialog");
 document.getElementById("openMyOrders").addEventListener("click",()=>{document.getElementById("myOrderLookupMessage").textContent="";document.getElementById("myOrderLookupResult").innerHTML="";myOrdersDialog.showModal();});
-document.getElementById("openOrderNotice").addEventListener("click",()=>{document.getElementById("myOrderLookupMessage").textContent="রশিদ নম্বর ও অর্ডারের সময় দেওয়া ইমেইল দিয়ে আপনার অর্ডারের অবস্থা দেখুন।";document.getElementById("myOrderLookupResult").innerHTML="";myOrdersDialog.showModal();});
+
+const notificationsDialog=document.getElementById("notificationsDialog");
+const notificationDefaults=[
+ {id:"welcome-designs",title:"আপনার পছন্দের ডিজাইন খুঁজে নিন",message:"Sajjadhub-এর ডিজাইন কালেকশন ঘুরে দেখুন। পছন্দ হলে সহজেই অর্ডার করতে পারবেন।",type:"info",link_url:"/#shop"},
+ {id:"welcome-offer",title:"নতুন ডিজাইনের জন্য চোখ রাখুন",message:"নতুন কালেকশন ও বিশেষ অফারের খবর পেতে এই নোটিফিকেশন সেন্টারটি নিয়মিত দেখুন।",type:"offer",link_url:"/#shop"}
+];
+function notificationSeen(){try{return JSON.parse(localStorage.getItem("sajjadhub-notifications-seen")||"[]")}catch{return[]}}
+function markNotificationsSeen(items){try{const seen=new Set(notificationSeen());items.forEach(n=>seen.add(String(n.id)));localStorage.setItem("sajjadhub-notifications-seen",JSON.stringify([...seen].slice(-150)))}catch{}}
+function renderNotifications(items){
+ const list=document.getElementById("notificationList"),seen=notificationSeen();
+ const labels={offer:"অফার",product:"নতুন ডিজাইন",order:"আপনার অর্ডার",info:"ঘোষণা"};
+ const icons={offer:"％",product:"✦",order:"▣",info:"i"};
+ list.innerHTML=items.map(n=>{const isNew=!seen.includes(String(n.id));const action=n.link_url?'<a class="notification-action" href="'+escapeHTML(n.link_url)+'">বিস্তারিত দেখুন ↗</a>':"";return '<article class="notification-card '+(isNew?"is-new":"")+'"><div class="notification-card-icon type-'+escapeHTML(n.type||"info")+'">'+(icons[n.type]||"i")+'</div><div class="notification-card-content"><div class="notification-card-meta"><span>'+(labels[n.type]||"ঘোষণা")+'</span>'+(isNew?'<b>নতুন</b>':"")+'</div><strong>'+escapeHTML(n.title)+'</strong><p>'+escapeHTML(n.message)+'</p>'+action+'<small>'+(n.created_at?escapeHTML(n.created_at):"Sajjadhub")+'</small></div></article>'}).join("")||'<div class="notification-empty">এই ইমেইলের জন্য এখনো কোনো নতুন নোটিফিকেশন নেই। নতুন আপডেট এলে এখানে দেখাবে।</div>';
+}
+async function fetchNotifications(){
+ const email=document.getElementById("notificationEmail").value.trim();
+ const message=document.getElementById("notificationMessage"),button=document.getElementById("loadNotifications"),list=document.getElementById("notificationList");
+ button.disabled=true;message.textContent="আপডেট খোঁজা হচ্ছে...";list.innerHTML='<div class="notification-empty">লোড হচ্ছে...</div>';
+ try{
+  const url="/api/notifications"+(email?"?email="+encodeURIComponent(email):"");
+  const response=await fetch(url,{cache:"no-store"}),data=await response.json();
+  if(!response.ok||!data.success)throw new Error(data.message||"নোটিফিকেশন লোড হয়নি।");
+  const items=[...notificationDefaults,...(data.notifications||[])];
+  renderNotifications(items);markNotificationsSeen(items);
+  document.getElementById("notificationUnread").hidden=true;
+  message.textContent=email?"সাধারণ বার্তার সঙ্গে এই ইমেইলের ব্যক্তিগত আপডেটও দেখানো হয়েছে।":"ব্যক্তিগত অর্ডার আপডেট দেখতে ইমেইল লিখে আবার আপডেট দেখুন।";
+ }catch(error){list.innerHTML='<div class="notification-empty">এখন আপডেট আনা যাচ্ছে না। কিছুক্ষণ পর আবার চেষ্টা করুন।</div>';message.textContent=error.message}
+ finally{button.disabled=false}
+}
+document.getElementById("openNotifications").addEventListener("click",()=>{notificationsDialog.showModal();fetchNotifications()});
+document.getElementById("closeNotifications").addEventListener("click",()=>notificationsDialog.close());
+notificationsDialog.addEventListener("click",e=>{if(e.target===notificationsDialog)notificationsDialog.close()});
+document.getElementById("loadNotifications").addEventListener("click",fetchNotifications);
+
 document.getElementById("closeMyOrders").addEventListener("click",()=>myOrdersDialog.close());
 myOrdersDialog.addEventListener("click",event=>{if(event.target===myOrdersDialog)myOrdersDialog.close();});
 document.getElementById("lookupMyOrder").addEventListener("click",async()=>{
