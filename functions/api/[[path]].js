@@ -881,6 +881,43 @@ export async function onRequest({ request, env }) {
         return json({ success: true });
       }
 
+      if (parts[1] === "products" && parts[2] && parts[3] === "permanent-delete" && method === "POST") {
+        const productId = parts[2];
+        const old = await env.DB.prepare(
+          "SELECT id, image_url, file_url FROM products WHERE id=?"
+        ).bind(productId).first();
+
+        if (!old) return json({ success: false, message: "পণ্য পাওয়া যায়নি।" }, 404);
+
+        const orderRefs = await env.DB.prepare(
+          "SELECT (SELECT COUNT(*) FROM order_items WHERE product_id=?) AS item_count, (SELECT COUNT(*) FROM orders WHERE product_id=?) AS order_count"
+        ).bind(productId, productId).first();
+
+        if (Number(orderRefs?.item_count || 0) > 0 || Number(orderRefs?.order_count || 0) > 0) {
+          return json({
+            success: false,
+            message: "এই ডিজাইনের অর্ডার ইতিহাস আছে। পুরোনো ক্রেতাদের ডাউনলোড ও রসিদ ঠিক রাখতে এটি স্থায়ীভাবে ডিলিট করা যাবে না। চাইলে ‘লুকান’ বাটনে চাপ দিয়ে সাইট থেকে সরিয়ে রাখতে পারেন।"
+          }, 409);
+        }
+
+        await env.DB.batch([
+          env.DB.prepare("DELETE FROM download_tokens WHERE product_id=?").bind(productId),
+          env.DB.prepare("DELETE FROM products WHERE id=?").bind(productId)
+        ]);
+
+        const cleanup = await Promise.allSettled(
+          [old.image_url, old.file_url].filter(Boolean).map((key) => deleteB2(env, key))
+        );
+        const failed = cleanup.some((item) => item.status === "rejected");
+
+        return json({
+          success: true,
+          message: failed
+            ? "ডিজাইনটি তালিকা থেকে স্থায়ীভাবে ডিলিট হয়েছে। তবে স্টোরেজের একটি ফাইল পরিষ্কার করা যায়নি।"
+            : "ডিজাইন ও তার ছবি/ডাউনলোড ফাইল স্থায়ীভাবে ডিলিট হয়েছে।"
+        });
+      }
+
       if (parts[1] === "products" && parts[2] && method === "DELETE") {
   const productId = parts[2];
 
