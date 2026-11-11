@@ -134,6 +134,8 @@ notificationsDialog.addEventListener("click",e=>{if(e.target===notificationsDial
 document.getElementById("loadNotifications").addEventListener("click",fetchNotifications);
 async function updateNotificationBadge(){try{const context=getNotificationOrderContext(),params=new URLSearchParams();if(context?.email&&context?.orderId){params.set("email",context.email);params.set("orderId",context.orderId)}const response=await fetch("/api/notifications"+(params.toString()?"?"+params.toString():""),{cache:"no-store"}),data=await response.json();if(!response.ok||!data.success)return;const all=[...notificationDefaults,...(data.notifications||[])],seen=notificationSeen();document.getElementById("notificationUnread").hidden=!all.some(n=>!seen.includes(String(n.id)))}catch{}}
 updateNotificationBadge();
+window.addEventListener("focus",updateNotificationBadge);
+setInterval(()=>{updateNotificationBadge();if(notificationsDialog.open)fetchNotifications()},20000);
 
 document.getElementById("closeMyOrders").addEventListener("click",()=>myOrdersDialog.close());
 myOrdersDialog.addEventListener("click",event=>{if(event.target===myOrdersDialog)myOrdersDialog.close();});
@@ -163,6 +165,7 @@ document.getElementById("submitPayment").onclick=async()=>{
   try{
     const response=await fetch('/api/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({customerName:name.value.trim(),email:email.value.trim(),phone:sender.value.trim(),trxId:trx.value.trim(),items:cart.map(x=>({id:x.id,qty:x.qty}))})});
     const data=await response.json();if(!response.ok||!data.success)throw new Error(data.message||'অর্ডার জমা হয়নি।');
+    try{sessionStorage.setItem("sajjadhub-notification-order",JSON.stringify({orderId:String(data.orderId),email:email.value.trim()}));}catch{}updateNotificationBadge();
     const purchasedItems=cart.map(item=>({...item}));
     const receiptTotal=Number(data.total)||purchasedItems.reduce((sum,item)=>sum+item.price*item.qty,0);
     document.getElementById("receiptContent").innerHTML=`
