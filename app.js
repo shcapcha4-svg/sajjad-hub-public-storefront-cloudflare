@@ -127,6 +127,8 @@ document.getElementById("openNotifications").addEventListener("click",()=>{notif
 document.getElementById("closeNotifications").addEventListener("click",()=>notificationsDialog.close());
 notificationsDialog.addEventListener("click",e=>{if(e.target===notificationsDialog)notificationsDialog.close()});
 document.getElementById("loadNotifications").addEventListener("click",fetchNotifications);
+async function updateNotificationBadge(){try{const response=await fetch("/api/notifications",{cache:"no-store"}),data=await response.json();if(!response.ok||!data.success)return;const all=[...notificationDefaults,...(data.notifications||[])],seen=notificationSeen();document.getElementById("notificationUnread").hidden=!all.some(n=>!seen.includes(String(n.id)))}catch{}}
+updateNotificationBadge();
 
 document.getElementById("closeMyOrders").addEventListener("click",()=>myOrdersDialog.close());
 myOrdersDialog.addEventListener("click",event=>{if(event.target===myOrdersDialog)myOrdersDialog.close();});
