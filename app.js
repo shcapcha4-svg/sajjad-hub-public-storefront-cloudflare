@@ -108,20 +108,20 @@ function renderNotifications(items){
  const icons={offer:"％",product:"✦",order:"▣",info:"i"};
  list.innerHTML=items.map(n=>{const isNew=!seen.includes(String(n.id));const action=n.link_url?'<a class="notification-action" href="'+escapeHTML(n.link_url)+'">বিস্তারিত দেখুন ↗</a>':"";return '<article class="notification-card '+(isNew?"is-new":"")+'"><div class="notification-card-icon type-'+escapeHTML(n.type||"info")+'">'+(icons[n.type]||"i")+'</div><div class="notification-card-content"><div class="notification-card-meta"><span>'+(labels[n.type]||"ঘোষণা")+'</span>'+(isNew?'<b>নতুন</b>':"")+'</div><strong>'+escapeHTML(n.title)+'</strong><p>'+escapeHTML(n.message)+'</p>'+action+'<small>'+(n.created_at?escapeHTML(n.created_at):"Sajjadhub")+'</small></div></article>'}).join("")||'<div class="notification-empty">এই ইমেইলের জন্য এখনো কোনো নতুন নোটিফিকেশন নেই। নতুন আপডেট এলে এখানে দেখাবে।</div>';
 }
+function getNotificationOrderContext(){try{return JSON.parse(sessionStorage.getItem("sajjadhub-notification-order")||"null")}catch{return null}}
 async function fetchNotifications(){
- const email=document.getElementById("notificationEmail").value.trim();
- const orderId=document.getElementById("notificationOrderId").value.trim().replace(/^#/, "");
  const message=document.getElementById("notificationMessage"),button=document.getElementById("loadNotifications"),list=document.getElementById("notificationList");
- if(!!email!==!!orderId){message.textContent="ব্যক্তিগত আপডেট দেখতে রসিদ নম্বর ও ইমেইল দুটিই দিন।";return}
  button.disabled=true;message.textContent="আপডেট খোঁজা হচ্ছে...";list.innerHTML='<div class="notification-empty">লোড হচ্ছে...</div>';
  try{
-  const params=new URLSearchParams();if(email){params.set("email",email);params.set("orderId",orderId)}const url="/api/notifications"+(params.toString()?"?"+params.toString():"");
+  const context=getNotificationOrderContext(),params=new URLSearchParams();
+  if(context?.email&&context?.orderId){params.set("email",context.email);params.set("orderId",context.orderId)}
+  const url="/api/notifications"+(params.toString()?"?"+params.toString():"");
   const response=await fetch(url,{cache:"no-store"}),data=await response.json();
   if(!response.ok||!data.success)throw new Error(data.message||"নোটিফিকেশন লোড হয়নি।");
   const items=[...notificationDefaults,...(data.notifications||[])];
   renderNotifications(items);markNotificationsSeen(items);
   document.getElementById("notificationUnread").hidden=true;
-  message.textContent=email?"সাধারণ বার্তার সঙ্গে এই রসিদ ও ইমেইলের ব্যক্তিগত আপডেটও দেখানো হয়েছে।":"ব্যক্তিগত অর্ডার আপডেট দেখতে রসিদ নম্বর ও ইমেইল লিখে আবার আপডেট দেখুন।";
+  message.textContent=context?.email?"সাধারণ বার্তার সঙ্গে আপনার যাচাই করা অর্ডারের আপডেটও দেখানো হয়েছে।":"অর্ডারের ব্যক্তিগত আপডেট পেতে আগে “আমার অর্ডার” থেকে রসিদ ও ইমেইল যাচাই করুন।";
  }catch(error){list.innerHTML='<div class="notification-empty">এখন আপডেট আনা যাচ্ছে না। কিছুক্ষণ পর আবার চেষ্টা করুন।</div>';message.textContent=error.message}
  finally{button.disabled=false}
 }
@@ -129,7 +129,7 @@ document.getElementById("openNotifications").addEventListener("click",()=>{notif
 document.getElementById("closeNotifications").addEventListener("click",()=>notificationsDialog.close());
 notificationsDialog.addEventListener("click",e=>{if(e.target===notificationsDialog)notificationsDialog.close()});
 document.getElementById("loadNotifications").addEventListener("click",fetchNotifications);
-async function updateNotificationBadge(){try{const response=await fetch("/api/notifications",{cache:"no-store"}),data=await response.json();if(!response.ok||!data.success)return;const all=[...notificationDefaults,...(data.notifications||[])],seen=notificationSeen();document.getElementById("notificationUnread").hidden=!all.some(n=>!seen.includes(String(n.id)))}catch{}}
+async function updateNotificationBadge(){try{const context=getNotificationOrderContext(),params=new URLSearchParams();if(context?.email&&context?.orderId){params.set("email",context.email);params.set("orderId",context.orderId)}const response=await fetch("/api/notifications"+(params.toString()?"?"+params.toString():""),{cache:"no-store"}),data=await response.json();if(!response.ok||!data.success)return;const all=[...notificationDefaults,...(data.notifications||[])],seen=notificationSeen();document.getElementById("notificationUnread").hidden=!all.some(n=>!seen.includes(String(n.id)))}catch{}}
 updateNotificationBadge();
 
 document.getElementById("closeMyOrders").addEventListener("click",()=>myOrdersDialog.close());
@@ -141,7 +141,7 @@ document.getElementById("lookupMyOrder").addEventListener("click",async()=>{
  try{
   const response=await fetch("/api/my-orders",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({orderId:orderId.value.trim(),email:email.value.trim()})});
   const data=await response.json();if(!response.ok||!data.success)throw new Error(data.message||"অর্ডার পাওয়া যায়নি।");
-  const order=data.order;const items=(order.items||[]).map(item=>`<li>${escapeHTML(item.product_name)} × ${Number(item.quantity)||1}</li>`).join("");
+  const order=data.order;try{sessionStorage.setItem("sajjadhub-notification-order",JSON.stringify({orderId:String(order.id),email:email.value.trim()}));}catch{}updateNotificationBadge();const items=(order.items||[]).map(item=>`<li>${escapeHTML(item.product_name)} × ${Number(item.quantity)||1}</li>`).join("");
   let statusText="আপনার অর্ডারটি পেন্ডিং আছে। পেমেন্ট যাচাই চলছে।";let downloads="";
   if(order.status==="paid"){statusText="আপনার ডিজাইন অনুমোদিত হয়েছে। রশিদ নম্বর ও এই ইমেইল দিয়ে অর্ডার খুঁজে এখন ডিজাইন ডাউনলোড করতে পারবেন।";downloads=(order.downloads||[]).map(file=>`<a class="my-order-download" href="${escapeHTML(file.url)}">${escapeHTML(file.name)} — ডাউনলোড</a>`).join("")||"<p>ডাউনলোড ফাইল এখনো যুক্ত করা হয়নি।</p>";}
   else if(order.status==="rejected")statusText="দুঃখিত, আপনার পেমেন্ট অনুমোদিত হয়নি। সহায়তার জন্য যোগাযোগ করুন।";
