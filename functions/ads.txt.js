@@ -1,4 +1,4 @@
-const PUBLISHER_ID_PATTERN = /^pub-\\d{16}$/;
+const PUBLISHER_ID_PATTERN = /^pub-\d{16}$/;
 
 export async function onRequest({ env }) {
   const publisherId = String(env.ADSENSE_PUBLISHER_ID || "").trim();
@@ -15,7 +15,7 @@ export async function onRequest({ env }) {
   }
 
   return new Response(
-    `google.com, ${publisherId}, DIRECT, f08c47fec0942fa0\\n`,
+    \`google.com, \${publisherId}, DIRECT, f08c47fec0942fa0\n\`,
     {
       status: 200,
       headers: {
