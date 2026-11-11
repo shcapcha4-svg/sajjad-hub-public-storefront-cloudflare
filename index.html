@@ -31,14 +31,14 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=offers-tab-newest-notifications-20261111-2">
+  <link rel="stylesheet" href="styles.css?v=favorites-20261111-1">
 </head>
 <body>
   <header class="topbar">
     <a class="brand" href="#" aria-label="Sajjadhub হোম"><img src="/sajjadhub-logo.svg" alt="Sajjadhub — Digital Design Store"></a>
     <div class="header-navigation">
       <details class="category-menu"><summary class="category-menu-trigger"><span aria-hidden="true">☷</span> ক্যাটাগরি <span class="category-chevron">▾</span></summary><div class="category-menu-dropdown"><a href="#shop" data-category-link="পোস্টার">পোস্টার</a><a href="#shop" data-category-link="ভিজিটিং কার্ড">ভিজিটিং কার্ড</a><a href="#shop" data-category-link="ব্যানার">ব্যানার</a><a href="#shop" data-category-link="PNG">PNG</a><a href="#shop" data-category-link="সোশ্যাল মিডিয়া">সোশ্যাল মিডিয়া</a><a href="#shop" data-category-link="লোগো">লোগো</a><a href="#shop" data-category-link="ক্যাশ মেমো">ক্যাশ মেমো</a><a href="#shop" data-category-link="অন্যান্য">অন্যান্য</a></div></details>
-      <nav class="primary-nav"><a href="#shop">ডিজাইন</a><a class="offer-nav-link" href="#shop" data-offers-link>✦ অফার</a><a href="#how">কীভাবে কিনবেন</a><a href="#contact">যোগাযোগ</a></nav>
+      <nav class="primary-nav"><a href="#shop">ডিজাইন</a><a class="favorites-nav-link" href="#favorites" data-favorites-link>♡ পছন্দের তালিকা <span id="favoriteCount" hidden></span></a><a class="offer-nav-link" href="#shop" data-offers-link>✦ অফার</a><a href="#how">কীভাবে কিনবেন</a><a href="#contact">যোগাযোগ</a></nav>
     </div>
     <div class="header-actions" aria-label="দোকানের দ্রুত অপশন">
       <button class="header-icon-button theme-toggle" id="themeToggle" type="button" aria-label="ডার্ক মোড চালু করুন" title="ডার্ক মোড"><svg class="theme-moon-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 15.5A8.5 8.5 0 0 1 8.5 3.5 8.5 8.5 0 1 0 20.5 15.5Z"/></svg></button>
@@ -69,6 +69,12 @@
 
     <section class="trust-strip">
       <div><b>01</b><span>পছন্দের ডিজাইন বাছাই</span></div><div><b>02</b><span>নিরাপদ পেমেন্ট</span></div><div><b>03</b><span>ডাউনলোড করে ব্যবহার</span></div>
+    </section>
+
+    <section class="favorites-section" id="favorites">
+      <div class="section-heading"><div><span class="eyebrow">YOUR SAVED DESIGNS</span><h2>আপনার <em>পছন্দের ডিজাইন</em></h2><p class="favorites-intro">যে ডিজাইনগুলো ভালো লাগে, ছবির কোণের হৃদয় চিহ্নে চাপ দিয়ে এখানে জমা রাখুন।</p></div></div>
+      <div class="product-grid" id="favoriteProductGrid"></div>
+      <p class="empty-state favorites-empty" id="favoriteEmptyState">এখনো পছন্দের কোনো ডিজাইন নেই। পণ্যের ছবির কোণের ♡ চিহ্নে চাপ দিয়ে এখানে জমা রাখুন।</p>
     </section>
 
     <section class="shop-section" id="shop">
@@ -108,6 +114,6 @@
     </div>
   </dialog>
   <a class="floating-whatsapp-chat" href="https://wa.me/8801951608000?text=আসসালামু%20আলাইকুম%2C%20SajjadHub%20থেকে%20সহায়তা%20চাই।" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp-এ বিনামূল্যে চ্যাট করুন"><span class="chat-icon" aria-hidden="true">◉</span><span><strong>ফ্রি চ্যাট</strong><small>WhatsApp সহায়তা</small></span></a>
-  <script src="app.js?v=offers-tab-newest-notifications-20261111-2"></script>
+  <script src="app.js?v=favorites-20261111-1"></script>
 </body>
 </html>
