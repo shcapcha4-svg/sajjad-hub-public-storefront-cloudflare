@@ -110,16 +110,18 @@ function renderNotifications(items){
 }
 async function fetchNotifications(){
  const email=document.getElementById("notificationEmail").value.trim();
+ const orderId=document.getElementById("notificationOrderId").value.trim().replace(/^#/, "");
  const message=document.getElementById("notificationMessage"),button=document.getElementById("loadNotifications"),list=document.getElementById("notificationList");
+ if(!!email!==!!orderId){message.textContent="ব্যক্তিগত আপডেট দেখতে রসিদ নম্বর ও ইমেইল দুটিই দিন।";return}
  button.disabled=true;message.textContent="আপডেট খোঁজা হচ্ছে...";list.innerHTML='<div class="notification-empty">লোড হচ্ছে...</div>';
  try{
-  const url="/api/notifications"+(email?"?email="+encodeURIComponent(email):"");
+  const params=new URLSearchParams();if(email){params.set("email",email);params.set("orderId",orderId)}const url="/api/notifications"+(params.toString()?"?"+params.toString():"");
   const response=await fetch(url,{cache:"no-store"}),data=await response.json();
   if(!response.ok||!data.success)throw new Error(data.message||"নোটিফিকেশন লোড হয়নি।");
   const items=[...notificationDefaults,...(data.notifications||[])];
   renderNotifications(items);markNotificationsSeen(items);
   document.getElementById("notificationUnread").hidden=true;
-  message.textContent=email?"সাধারণ বার্তার সঙ্গে এই ইমেইলের ব্যক্তিগত আপডেটও দেখানো হয়েছে।":"ব্যক্তিগত অর্ডার আপডেট দেখতে ইমেইল লিখে আবার আপডেট দেখুন।";
+  message.textContent=email?"সাধারণ বার্তার সঙ্গে এই রসিদ ও ইমেইলের ব্যক্তিগত আপডেটও দেখানো হয়েছে।":"ব্যক্তিগত অর্ডার আপডেট দেখতে রসিদ নম্বর ও ইমেইল লিখে আবার আপডেট দেখুন।";
  }catch(error){list.innerHTML='<div class="notification-empty">এখন আপডেট আনা যাচ্ছে না। কিছুক্ষণ পর আবার চেষ্টা করুন।</div>';message.textContent=error.message}
  finally{button.disabled=false}
 }
