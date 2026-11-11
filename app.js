@@ -117,6 +117,22 @@ document.getElementById("openCart").onclick=openCart;document.getElementById("cl
 const myOrdersDialog=document.getElementById("myOrdersDialog");
 document.getElementById("openMyOrders").addEventListener("click",()=>{document.getElementById("myOrderLookupMessage").textContent="";document.getElementById("myOrderLookupResult").innerHTML="";myOrdersDialog.showModal();});
 
+
+const memberDialog=document.getElementById("memberDialog");
+let signedInMember=null,memberMode="login";
+function memberMessage(text,error=false){const el=document.getElementById("memberMessage");el.textContent=text;el.classList.toggle("error",error);}
+function setMemberMode(mode){memberMode=mode;document.getElementById("memberLoginForm").hidden=mode!=="login";document.getElementById("memberRegisterForm").hidden=mode!=="register";document.getElementById("memberLoginTab").classList.toggle("active",mode==="login");document.getElementById("memberRegisterTab").classList.toggle("active",mode==="register");memberMessage("");}
+function renderMemberState(){const logged=!!signedInMember;document.getElementById("memberAuthForms").hidden=logged;document.getElementById("memberSignedIn").hidden=!logged;document.getElementById("memberWelcome").textContent=logged?"স্বাগতম, "+signedInMember.username+"!":"স্বাগতম!";const button=document.getElementById("openMember");button.title=logged?"সদস্য: "+signedInMember.username:"সদস্য লগইন";button.setAttribute("aria-label",logged?"সদস্য অ্যাকাউন্ট: "+signedInMember.username:"সদস্য লগইন");}
+async function refreshMember(){try{const r=await fetch("/api/customers/me",{cache:"no-store"}),d=await r.json();signedInMember=d.member||null;}catch{signedInMember=null;}renderMemberState();}
+document.getElementById("openMember").addEventListener("click",async()=>{await refreshMember();setMemberMode("login");memberDialog.showModal();});
+document.getElementById("closeMember").addEventListener("click",()=>memberDialog.close());
+document.getElementById("memberLoginTab").addEventListener("click",()=>setMemberMode("login"));
+document.getElementById("memberRegisterTab").addEventListener("click",()=>setMemberMode("register"));
+document.getElementById("memberLoginForm").addEventListener("submit",async e=>{e.preventDefault();const form=e.currentTarget,button=document.getElementById("memberLoginSubmit");button.disabled=true;memberMessage("লগইন হচ্ছে...");try{const response=await fetch("/api/customers/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(Object.fromEntries(new FormData(form).entries()))}),data=await response.json();if(!response.ok||!data.success)throw new Error(data.message||"লগইন করা যায়নি।");signedInMember=data.member;renderMemberState();form.reset();memberMessage("সফলভাবে লগইন হয়েছে।");}catch(err){memberMessage(err.message,true);}finally{button.disabled=false;}});
+document.getElementById("memberRegisterForm").addEventListener("submit",async e=>{e.preventDefault();const form=e.currentTarget,values=Object.fromEntries(new FormData(form).entries()),button=document.getElementById("memberRegisterSubmit");if(values.password!==values.confirmPassword){memberMessage("দুটি পাসওয়ার্ড মিলছে না।",true);return;}button.disabled=true;memberMessage("সদস্য অ্যাকাউন্ট তৈরি হচ্ছে...");try{const response=await fetch("/api/customers/register",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username:values.username,password:values.password})}),data=await response.json();if(!response.ok||!data.success)throw new Error(data.message||"অ্যাকাউন্ট তৈরি করা যায়নি।");signedInMember=data.member;renderMemberState();form.reset();memberMessage("অভিনন্দন! আপনার সদস্য অ্যাকাউন্ট তৈরি হয়েছে।");}catch(err){memberMessage(err.message,true);}finally{button.disabled=false;}});
+document.getElementById("memberLogout").addEventListener("click",async()=>{try{await fetch("/api/customers/logout",{method:"POST"});}finally{signedInMember=null;renderMemberState();setMemberMode("login");memberMessage("আপনি লগআউট করেছেন।");}});
+refreshMember();
+
 const notificationsDialog=document.getElementById("notificationsDialog");
 const notificationDefaults=[
  {id:"welcome-designs",title:"আপনার পছন্দের ডিজাইন খুঁজে নিন",message:"Sajjadhub-এর ডিজাইন কালেকশন ঘুরে দেখুন। পছন্দ হলে সহজেই অর্ডার করতে পারবেন।",type:"info",link_url:"/#shop"},
