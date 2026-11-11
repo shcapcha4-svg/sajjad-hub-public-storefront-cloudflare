@@ -65,12 +65,38 @@ const cookie = (value, maxAge) =>
   `sh_admin=${value}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${maxAge}`;
 
 
+
+async function ensureNotificationTable(env) {
+  await env.DB.prepare("CREATE TABLE IF NOT EXISTS customer_notifications (id TEXT PRIMARY KEY, title TEXT NOT NULL, message TEXT NOT NULL, type TEXT NOT NULL DEFAULT 'info', target_email TEXT, target_order_id INTEGER, link_url TEXT, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, is_active INTEGER NOT NULL DEFAULT 1)").run();
+  const columns = await env.DB.prepare("PRAGMA table_info(customer_notifications)").all();
+  if (!(columns.results || []).some((column) => column.name === "target_order_id")) {
+    try {
+      await env.DB.prepare("ALTER TABLE customer_notifications ADD COLUMN target_order_id INTEGER").run();
+    } catch (error) {
+      const refreshed = await env.DB.prepare("PRAGMA table_info(customer_notifications)").all();
+      if (!(refreshed.results || []).some((column) => column.name === "target_order_id")) throw error;
+    }
+  }
+}
+
+async function ensureProductColumns(env) {
+  const columns = [["tag", "ALTER TABLE products ADD COLUMN tag TEXT NOT NULL DEFAULT ''"], ["offer_price", "ALTER TABLE products ADD COLUMN offer_price INTEGER"], ["is_deleted", "ALTER TABLE products ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0"]];
+  let { results = [] } = await env.DB.prepare("PRAGMA table_info(products)").all();
+  for (const [name, sql] of columns) {
+    if (results.some((column) => column.name === name)) continue;
+    try { await env.DB.prepare(sql).run(); }
+    catch (error) { const refreshed = await env.DB.prepare("PRAGMA table_info(products)").all(); if (!(refreshed.results || []).some((column) => column.name === name)) throw error; }
+    const refreshed = await env.DB.prepare("PRAGMA table_info(products)").all(); results = refreshed.results || results;
+  }
+}
+
 const safeProduct = (row) => ({
   id: row.id,
   name: row.name,
   category: row.category,
   price: row.price,
-  tag: "",
+  offerPrice: row.offer_price == null ? null : Number(row.offer_price),
+  tag: row.tag || "",
   description: row.description || "",
   fileType: "",
   bg: "#e5e7eb",
@@ -341,13 +367,25 @@ export async function onRequest({ request, env }) {
   const method = request.method;
 
   try {
+    if (route === "notifications" && method === "GET") {
+      await ensureNotificationTable(env);
+      const email = String(url.searchParams.get("email") || "").trim().toLowerCase().slice(0, 254);
+      const orderIdInput = String(url.searchParams.get("orderId") || "").trim().replace(/^#/, "");
+      const orderIdValue = /^\d{1,12}$/.test(orderIdInput) ? Number(orderIdInput) : 0;
+      const { results = [] } = await env.DB.prepare(
+        "SELECT id,title,message,type,link_url,created_at FROM customer_notifications WHERE is_active=1 AND (target_email IS NULL OR target_email='' OR (lower(target_email)=? AND target_order_id=?)) ORDER BY created_at DESC, rowid DESC LIMIT 50"
+      ).bind(email, orderIdValue).all();
+      return json({ success: true, notifications: results });
+    }
+
     if (route === "health" && method === "GET") {
       return json({ success: true, message: "Sajjadhub API online" });
     }
 
     if (route === "products" && method === "GET") {
+      await ensureProductColumns(env);
       const { results = [] } = await env.DB.prepare(
-        "SELECT * FROM products WHERE is_active=1 ORDER BY created_at DESC"
+        "SELECT * FROM products WHERE is_active=1 AND COALESCE(is_deleted,0)=0 ORDER BY created_at DESC"
       ).all();
 
       return json({
@@ -395,8 +433,8 @@ export async function onRequest({ request, env }) {
         return new Response("ডাউনলোড লিংকটি অবৈধ।", { status: 404 });
       }
 
-      // Paid order-এর ডাউনলোড লিংক সক্রিয় থাকবে; ২০ সেকেন্ডের UI reset
-      // বড় ফাইল ডাউনলোডে বাধা দেবে না এবং প্রয়োজন হলে পুনরায় ডাউনলোড করা যাবে।
+      // Paid order-এর ডাউনলোড লিংক সক্রিয় থাকবে; বাটনের ২০ সেকেন্ডের UI reset
+      // ডাউনলোড সম্পন্ন হওয়াকে বাধা দেবে না এবং প্রয়োজন হলে পুনরায় ডাউনলোড করা যাবে।
       const object = await b2Request(env, "GET", row.file_key);
 
       if (object.status === 404) {
@@ -526,12 +564,13 @@ export async function onRequest({ request, env }) {
         );
       }
 
+      await ensureProductColumns(env);
       let total = 0;
       const valid = [];
 
       for (const item of items) {
         const product = await env.DB.prepare(
-          "SELECT id, name, price FROM products WHERE id=? AND is_active=1"
+          "SELECT id, name, price, offer_price FROM products WHERE id=? AND is_active=1 AND COALESCE(is_deleted,0)=0"
         )
           .bind(String(item.id))
           .first();
@@ -551,8 +590,9 @@ export async function onRequest({ request, env }) {
           );
         }
 
-        total += product.price * quantity;
-        valid.push({ product, quantity });
+        const payablePrice = product.offer_price != null && Number(product.offer_price) >= 0 && Number(product.offer_price) < Number(product.price) ? Number(product.offer_price) : Number(product.price);
+        total += payablePrice * quantity;
+        valid.push({ product: { ...product, payablePrice }, quantity });
       }
 
       const first = valid[0].product;
@@ -571,7 +611,7 @@ export async function onRequest({ request, env }) {
             orderId,
             item.product.id,
             item.product.name,
-            item.product.price,
+            item.product.payablePrice,
             item.quantity
           )
           .run();
@@ -640,9 +680,51 @@ export async function onRequest({ request, env }) {
         );
       }
 
+      if (route.startsWith("admin/notifications")) {
+        await ensureNotificationTable(env);
+
+        if (route === "admin/notifications" && method === "GET") {
+          const { results = [] } = await env.DB.prepare(
+            "SELECT id,title,message,type,target_email,target_order_id,link_url,created_at,is_active FROM customer_notifications ORDER BY created_at DESC LIMIT 100"
+          ).all();
+          return json({ success: true, notifications: results });
+        }
+
+        if (route === "admin/notifications" && method === "POST") {
+          const body = await request.json();
+          const title = String(body.title || "").trim().slice(0, 120);
+          const message = String(body.message || "").trim().slice(0, 1000);
+          const type = String(body.type || "info");
+          const targetEmail = String(body.targetEmail || "").trim().toLowerCase().slice(0, 254);
+          const targetOrderIdInput = String(body.targetOrderId || "").trim().replace(/^#/, "");
+          const targetOrderId = /^\d{1,12}$/.test(targetOrderIdInput) ? Number(targetOrderIdInput) : 0;
+          const linkUrl = String(body.linkUrl || "").trim().slice(0, 500);
+          if (!title || !message) return json({ success: false, message: "শিরোনাম ও বার্তা লিখুন।" }, 400);
+          if (!["offer", "product", "order", "info"].includes(type)) return json({ success: false, message: "বার্তার ধরন সঠিক নয়।" }, 400);
+          if (targetEmail && !/^\S+@\S+\.\S+$/.test(targetEmail)) return json({ success: false, message: "ক্রেতার ইমেইল সঠিক নয়।" }, 400);
+          if (!!targetEmail !== !!targetOrderId) return json({ success: false, message: "ব্যক্তিগত বার্তার জন্য ক্রেতার ইমেইল ও অর্ডার নম্বর দুটিই দিন।" }, 400);
+          if (targetEmail) {
+            const customerOrder = await env.DB.prepare("SELECT id FROM orders WHERE id=? AND lower(customer_email)=? LIMIT 1").bind(targetOrderId, targetEmail).first();
+            if (!customerOrder) return json({ success: false, message: "এই অর্ডার নম্বর ও ইমেইল মিলছে না।" }, 400);
+          }
+          if (linkUrl && !(linkUrl.startsWith("/") && !linkUrl.startsWith("//")) && !/^https:\/\//i.test(linkUrl)) return json({ success: false, message: "লিংকটি সঠিক নয়।" }, 400);
+          const notificationId = id();
+          await env.DB.prepare(
+            "INSERT INTO customer_notifications(id,title,message,type,target_email,target_order_id,link_url) VALUES(?,?,?,?,?,?,?)"
+          ).bind(notificationId, title, message, type, targetEmail || null, targetOrderId || null, linkUrl || null).run();
+          return json({ success: true, id: notificationId });
+        }
+
+        if (parts[2] && method === "DELETE") {
+          await env.DB.prepare("UPDATE customer_notifications SET is_active=0 WHERE id=?").bind(parts[2]).run();
+          return json({ success: true });
+        }
+      }
+
       if (route === "admin/products" && method === "GET") {
+        await ensureProductColumns(env);
         const { results = [] } = await env.DB.prepare(
-          "SELECT * FROM products ORDER BY created_at DESC"
+          "SELECT * FROM products WHERE COALESCE(is_deleted,0)=0 ORDER BY created_at DESC"
         ).all();
 
         return json({
@@ -652,14 +734,18 @@ export async function onRequest({ request, env }) {
       }
 
       if (route === "admin/products" && method === "POST") {
+        await ensureProductColumns(env);
         const form = await request.formData();
         const name = String(form.get("name") || "").trim();
         const category = String(form.get("category") || "").trim();
+        const tag = String(form.get("tag") || "").trim().slice(0, 300);
         const price = Number(form.get("price"));
+        const offerRaw = String(form.get("offerPrice") || "").trim();
+        const offerPrice = offerRaw === "" ? null : Number(offerRaw);
 
-        if (!name || !category || !Number.isFinite(price) || price < 0) {
+        if (!name || !category || !Number.isFinite(price) || price < 0 || (offerPrice !== null && (!Number.isFinite(offerPrice) || offerPrice < 0 || offerPrice >= price))) {
           return json(
-            { success: false, message: "নাম, ক্যাটাগরি ও সঠিক দাম দিন।" },
+            { success: false, message: "নাম, ক্যাটাগরি ও সঠিক দাম দিন। অফার মূল্য দিলে তা মূল দামের চেয়ে কম হতে হবে।" },
             400
           );
         }
@@ -708,13 +794,14 @@ export async function onRequest({ request, env }) {
         }
 
         const inserted = await env.DB.prepare(
-          "INSERT INTO products(name,description,price,image_url,category,file_url,is_active) VALUES(?,?,?,?,?,?,1)"
+          "INSERT INTO products(name,description,price,image_url,category,file_url,is_active,tag,offer_price,is_deleted) VALUES(?,?,?,?,?,?,1,?,?,0)"
         )
-          .bind(name, String(form.get("description") || ""), Math.round(price), imageKey, category, fileKey)
+          .bind(name, String(form.get("description") || ""), Math.round(price), imageKey, category, fileKey, tag, offerPrice === null ? null : Math.round(offerPrice))
           .run();
 
         return json({ success: true, id: inserted.meta.last_row_id });
       }      if (parts[1] === "products" && parts[2] && method === "PUT") {
+        await ensureProductColumns(env);
         const productId = parts[2];
         const form = await request.formData();
 
@@ -777,19 +864,19 @@ export async function onRequest({ request, env }) {
         const value = (field, oldField = field) =>
           form.has(field) ? String(form.get(field)) : old[oldField];
 
-        const price = form.has("price")
-          ? Number(form.get("price"))
-          : old.price;
+        const price = form.has("price") ? Number(form.get("price")) : old.price;
+        const offerRaw = form.has("offerPrice") ? String(form.get("offerPrice") || "").trim() : (old.offer_price == null ? "" : String(old.offer_price));
+        const offerPrice = offerRaw === "" ? null : Number(offerRaw);
 
-        if (!Number.isFinite(price) || price < 0) {
+        if (!Number.isFinite(price) || price < 0 || (offerPrice !== null && (!Number.isFinite(offerPrice) || offerPrice < 0 || offerPrice >= price))) {
           return json(
-            { success: false, message: "দাম সঠিক নয়।" },
+            { success: false, message: "দাম সঠিক নয়। অফার মূল্য দিলে তা মূল দামের চেয়ে কম হতে হবে।" },
             400
           );
         }
 
         await env.DB.prepare(
-          "UPDATE products SET name=?,category=?,price=?,description=?,image_url=?,file_url=?,is_active=1 WHERE id=?"
+          "UPDATE products SET name=?,category=?,price=?,description=?,image_url=?,file_url=?,is_active=1,tag=?,offer_price=? WHERE id=?"
         )
           .bind(
             value("name"),
@@ -798,6 +885,8 @@ export async function onRequest({ request, env }) {
             value("description"),
             imageKey,
             fileKey,
+            value("tag", "tag"),
+            offerPrice === null ? null : Math.round(offerPrice),
             productId
           )
           .run();
@@ -811,6 +900,41 @@ export async function onRequest({ request, env }) {
         }
 
         return json({ success: true });
+      }
+
+      if (parts[1] === "products" && parts[2] && parts[3] === "permanent-delete" && method === "POST") {
+        const productId = parts[2];
+        const old = await env.DB.prepare(
+          "SELECT id, image_url, file_url FROM products WHERE id=?"
+        ).bind(productId).first();
+
+        if (!old) return json({ success: false, message: "পণ্য পাওয়া যায়নি।" }, 404);
+
+        const orderRefs = await env.DB.prepare(
+          "SELECT (SELECT COUNT(*) FROM order_items WHERE product_id=?) AS item_count, (SELECT COUNT(*) FROM orders WHERE product_id=?) AS order_count"
+        ).bind(productId, productId).first();
+
+        if (Number(orderRefs?.item_count || 0) > 0 || Number(orderRefs?.order_count || 0) > 0) {
+          await env.DB.prepare("UPDATE products SET is_active=0, is_deleted=1 WHERE id=?").bind(productId).run();
+          return json({ success: true, archived: true, message: "ডিজাইনটি অ্যাডমিন ও ওয়েবসাইট—দুই জায়গা থেকেই সরানো হয়েছে। পুরোনো অর্ডারের ডাউনলোড ঠিক রাখতে এর সংরক্ষিত কপি নিরাপদে রাখা হয়েছে।" });
+        }
+
+        await env.DB.batch([
+          env.DB.prepare("DELETE FROM download_tokens WHERE product_id=?").bind(productId),
+          env.DB.prepare("DELETE FROM products WHERE id=?").bind(productId)
+        ]);
+
+        const cleanup = await Promise.allSettled(
+          [old.image_url, old.file_url].filter(Boolean).map((key) => deleteB2(env, key))
+        );
+        const failed = cleanup.some((item) => item.status === "rejected");
+
+        return json({
+          success: true,
+          message: failed
+            ? "ডিজাইনটি তালিকা থেকে স্থায়ীভাবে ডিলিট হয়েছে। তবে স্টোরেজের একটি ফাইল পরিষ্কার করা যায়নি।"
+            : "ডিজাইন ও তার ছবি/ডাউনলোড ফাইল স্থায়ীভাবে ডিলিট হয়েছে।"
+        });
       }
 
       if (parts[1] === "products" && parts[2] && method === "DELETE") {
@@ -886,7 +1010,7 @@ export async function onRequest({ request, env }) {
         }
 
         const order = await env.DB.prepare(
-          "SELECT id,payment_method FROM orders WHERE id=?"
+          "SELECT id,payment_method,payment_status,customer_email FROM orders WHERE id=?"
         )
           .bind(orderId)
           .first();
@@ -937,6 +1061,26 @@ export async function onRequest({ request, env }) {
                 )
                 .run();
             }
+          }
+
+          // Create a private customer notification only on the first approval.
+          if (order.payment_status !== "paid" && order.customer_email) {
+            await ensureNotificationTable(env);
+            const notificationTitle = "আপনার ডিজাইন প্রস্তুত!";
+            const notificationMessage = `আপনার অর্ডার #${orderId} অনুমোদিত হয়েছে। আপনার ডিজাইন এখন ডাউনলোডের জন্য প্রস্তুত। সাইটের “আমার অর্ডার” থেকে রসিদ নম্বর ও ইমেইল দিয়ে ডাউনলোড করুন।`;
+            await env.DB.prepare(
+              "INSERT INTO customer_notifications(id,title,message,type,target_email,target_order_id,link_url) VALUES(?,?,?,?,?,?,?)"
+            )
+              .bind(
+                id(),
+                notificationTitle,
+                notificationMessage,
+                "order",
+                String(order.customer_email).trim().toLowerCase(),
+                Number(orderId),
+                "/"
+              )
+              .run();
           }
         }
 
