@@ -38,13 +38,16 @@ function productArtwork(p, extraClass="") {
   return `<div class="sample-art ${extraClass}" style="background:${escapeHTML(p.bg||"#e5e7eb")};color:${escapeHTML(p.ink||"#344054")}"><small>${escapeHTML(p.tag||"SAJJADHUB")}</small><strong>${p.title||"DESIGN"}</strong><small>${escapeHTML(p.sub||"DIGITAL DESIGN")}</small></div>`;
 }
 function productTagsMarkup(value){return String(value||"").split(",").map(t=>t.trim()).filter(Boolean).map(t=>`<span class="product-tag-chip">#${escapeHTML(t)}</span>`).join("")}
-function effectiveProductPrice(p){const offer=Number(p.offerPrice);return p.offerPrice!==null&&p.offerPrice!==""&&Number.isFinite(offer)&&offer>=0&&offer<Number(p.price)?offer:Number(p.price)}
+function hasOffer(p){const offer=Number(p.offerPrice);return p.offerPrice!==null&&p.offerPrice!==""&&Number.isFinite(offer)&&offer>=0&&offer<Number(p.price)}
+function effectiveProductPrice(p){return hasOffer(p)?Number(p.offerPrice):Number(p.price)}
 function productPriceMarkup(p){const offer=effectiveProductPrice(p);return offer<Number(p.price)?'<span class="old-price">'+money(p.price)+'</span><strong class="offer-price">'+money(offer)+'</strong>':'<span class="price">'+money(p.price)+'</span>'}
 function renderProducts(){
-  const q=search.value.trim().toLowerCase(), c=filter.value;
-  const shown=products.filter(p=>(c==="সব"||p.category===c)&&(p.name.toLowerCase().includes(q)||p.category.toLowerCase().includes(q)||String(p.tag||"").toLowerCase().includes(q)));
-  grid.innerHTML=shown.map(p=>`<article class="product-card" data-product="${escapeHTML(p.id)}" tabindex="0" role="button" aria-label="${escapeHTML(p.name)} বিস্তারিত দেখুন"><button class="product-open" type="button" data-detail="${escapeHTML(p.id)}" aria-label="${escapeHTML(p.name)} বিস্তারিত দেখুন"><div class="product-thumb" style="background:${escapeHTML(p.bg||"#e5e7eb")}">${productArtwork(p)}</div></button><div class="product-info"><div class="product-meta"><span>${escapeHTML(p.category)}</span><span>ডিজিটাল ফাইল</span></div>${productTagsMarkup(p.tag)?`<div class="product-tag-list">${productTagsMarkup(p.tag)}</div>`:""}<button class="product-title-button" type="button" data-detail="${escapeHTML(p.id)}"><h3>${escapeHTML(p.name)}</h3></button><div class="product-bottom"><span class="product-prices">${productPriceMarkup(p)}</span><button class="add-button" data-add="${escapeHTML(p.id)}">+ কার্টে যোগ</button></div><button class="details-link" type="button" data-detail="${escapeHTML(p.id)}">বিস্তারিত দেখুন →</button></div></article>`).join("");
-  const emptyState=document.getElementById("emptyState");emptyState.hidden=shown.length>0;emptyState.textContent=products.length?"এই নামে কোনো ডিজাইন পাওয়া যায়নি।":"এখনো কোনো ডিজাইন আপলোড করা হয়নি।";
+  const q=search.value.trim().toLowerCase(), c=filter.value, isOfferView=c==="অফার";
+  const shown=products.filter(p=>(isOfferView?hasOffer(p):(c==="সব"||p.category===c))&&(p.name.toLowerCase().includes(q)||p.category.toLowerCase().includes(q)||String(p.tag||"").toLowerCase().includes(q)));
+  grid.innerHTML=shown.map(p=>`<article class="product-card" data-product="${escapeHTML(p.id)}" tabindex="0" role="button" aria-label="${escapeHTML(p.name)} বিস্তারিত দেখুন"><button class="product-open" type="button" data-detail="${escapeHTML(p.id)}" aria-label="${escapeHTML(p.name)} বিস্তারিত দেখুন"><div class="product-thumb" style="background:${escapeHTML(p.bg||"#e5e7eb")}">${productArtwork(p)}</div></button><div class="product-info"><div class="product-meta"><span>${escapeHTML(p.category)}</span>${hasOffer(p)?'<span class="offer-product-badge">বিশেষ অফার</span>':'<span>ডিজিটাল ফাইল</span>'}</div>${productTagsMarkup(p.tag)?`<div class="product-tag-list">${productTagsMarkup(p.tag)}</div>`:""}<button class="product-title-button" type="button" data-detail="${escapeHTML(p.id)}"><h3>${escapeHTML(p.name)}</h3></button><div class="product-bottom"><span class="product-prices">${productPriceMarkup(p)}</span><button class="add-button" data-add="${escapeHTML(p.id)}">+ কার্টে যোগ</button></div><button class="details-link" type="button" data-detail="${escapeHTML(p.id)}">বিস্তারিত দেখুন →</button></div></article>`).join("");
+  const heading=document.getElementById("shopHeading");if(heading)heading.innerHTML=isOfferView?'বিশেষ <em>অফার</em>':'এক্সপ্লোর করুন <em>ডিজাইন</em>';
+  const eyebrow=document.getElementById("shopEyebrow");if(eyebrow)eyebrow.textContent=isOfferView?'SPECIAL OFFERS':'THE COLLECTION';
+  const emptyState=document.getElementById("emptyState");emptyState.hidden=shown.length>0;emptyState.textContent=isOfferView?"এখন কোনো অফার চলছে না।":products.length?"এই নামে কোনো ডিজাইন পাওয়া যায়নি।":"এখনো কোনো ডিজাইন আপলোড করা হয়নি।";
 }
 function showProductDetails(id){
   const p=products.find(x=>String(x.id)===String(id)); if(!p)return;
@@ -107,9 +110,10 @@ function notificationSeen(){try{return JSON.parse(localStorage.getItem("sajjadhu
 function markNotificationsSeen(items){try{const seen=new Set(notificationSeen());items.forEach(n=>seen.add(String(n.id)));localStorage.setItem("sajjadhub-notifications-seen",JSON.stringify([...seen].slice(-150)))}catch{}}
 function renderNotifications(items){
  const list=document.getElementById("notificationList"),seen=notificationSeen();
+ const ordered=[...items].sort((a,b)=>{const stamp=n=>{const value=String(n.created_at||"");const parsed=Date.parse(value.includes("T")?value:value.replace(" ","T")+"Z");return Number.isFinite(parsed)?parsed:0};return stamp(b)-stamp(a)});
  const labels={offer:"অফার",product:"নতুন ডিজাইন",order:"আপনার অর্ডার",info:"ঘোষণা"};
  const icons={offer:"％",product:"✦",order:"▣",info:"i"};
- list.innerHTML=items.map(n=>{const isNew=!seen.includes(String(n.id));const action=n.link_url?'<a class="notification-action" href="'+escapeHTML(n.link_url)+'">বিস্তারিত দেখুন ↗</a>':"";return '<article class="notification-card '+(isNew?"is-new":"")+'"><div class="notification-card-icon type-'+escapeHTML(n.type||"info")+'">'+(icons[n.type]||"i")+'</div><div class="notification-card-content"><div class="notification-card-meta"><span>'+(labels[n.type]||"ঘোষণা")+'</span>'+(isNew?'<b>নতুন</b>':"")+'</div><strong>'+escapeHTML(n.title)+'</strong><p>'+escapeHTML(n.message)+'</p>'+action+'<small>'+(n.created_at?escapeHTML(n.created_at):"Sajjadhub")+'</small></div></article>'}).join("")||'<div class="notification-empty">এখনো নতুন কোনো নোটিফিকেশন নেই। নতুন বার্তা এলে এখানে দেখাবে।</div>';
+ list.innerHTML=ordered.map(n=>{const isNew=!seen.includes(String(n.id));const action=n.link_url?'<a class="notification-action" href="'+escapeHTML(n.link_url)+'">বিস্তারিত দেখুন ↗</a>':"";return '<article class="notification-card '+(isNew?"is-new":"")+'"><div class="notification-card-icon type-'+escapeHTML(n.type||"info")+'">'+(icons[n.type]||"i")+'</div><div class="notification-card-content"><div class="notification-card-meta"><span>'+(labels[n.type]||"ঘোষণা")+'</span>'+(isNew?'<b>নতুন</b>':"")+'</div><strong>'+escapeHTML(n.title)+'</strong><p>'+escapeHTML(n.message)+'</p>'+action+'<small>'+(n.created_at?escapeHTML(n.created_at):"Sajjadhub")+'</small></div></article>'}).join("")||'<div class="notification-empty">এখনো নতুন কোনো নোটিফিকেশন নেই। নতুন বার্তা এলে এখানে দেখাবে।</div>';
 }
 function getNotificationOrderContext(){try{return JSON.parse(sessionStorage.getItem("sajjadhub-notification-order")||"null")}catch{return null}}
 async function fetchNotifications(){
@@ -121,7 +125,7 @@ async function fetchNotifications(){
   const url="/api/notifications"+(params.toString()?"?"+params.toString():"");
   const response=await fetch(url,{cache:"no-store"}),data=await response.json();
   if(!response.ok||!data.success)throw new Error(data.message||"নোটিফিকেশন লোড হয়নি।");
-  const items=[...notificationDefaults,...(data.notifications||[])];
+  const items=[...(data.notifications||[]),...notificationDefaults];
   renderNotifications(items);markNotificationsSeen(items);
   document.getElementById("notificationUnread").hidden=true;
   message.textContent=context?.email?"সাধারণ বার্তার সঙ্গে আপনার যাচাই করা অর্ডারের আপডেটও দেখানো হয়েছে।":"অর্ডারের ব্যক্তিগত আপডেট পেতে আগে “আমার অর্ডার” থেকে রসিদ ও ইমেইল যাচাই করুন।";
@@ -191,7 +195,8 @@ search.addEventListener("input",renderProducts);filter.addEventListener("change"
 document.querySelector(".category-menu-dropdown")?.addEventListener("click",e=>{const link=e.target.closest("[data-category-link]");if(!link)return;const category=link.dataset.categoryLink;filter.value=category;document.querySelectorAll(".category-pills button").forEach(b=>b.classList.toggle("active",b.dataset.category===category));renderProducts();document.querySelector(".category-menu")?.removeAttribute("open")});
 document.getElementById("printReceipt").addEventListener("click",()=>window.print());
 document.getElementById("closeReceipt").addEventListener("click",()=>document.getElementById("receiptDialog").close());
-document.getElementById("categoryPills").addEventListener("click",e=>{const c=e.target.dataset.category;if(!c)return;filter.value=c;document.querySelectorAll(".category-pills button").forEach(b=>b.classList.toggle("active",b.dataset.category===c));renderProducts()});
+document.getElementById("categoryPills").addEventListener("click",e=>{const b=e.target.closest("button[data-category]");if(!b)return;const c=b.dataset.category;filter.value=c;document.querySelectorAll(".category-pills button").forEach(x=>x.classList.toggle("active",x===b));renderProducts()});
+document.querySelector("[data-offers-link]")?.addEventListener("click",()=>document.querySelector('#categoryPills [data-category="অফার"]')?.click());
 filter.addEventListener("change",()=>document.querySelectorAll(".category-pills button").forEach(b=>b.classList.toggle("active",b.dataset.category===filter.value)));
 document.getElementById("year").textContent=new Date().getFullYear();
 renderProducts();renderCart();
