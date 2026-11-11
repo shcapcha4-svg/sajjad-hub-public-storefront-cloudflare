@@ -342,11 +342,13 @@ export async function onRequest({ request, env }) {
 
   try {
     if (route === "notifications" && method === "GET") {
-      await env.DB.prepare("CREATE TABLE IF NOT EXISTS customer_notifications (id TEXT PRIMARY KEY, title TEXT NOT NULL, message TEXT NOT NULL, type TEXT NOT NULL DEFAULT 'info', target_email TEXT, link_url TEXT, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, is_active INTEGER NOT NULL DEFAULT 1)").run();
+      await env.DB.prepare("CREATE TABLE IF NOT EXISTS customer_notifications (id TEXT PRIMARY KEY, title TEXT NOT NULL, message TEXT NOT NULL, type TEXT NOT NULL DEFAULT 'info', target_email TEXT, target_order_id INTEGER, link_url TEXT, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, is_active INTEGER NOT NULL DEFAULT 1)").run();
       const email = String(url.searchParams.get("email") || "").trim().toLowerCase().slice(0, 254);
+      const orderIdInput = String(url.searchParams.get("orderId") || "").trim().replace(/^#/, "");
+      const orderIdValue = /^\\d{1,12}$/.test(orderIdInput) ? Number(orderIdInput) : 0;
       const { results = [] } = await env.DB.prepare(
-        "SELECT id,title,message,type,link_url,created_at FROM customer_notifications WHERE is_active=1 AND (target_email IS NULL OR target_email='' OR lower(target_email)=?) ORDER BY created_at DESC LIMIT 50"
-      ).bind(email).all();
+        "SELECT id,title,message,type,link_url,created_at FROM customer_notifications WHERE is_active=1 AND (target_email IS NULL OR target_email='' OR (lower(target_email)=? AND target_order_id=?)) ORDER BY created_at DESC LIMIT 50"
+      ).bind(email, orderIdValue).all();
       return json({ success: true, notifications: results });
     }
 
@@ -654,7 +656,7 @@ export async function onRequest({ request, env }) {
 
         if (route === "admin/notifications" && method === "GET") {
           const { results = [] } = await env.DB.prepare(
-            "SELECT id,title,message,type,target_email,link_url,created_at,is_active FROM customer_notifications ORDER BY created_at DESC LIMIT 100"
+            "SELECT id,title,message,type,target_email,target_order_id,link_url,created_at,is_active FROM customer_notifications ORDER BY created_at DESC LIMIT 100"
           ).all();
           return json({ success: true, notifications: results });
         }
@@ -665,6 +667,8 @@ export async function onRequest({ request, env }) {
           const message = String(body.message || "").trim().slice(0, 1000);
           const type = String(body.type || "info");
           const targetEmail = String(body.targetEmail || "").trim().toLowerCase().slice(0, 254);
+          const targetOrderIdInput = String(body.targetOrderId || "").trim().replace(/^#/, "");
+          const targetOrderId = /^\\d{1,12}$/.test(targetOrderIdInput) ? Number(targetOrderIdInput) : 0;
           const linkUrl = String(body.linkUrl || "").trim().slice(0, 500);
           if (!title || !message) return json({ success: false, message: "শিরোনাম ও বার্তা লিখুন।" }, 400);
           if (!["offer", "product", "order", "info"].includes(type)) return json({ success: false, message: "বার্তার ধরন সঠিক নয়।" }, 400);
@@ -672,8 +676,8 @@ export async function onRequest({ request, env }) {
           if (linkUrl && !(linkUrl.startsWith("/") && !linkUrl.startsWith("//")) && !/^https:\/\//i.test(linkUrl)) return json({ success: false, message: "লিংকটি সঠিক নয়।" }, 400);
           const notificationId = id();
           await env.DB.prepare(
-            "INSERT INTO customer_notifications(id,title,message,type,target_email,link_url) VALUES(?,?,?,?,?,?)"
-          ).bind(notificationId, title, message, type, targetEmail || null, linkUrl || null).run();
+            "INSERT INTO customer_notifications(id,title,message,type,target_email,target_order_id,link_url) VALUES(?,?,?,?,?,?,?)"
+          ).bind(notificationId, title, message, type, targetEmail || null, targetOrderId || null, linkUrl || null).run();
           return json({ success: true, id: notificationId });
         }
 
