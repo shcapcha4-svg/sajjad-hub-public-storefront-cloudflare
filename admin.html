@@ -161,6 +161,12 @@ body[data-theme="dark"] .admin-list.list-view .admin-item{background:var(--admin
       <div class="panel-heading" style="margin-top:24px"><div><h2>প্রকাশিত নোটিফিকেশন</h2><p>প্রয়োজনে কোনো বার্তা সরিয়ে দিতে পারবেন।</p></div><button id="refreshNotifications" class="admin-btn light small" type="button">রিফ্রেশ</button></div>
       <div id="adminNotifications" class="orders-list"></div>
     </section>
+    <section class="admin-panel" id="membersPanel">
+      <div class="panel-heading"><div><div class="admin-eyebrow">CUSTOMER MEMBERS</div><h2>সদস্য ব্যবস্থাপনা</h2><p>সাইটে কতজন সদস্য হয়েছেন এবং তাদের ইউজারনেম ও যোগদানের তারিখ দেখুন।</p></div><button id="refreshMembers" class="admin-btn light small" type="button">রিফ্রেশ</button></div>
+      <div class="orders-grid"><div class="order-stat"><span>মোট সদস্য</span><strong id="totalMembers">০</strong></div><div class="order-stat"><span>সক্রিয় সদস্য</span><strong id="activeMembers">০</strong></div><div class="order-stat"><span>সদস্য লগইন ব্যবস্থা</span><strong>চালু</strong></div></div>
+      <div class="admin-toolbar"><input id="memberSearch" class="admin-search" type="search" placeholder="ইউজারনেম দিয়ে খুঁজুন..."></div>
+      <div id="members" class="orders-list"></div><p class="admin-hint">নিরাপত্তার জন্য এখানে কখনো সদস্যদের পাসওয়ার্ড দেখানো হয় না।</p>
+    </section>
     <section class="admin-panel">
       <div class="panel-heading"><div><div class="admin-eyebrow">SALES & PAYMENTS</div><h2>বিক্রয় ও অর্ডার</h2><p>ক্রেতার অর্ডার ও পেমেন্টের অবস্থা এখানে দেখুন।</p></div><button id="refreshOrders" class="admin-btn light small" type="button">রিফ্রেশ</button></div>
       <div class="orders-grid"><div class="order-stat"><span>মোট অর্ডার</span><strong id="totalOrders">০</strong></div><div class="order-stat"><span>পেমেন্ট সম্পন্ন</span><strong id="paidOrders">০</strong></div><div class="order-stat"><span>অপেক্ষমাণ</span><strong id="pendingOrders">০</strong></div></div>
@@ -171,5 +177,5 @@ body[data-theme="dark"] .admin-list.list-view .admin-item{background:var(--admin
   </div>
 </div>
 <dialog id="productModal" class="modal"><div class="modal-inner"><button class="modal-close" data-close="productModal" aria-label="বন্ধ করুন">×</button><div id="productModalContent"></div></div></dialog>
-<script src="admin.js?v=offer-delete-20261111-1"></script>
+<script src="admin.js?v=members-20261111-1"></script>
 </body></html>
