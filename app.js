@@ -81,7 +81,10 @@ function openCart(){document.getElementById("cartDrawer").classList.add("open");
 function closeCart(){document.getElementById("cartDrawer").classList.remove("open");document.getElementById("backdrop").classList.remove("show")}
 document.getElementById("favoriteProductGrid").addEventListener("click",e=>{const favorite=e.target.closest("[data-favorite]");if(favorite){e.preventDefault();e.stopPropagation();toggleFavorite(favorite.dataset.favorite);return;}const add=e.target.closest("[data-add]");if(add){e.stopPropagation();addToCart(add.dataset.add);openCart();return;}const detail=e.target.closest("[data-detail]");if(detail)showProductDetails(detail.dataset.detail);});
 document.getElementById("favoriteProductGrid").addEventListener("keydown",e=>{if((e.key==="Enter"||e.key===" ")&&e.target.classList.contains("product-card")){e.preventDefault();showProductDetails(e.target.dataset.product);}});
-document.querySelector('[data-favorites-link]').addEventListener("click",()=>{document.getElementById("favorites").scrollIntoView({behavior:"smooth",block:"start"});});
+const favoritesDialog=document.getElementById("favoritesDialog");
+document.querySelector('[data-favorites-link]').addEventListener("click",event=>{event.preventDefault();renderFavorites();favoritesDialog.showModal();});
+document.getElementById("closeFavorites").addEventListener("click",()=>favoritesDialog.close());
+favoritesDialog.addEventListener("click",event=>{if(event.target===favoritesDialog)favoritesDialog.close();});
 window.addEventListener("storage",e=>{if(e.key===FAVORITES_KEY){favoriteIds=readFavorites();renderProducts();renderFavorites();}});
 grid.addEventListener("click",e=>{
   const favorite=e.target.closest("[data-favorite]");if(favorite){e.preventDefault();e.stopPropagation();toggleFavorite(favorite.dataset.favorite);return;}
