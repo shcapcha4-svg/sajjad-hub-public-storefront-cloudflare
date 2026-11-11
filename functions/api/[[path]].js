@@ -79,6 +79,12 @@ async function ensureNotificationTable(env) {
   }
 }
 
+async function ensureDownloadHistoryTable(env) {
+  await env.DB.prepare("CREATE TABLE IF NOT EXISTS download_history (id INTEGER PRIMARY KEY AUTOINCREMENT, token TEXT NOT NULL, order_id INTEGER NOT NULL, product_id TEXT NOT NULL, customer_name TEXT, customer_email TEXT, downloaded_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)").run();
+  await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_download_history_downloaded_at ON download_history(downloaded_at)").run();
+  await env.DB.prepare("CREATE INDEX IF NOT EXISTS idx_download_history_order_product ON download_history(order_id,product_id)").run();
+}
+
 async function ensureProductColumns(env) {
   const columns = [["tag", "ALTER TABLE products ADD COLUMN tag TEXT NOT NULL DEFAULT ''"], ["offer_price", "ALTER TABLE products ADD COLUMN offer_price INTEGER"], ["is_deleted", "ALTER TABLE products ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0"]];
   let { results = [] } = await env.DB.prepare("PRAGMA table_info(products)").all();
@@ -524,6 +530,10 @@ export async function onRequest({ request, env }) {
         throw new Error(`B2 download ব্যর্থ হয়েছে (${object.status})।`);
       }
 
+      await ensureDownloadHistoryTable(env);
+      const buyer = await env.DB.prepare("SELECT customer_name,customer_email FROM orders WHERE id=?").bind(row.order_id).first();
+      await env.DB.prepare("INSERT INTO download_history(token,order_id,product_id,customer_name,customer_email) VALUES(?,?,?,?,?)").bind(token,row.order_id,row.product_id,buyer?.customer_name||"",buyer?.customer_email||"").run();
+
       return new Response(object.body, {
         headers: {
           "Content-Type":
@@ -757,6 +767,25 @@ export async function onRequest({ request, env }) {
           { success: false, message: "অনুমতি নেই। আবার লগইন করুন।" },
           401
         );
+      }
+
+      if (route === "admin/downloads" && method === "GET") {
+        await ensureDownloadHistoryTable(env);
+        const params = new URL(request.url).searchParams;
+        const from = params.get("from") || "";
+        const to = params.get("to") || "";
+        const search = (params.get("q") || "").trim().slice(0,120);
+        const clauses = [];
+        const values = [];
+        if (from) { clauses.push("date(datetime(h.downloaded_at,'+6 hours'))>=?"); values.push(from); }
+        if (to) { clauses.push("date(datetime(h.downloaded_at,'+6 hours'))<=?"); values.push(to); }
+        if (search) {
+          clauses.push("(lower(COALESCE(h.customer_name,'')) LIKE ? OR lower(COALESCE(h.customer_email,'')) LIKE ? OR lower(p.name) LIKE ? OR CAST(h.order_id AS TEXT) LIKE ?)");
+          const q = '%'+search.toLowerCase()+'%'; values.push(q,q,q,q);
+        }
+        const where = clauses.length ? "WHERE "+clauses.join(" AND ") : "";
+        const { results = [] } = await env.DB.prepare("SELECT h.id,h.order_id,h.product_id,h.customer_name,h.customer_email,h.downloaded_at,p.name AS product_name FROM download_history h JOIN products p ON p.id=h.product_id "+where+" ORDER BY h.downloaded_at DESC LIMIT 1000").bind(...values).all();
+        return json({success:true,downloads:results.map(row=>({...row,product_url:"/product/"+encodeURIComponent(row.product_id)}))});
       }
 
       if (route === "admin/sales-summary" && method === "GET") {
