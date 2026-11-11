@@ -65,12 +65,23 @@ const cookie = (value, maxAge) =>
   `sh_admin=${value}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${maxAge}`;
 
 
+async function ensureProductTagColumn(env) {
+  const { results = [] } = await env.DB.prepare("PRAGMA table_info(products)").all();
+  if (results.some((column) => column.name === "tag")) return;
+  try {
+    await env.DB.prepare("ALTER TABLE products ADD COLUMN tag TEXT NOT NULL DEFAULT ''").run();
+  } catch (error) {
+    const { results: refreshed = [] } = await env.DB.prepare("PRAGMA table_info(products)").all();
+    if (!refreshed.some((column) => column.name === "tag")) throw error;
+  }
+}
+
 const safeProduct = (row) => ({
   id: row.id,
   name: row.name,
   category: row.category,
   price: row.price,
-  tag: "",
+  tag: row.tag || "",
   description: row.description || "",
   fileType: "",
   bg: "#e5e7eb",
@@ -693,6 +704,7 @@ export async function onRequest({ request, env }) {
       }
 
       if (route === "admin/products" && method === "GET") {
+        await ensureProductTagColumn(env);
         const { results = [] } = await env.DB.prepare(
           "SELECT * FROM products ORDER BY created_at DESC"
         ).all();
@@ -704,9 +716,11 @@ export async function onRequest({ request, env }) {
       }
 
       if (route === "admin/products" && method === "POST") {
+        await ensureProductTagColumn(env);
         const form = await request.formData();
         const name = String(form.get("name") || "").trim();
         const category = String(form.get("category") || "").trim();
+        const tag = String(form.get("tag") || "").trim().slice(0, 300);
         const price = Number(form.get("price"));
 
         if (!name || !category || !Number.isFinite(price) || price < 0) {
@@ -760,13 +774,14 @@ export async function onRequest({ request, env }) {
         }
 
         const inserted = await env.DB.prepare(
-          "INSERT INTO products(name,description,price,image_url,category,file_url,is_active) VALUES(?,?,?,?,?,?,1)"
+          "INSERT INTO products(name,description,price,image_url,category,file_url,is_active,tag) VALUES(?,?,?,?,?,?,1,?)"
         )
-          .bind(name, String(form.get("description") || ""), Math.round(price), imageKey, category, fileKey)
+          .bind(name, String(form.get("description") || ""), Math.round(price), imageKey, category, fileKey, tag)
           .run();
 
         return json({ success: true, id: inserted.meta.last_row_id });
       }      if (parts[1] === "products" && parts[2] && method === "PUT") {
+        await ensureProductTagColumn(env);
         const productId = parts[2];
         const form = await request.formData();
 
@@ -841,7 +856,7 @@ export async function onRequest({ request, env }) {
         }
 
         await env.DB.prepare(
-          "UPDATE products SET name=?,category=?,price=?,description=?,image_url=?,file_url=?,is_active=1 WHERE id=?"
+          "UPDATE products SET name=?,category=?,price=?,description=?,image_url=?,file_url=?,is_active=1,tag=? WHERE id=?"
         )
           .bind(
             value("name"),
@@ -850,6 +865,7 @@ export async function onRequest({ request, env }) {
             value("description"),
             imageKey,
             fileKey,
+            value("tag", "tag"),
             productId
           )
           .run();
