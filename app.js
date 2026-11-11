@@ -39,9 +39,12 @@ function applyHeroFeaturedDesigns(settings){
   const apply=(selector,product,imageUrl)=>{
     const poster=document.querySelector(selector);
     if(!poster||!product||!imageUrl)return;
-    poster.innerHTML='<img class="hero-feature-image" src="'+escapeHTML(imageUrl)+'" alt="'+escapeHTML(product.name)+'"><span class="hero-feature-caption">'+escapeHTML(product.name)+'</span>';
+    poster.innerHTML='<img class="hero-feature-image" src="'+escapeHTML(imageUrl)+'" alt="নির্বাচিত ডিজাইন">';
     poster.classList.add("has-featured-design");
-    poster.setAttribute("aria-label",product.name);
+    poster.dataset.heroProduct=String(product.id);
+    poster.setAttribute("role","button");
+    poster.setAttribute("tabindex","0");
+    poster.setAttribute("aria-label","ডিজাইনটি দেখতে ও কিনতে ক্লিক করুন");
   };
   apply(".poster-back",first,settings?.firstImageUrl);
   apply(".poster-front",second,settings?.secondImageUrl);
@@ -110,6 +113,16 @@ document.getElementById("productDetailContent").addEventListener("click",e=>{
   if(add){addToCart(add.dataset.detailAdd);document.getElementById("productDialog").close();openCart();return;}
   const buy=e.target.closest("[data-detail-buy]");
   if(buy){buyNow(buy.dataset.detailBuy);}
+});
+const heroShowcase=document.querySelector(".hero-art");
+heroShowcase?.addEventListener("click",event=>{
+  const poster=event.target.closest(".poster[data-hero-product]");
+  if(poster)showProductDetails(poster.dataset.heroProduct);
+});
+heroShowcase?.addEventListener("keydown",event=>{
+  if((event.key==="Enter"||event.key===" ")&&event.target.matches(".poster[data-hero-product]")){
+    event.preventDefault();showProductDetails(event.target.dataset.heroProduct);
+  }
 });
 function buyNow(id){
   const p=products.find(x=>String(x.id)===String(id));if(!p)return;

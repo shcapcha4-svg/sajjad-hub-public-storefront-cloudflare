@@ -756,3 +756,18 @@ body[data-theme="dark"] .hero-admin-preview strong{color:#b8edc6}
 
 .hero-upload-grid input[type="file"]{display:block;width:100%;margin-top:8px}
 .hero-upload-grid small{display:block;color:var(--muted,#667085);font-size:12px;margin-top:5px;overflow-wrap:anywhere}
+
+
+/* Interactive floating featured-book mockups */
+.poster.has-featured-design{width:225px;height:300px;padding:0;overflow:visible;display:block;background:transparent;border:0;cursor:pointer;transform-style:preserve-3d;filter:drop-shadow(0 24px 18px #0005);transition:filter .25s ease}
+.poster.has-featured-design .hero-feature-image{position:relative;z-index:1;display:block;width:100%;height:100%;aspect-ratio:3 / 4;object-fit:contain;border-radius:3px;background:transparent;pointer-events:none}
+.poster.has-featured-design::after{content:"";position:absolute;z-index:0;left:12%;right:12%;height:17px;bottom:-20px;border-radius:50%;background:#0009;filter:blur(13px);transform:scaleX(.86);opacity:.72;transition:opacity .3s ease,transform .3s ease}
+.poster-back.has-featured-design{animation:heroBookFloatBack 4.8s ease-in-out infinite}
+.poster-front.has-featured-design{animation:heroBookFloatFront 4.2s ease-in-out infinite}
+.poster-back.has-featured-design:hover,.poster-back.has-featured-design:focus-visible,.poster-front.has-featured-design:hover,.poster-front.has-featured-design:focus-visible{filter:drop-shadow(0 30px 24px #0007);outline:2px solid #c7f36b;outline-offset:7px}
+.poster.has-featured-design:hover::after,.poster.has-featured-design:focus-visible::after{opacity:.95;transform:scaleX(1.08)}
+@keyframes heroBookFloatBack{0%,100%{transform:rotate(-12deg) translate(-68px,5px) translateY(0)}50%{transform:rotate(-12deg) translate(-68px,5px) translateY(-10px)}}
+@keyframes heroBookFloatFront{0%,100%{transform:rotate(8deg) translate(45px,5px) translateY(0)}50%{transform:rotate(8deg) translate(45px,5px) translateY(-13px)}}
+@media(max-width:900px){.poster.has-featured-design{width:195px;height:260px}}
+@media(max-width:620px){.poster.has-featured-design{width:166px;height:222px}.poster-back.has-featured-design{animation-duration:5.2s}.poster-front.has-featured-design{animation-duration:4.6s}}
+@media(prefers-reduced-motion:reduce){.poster.has-featured-design{animation:none!important;transition:none}}
