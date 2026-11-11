@@ -555,3 +555,5 @@ body[data-theme="dark"] .notification-card-content>p{color:#c0cec3}
 body[data-theme="dark"] .notification-card-meta{color:#a0b0a5}
 body[data-theme="dark"] .notification-empty{border-color:#405a49;color:#a0b0a5}
 @media(max-width:620px){.notification-bell{width:36px;height:36px;flex-basis:36px}.notification-bell svg{width:19px;height:19px}.notifications-hero{padding:27px 21px 22px}.notifications-body{padding:19px 18px 20px}.notifications-hero h2{font-size:25px}.notification-card{padding:12px;grid-template-columns:33px minmax(0,1fr);gap:9px}.notification-card-icon{width:32px;height:32px}}
+
+/* Trigger fresh preview for full notification center and private order updates */
