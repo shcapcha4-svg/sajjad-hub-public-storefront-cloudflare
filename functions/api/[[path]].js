@@ -67,7 +67,7 @@ const cookie = (value, maxAge) =>
 
 
 async function ensureNotificationTable(env) {
-  await ensureNotificationTable(env);
+  await env.DB.prepare("CREATE TABLE IF NOT EXISTS customer_notifications (id TEXT PRIMARY KEY, title TEXT NOT NULL, message TEXT NOT NULL, type TEXT NOT NULL DEFAULT 'info', target_email TEXT, target_order_id INTEGER, link_url TEXT, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, is_active INTEGER NOT NULL DEFAULT 1)").run();
   const columns = await env.DB.prepare("PRAGMA table_info(customer_notifications)").all();
   if (!(columns.results || []).some((column) => column.name === "target_order_id")) {
     try {
