@@ -33,21 +33,36 @@ const filter = document.getElementById("categoryFilter");
 const productImageUrls = new Map();
 const purchaseStatusByProduct = new Map();
 function escapeHTML(value="") { return String(value).replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch])); }
-function applyHeroFeaturedDesigns(settings){
+async function applyHeroFeaturedDesigns(settings){
   const first=products.find(p=>String(p.id)===String(settings?.firstId));
   const second=products.find(p=>String(p.id)===String(settings?.secondId));
-  const apply=(selector,product,imageUrl)=>{
-    const poster=document.querySelector(selector);
-    if(!poster||!product||!imageUrl)return;
-    poster.innerHTML='<img class="hero-feature-image" src="'+escapeHTML(imageUrl)+'" alt="নির্বাচিত ডিজাইন">';
-    poster.classList.add("has-featured-design");
-    poster.dataset.heroProduct=String(product.id);
-    poster.setAttribute("role","button");
-    poster.setAttribute("tabindex","0");
-    poster.setAttribute("aria-label","ডিজাইনটি দেখতে ও কিনতে ক্লিক করুন");
-  };
-  apply(".poster-back",first,settings?.firstImageUrl);
-  apply(".poster-front",second,settings?.secondImageUrl);
+  const items=[
+    {selector:".poster-back",product:first,url:settings?.firstImageUrl},
+    {selector:".poster-front",product:second,url:settings?.secondImageUrl}
+  ].filter(item=>item.product&&item.url);
+  if(items.length!==2)return;
+  try{
+    await Promise.all(items.map(({url})=>new Promise((resolve,reject)=>{
+      const preload=new Image();
+      preload.onload=resolve;
+      preload.onerror=()=>reject(new Error("Featured artwork failed to load"));
+      preload.src=url;
+      if(preload.complete&&preload.naturalWidth)resolve();
+    })));
+    for(const {selector,product,url} of items){
+      const poster=document.querySelector(selector);
+      if(!poster)continue;
+      poster.innerHTML='<img class="hero-feature-image" src="'+escapeHTML(url)+'" alt="নির্বাচিত ডিজাইন">';
+      poster.classList.add("has-featured-design");
+      poster.dataset.heroProduct=String(product.id);
+      poster.setAttribute("role","button");
+      poster.setAttribute("tabindex","0");
+      poster.setAttribute("aria-label","ডিজাইনটি দেখতে ও কিনতে ক্লিক করুন");
+    }
+    document.querySelector(".hero-art")?.classList.add("hero-ready");
+  }catch(error){
+    console.warn("Featured hero artwork could not be loaded.",error);
+  }
 }
 function productArtwork(p, extraClass="") {
   if (p.imageUrl) return `<img class="${extraClass}" src="${escapeHTML(p.imageUrl)}" alt="${escapeHTML(p.name)}" loading="lazy">`;
@@ -157,8 +172,8 @@ document.getElementById("openMember").addEventListener("click",async()=>{await r
 document.getElementById("closeMember").addEventListener("click",()=>memberDialog.close());
 document.getElementById("memberLoginTab").addEventListener("click",()=>setMemberMode("login"));
 document.getElementById("memberRegisterTab").addEventListener("click",()=>setMemberMode("register"));
-document.getElementById("memberLoginForm").addEventListener("submit",async e=>{e.preventDefault();const form=e.currentTarget,button=document.getElementById("memberLoginSubmit");button.disabled=true;memberMessage("লগইন হচ্ছে...");try{const response=await fetch("/api/customers/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(Object.fromEntries(new FormData(form).entries()))}),data=await response.json();if(!response.ok||!data.success)throw new Error(data.message||"লগইন করা যায়নি।");signedInMember=data.member;renderMemberState();form.reset();memberMessage("সফলভাবে লগইন হয়েছে।");}catch(err){memberMessage(err.message,true);}finally{button.disabled=false;}});
-document.getElementById("memberRegisterForm").addEventListener("submit",async e=>{e.preventDefault();const form=e.currentTarget,values=Object.fromEntries(new FormData(form).entries()),button=document.getElementById("memberRegisterSubmit");if(values.password!==values.confirmPassword){memberMessage("দুটি পাসওয়ার্ড মিলছে না।",true);return;}button.disabled=true;memberMessage("সদস্য অ্যাকাউন্ট তৈরি হচ্ছে...");try{const response=await fetch("/api/customers/register",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username:values.username,password:values.password})}),data=await response.json();if(!response.ok||!data.success)throw new Error(data.message||"অ্যাকাউন্ট তৈরি করা যায়নি।");signedInMember=data.member;renderMemberState();form.reset();memberMessage("অভিনন্দন! আপনার সদস্য অ্যাকাউন্ট তৈরি হয়েছে।");}catch(err){memberMessage(err.message,true);}finally{button.disabled=false;}});
+document.getElementById("memberLoginForm").addEventListener("submit",async e=>{e.preventDefault();const form=e.currentTarget,button=document.getElementById("memberLoginSubmit");button.disabled=true;memberMessage("লগইন হচ্ছে...");try{const response=await fetch("/api/customers/login",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(Object.fromEntries(new FormData(form).entries()))}),data=await response.json();if(!response.ok||!data.success)throw new Error([data.message,data.errorCode,data.diagnostic].filter(Boolean).join(" · ")||"লগইন করা যায়নি।");signedInMember=data.member;renderMemberState();form.reset();memberMessage("সফলভাবে লগইন হয়েছে।");}catch(err){memberMessage(err.message,true);}finally{button.disabled=false;}});
+document.getElementById("memberRegisterForm").addEventListener("submit",async e=>{e.preventDefault();const form=e.currentTarget,values=Object.fromEntries(new FormData(form).entries()),button=document.getElementById("memberRegisterSubmit");if(values.password!==values.confirmPassword){memberMessage("দুটি পাসওয়ার্ড মিলছে না।",true);return;}button.disabled=true;memberMessage("সদস্য অ্যাকাউন্ট তৈরি হচ্ছে...");try{const response=await fetch("/api/customers/register",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({username:values.username,password:values.password})}),data=await response.json();if(!response.ok||!data.success)throw new Error([data.message,data.errorCode,data.diagnostic].filter(Boolean).join(" · ")||"অ্যাকাউন্ট তৈরি করা যায়নি।");signedInMember=data.member;renderMemberState();form.reset();memberMessage("অভিনন্দন! আপনার সদস্য অ্যাকাউন্ট তৈরি হয়েছে।");}catch(err){memberMessage(err.message,true);}finally{button.disabled=false;}});
 document.getElementById("memberLogout").addEventListener("click",async()=>{try{await fetch("/api/customers/logout",{method:"POST"});}finally{signedInMember=null;renderMemberState();setMemberMode("login");memberMessage("আপনি লগআউট করেছেন।");}});
 refreshMember();
 
