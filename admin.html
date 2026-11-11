@@ -134,6 +134,25 @@ body[data-theme="dark"] .admin-list.list-view .admin-item{background:var(--admin
       <div class="admin-toolbar"><input id="productSearch" class="admin-search" type="search" placeholder="ডিজাইনের নাম দিয়ে খুঁজুন..."><select id="productFilter" class="admin-filter"><option value="all">সব পণ্য</option><option value="active">সাইটে প্রকাশিত</option><option value="hidden">লুকানো</option><option value="file">ডাউনলোড ফাইল আছে</option><option value="missing">ডাউনলোড ফাইল নেই</option></select><button id="gridView" class="admin-btn light small" type="button">কার্ড ভিউ</button><button id="listView" class="admin-btn light small" type="button">লিস্ট ভিউ</button></div>
       <div id="products" class="admin-list"></div>
     </section>
+    <section class="admin-panel" id="notificationPanel">
+      <div class="panel-heading"><div><div class="admin-eyebrow">CUSTOMER NOTIFICATIONS</div><h2>কাস্টমার নোটিফিকেশন</h2><p>অফার, নতুন ডিজাইন বা নির্দিষ্ট ক্রেতার কেনা পণ্যের আপডেট পাঠান।</p></div><span class="admin-tag">MESSAGE CENTER</span></div>
+      <form id="notificationForm" class="admin-form">
+        <div class="admin-grid">
+          <label>বার্তার শিরোনাম<input name="title" maxlength="120" placeholder="যেমন: নতুন ডিজাইন এসেছে!" required></label>
+          <label>বার্তার ধরন<select name="type"><option value="offer">অফার / কেনার আমন্ত্রণ</option><option value="product">নতুন ডিজাইন / পণ্য আপডেট</option><option value="order">কেনা পণ্যের আপডেট</option><option value="info">সাধারণ ঘোষণা</option></select></label>
+        </div>
+        <label>বার্তা<textarea name="message" maxlength="1000" placeholder="কাস্টমারকে কী জানাতে চান লিখুন..." required></textarea></label>
+        <div class="admin-grid">
+          <label>নির্দিষ্ট ক্রেতার ইমেইল (ঐচ্ছিক)<input name="targetEmail" type="email" placeholder="খালি রাখলে সবাই দেখবে"></label>
+          <label>লিংক (ঐচ্ছিক)<input name="linkUrl" type="url" placeholder="/#shop অথবা https://..."></label>
+        </div>
+        <p class="admin-hint">নির্দিষ্ট ইমেইল দিলে শুধু সেই ক্রেতা নোটিফিকেশন আইকনে নিজের ইমেইল দিয়ে বার্তাটি দেখতে পাবেন। খালি রাখলে সবার কাছে যাবে।</p>
+        <div class="admin-actions"><button class="admin-btn" type="submit" id="publishNotification">নোটিফিকেশন প্রকাশ করুন</button></div>
+        <p id="notificationAdminMessage" class="admin-message" role="status"></p>
+      </form>
+      <div class="panel-heading" style="margin-top:24px"><div><h2>প্রকাশিত নোটিফিকেশন</h2><p>প্রয়োজনে কোনো বার্তা সরিয়ে দিতে পারবেন।</p></div><button id="refreshNotifications" class="admin-btn light small" type="button">রিফ্রেশ</button></div>
+      <div id="adminNotifications" class="orders-list"></div>
+    </section>
     <section class="admin-panel">
       <div class="panel-heading"><div><div class="admin-eyebrow">SALES & PAYMENTS</div><h2>বিক্রয় ও অর্ডার</h2><p>ক্রেতার অর্ডার ও পেমেন্টের অবস্থা এখানে দেখুন।</p></div><button id="refreshOrders" class="admin-btn light small" type="button">রিফ্রেশ</button></div>
       <div class="orders-grid"><div class="order-stat"><span>মোট অর্ডার</span><strong id="totalOrders">০</strong></div><div class="order-stat"><span>পেমেন্ট সম্পন্ন</span><strong id="paidOrders">০</strong></div><div class="order-stat"><span>অপেক্ষমাণ</span><strong id="pendingOrders">০</strong></div></div>
