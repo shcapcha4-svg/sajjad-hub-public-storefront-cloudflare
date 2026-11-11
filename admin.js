@@ -1,6 +1,7 @@
 const $=s=>document.querySelector(s);
 let products=[],orders=[],notifications=[],objectPreviewUrl=null;
 let members=[];
+let salesSummary=null,salesPeriod='daily';
 const money=n=>'৳'+Number(n||0).toLocaleString('bn-BD');
 const bn=n=>Number(n||0).toLocaleString('bn-BD');
 function esc(s=''){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
@@ -13,7 +14,7 @@ function showDashboard(){ $('#loginView').hidden=true;$('#dashboard').hidden=fal
 async function check(){try{const d=await api('/api/admin/me');if(d.success){showDashboard();return}}catch{}$('#loginView').hidden=false}
 $('#loginForm').addEventListener('submit',async e=>{e.preventDefault();message($('#loginMessage'),'লগইন হচ্ছে...');try{await api('/api/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:$('#password').value})});showDashboard()}catch(err){message($('#loginMessage'),err.message,true)}});
 $('#logout').onclick=async()=>{try{await api('/api/admin/logout',{method:'POST'})}finally{location.reload()}};
-async function loadAll(){try{await loadProducts()}catch(error){message($('#productMessage'),error.message,true)}await Promise.allSettled([loadHeroDesigns(),loadOrders(),loadNotifications(),loadCustomers()])}
+async function loadAll(){try{await loadProducts()}catch(error){message($('#productMessage'),error.message,true)}await Promise.allSettled([loadHeroDesigns(),loadOrders(),loadNotifications(),loadCustomers(),loadSalesSummary()])}
 async function loadProducts(){const d=await api('/api/admin/products');products=d.products||[];renderProducts();renderHeroDesignOptions()}
 async function inspectHeroArtwork(file){
   if(file.size>2*1024*1024)throw new Error("ছবির ফাইল ২ MB-এর মধ্যে হতে হবে।");
@@ -103,6 +104,23 @@ function renderNotifications(){$('#adminNotifications').innerHTML=notifications.
 $('#notificationForm').addEventListener('submit',async e=>{e.preventDefault();const form=e.currentTarget,btn=$('#publishNotification'),data=Object.fromEntries(new FormData(form).entries());btn.disabled=true;message($('#notificationAdminMessage'),'নোটিফিকেশন প্রকাশ হচ্ছে...');try{await api('/api/admin/notifications',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});form.reset();message($('#notificationAdminMessage'),'নোটিফিকেশন সফলভাবে প্রকাশ হয়েছে।');await loadNotifications()}catch(err){message($('#notificationAdminMessage'),err.message,true)}finally{btn.disabled=false}});
 $('#adminNotifications').addEventListener('click',async e=>{const b=e.target.closest('[data-delete-notification]');if(!b)return;if(!confirm('এই নোটিফিকেশনটি কাস্টমারদের কাছ থেকে সরিয়ে দেবেন?'))return;try{await api('/api/admin/notifications/'+encodeURIComponent(b.dataset.deleteNotification),{method:'DELETE'});await loadNotifications()}catch(err){alert(err.message)}});
 $('#refreshNotifications').onclick=()=>loadNotifications().catch(e=>alert(e.message));
+async function loadSalesSummary(){const data=await api('/api/admin/sales-summary');salesSummary=data;renderSalesSummary();message($('#salesMessage'),'বিক্রির হিসাব আপডেট হয়েছে।')}
+function salesDateLabel(value,period){
+ if(period==='monthly'){const [year,month]=String(value).split('-').map(Number);return new Date(Date.UTC(year,month-1,1)).toLocaleDateString('bn-BD',{month:'long',year:'numeric',timeZone:'UTC'})}
+ const [year,month,day]=String(value).split('-').map(Number),date=new Date(Date.UTC(year,month-1,day));
+ if(period==='weekly'){const end=new Date(date);end.setUTCDate(end.getUTCDate()+6);return date.toLocaleDateString('bn-BD',{day:'numeric',month:'short',timeZone:'UTC'})+' – '+end.toLocaleDateString('bn-BD',{day:'numeric',month:'short',year:'numeric',timeZone:'UTC'})}
+ return date.toLocaleDateString('bn-BD',{day:'numeric',month:'long',year:'numeric',timeZone:'UTC'})
+}
+function renderSalesSummary(){
+ if(!salesSummary)return;
+ const cards=[['salesAllTime','salesAllTimeOrders',salesSummary.allTime],['salesThisWeek','salesThisWeekOrders',salesSummary.thisWeek],['salesThisMonth','salesThisMonthOrders',salesSummary.thisMonth],['salesToday','salesTodayOrders',salesSummary.today]];
+ for(const [amountId,countId,item] of cards){$('#'+amountId).textContent=money(item?.sales||0);$('#'+countId).textContent=bn(item?.orders||0)+'টি Paid অর্ডার'}
+ const rows=salesSummary[salesPeriod]||[];$('#salesPeriodHeading').textContent=salesPeriod==='daily'?'তারিখ':salesPeriod==='weekly'?'সপ্তাহ':'মাস';
+ $('#salesBreakdown').innerHTML=rows.map(row=>'<tr><td>'+esc(salesDateLabel(row.period,salesPeriod))+'</td><td>'+bn(row.orders)+'</td><td>'+money(row.sales)+'</td></tr>').join('')||'<tr><td colspan="3">এখনো কোনো Paid বিক্রি নেই।</td></tr>';
+ document.querySelectorAll('[data-sales-period]').forEach(button=>{const active=button.dataset.salesPeriod===salesPeriod;button.classList.toggle('light',!active);button.setAttribute('aria-pressed',active?'true':'false')});
+}
+document.querySelectorAll('[data-sales-period]').forEach(button=>button.addEventListener('click',()=>{salesPeriod=button.dataset.salesPeriod;renderSalesSummary()}));
+$('#refreshSales').addEventListener('click',()=>loadSalesSummary().catch(error=>message($('#salesMessage'),error.message,true)));
 async function loadOrders(){const d=await api('/api/admin/orders');orders=(d.orders||[]).filter(o=>o.payment_method!=='TEST MODE');renderOrders()}
 function filteredOrders(){const q=$('#orderSearch').value.trim().toLowerCase(),f=$('#orderFilter').value;return orders.filter(o=>{const hay=[o.id,o.customer_name,o.buyer_email,o.sender_phone,o.trx_id].join(' ').toLowerCase();return hay.includes(q)&&(f==='all'||o.status===f)})}
 function renderOrders(){const list=filteredOrders();$('#totalOrders').textContent=bn(orders.length);$('#paidOrders').textContent=bn(orders.filter(o=>o.status==='paid').length);$('#pendingOrders').textContent=bn(orders.filter(o=>o.status==='pending').length);$('#orders').innerHTML=list.map(o=>`<article class="order-card ${esc(o.status)}"><div class="order-card-head"><h3>অর্ডার #${esc(o.id)}</h3><span class="order-status">${o.status==='paid'?'পেমেন্ট সম্পন্ন':o.status==='rejected'?'বাতিল':'অপেক্ষমাণ'}</span></div><p><b>ক্রেতা:</b> ${esc(o.customer_name)} · ${esc(o.buyer_email)} · ${esc(o.sender_phone)}</p><p><b>TrxID:</b> ${esc(o.trx_id)} · <b>মোট:</b> <b>${money(o.total)}</b> · ${esc(o.created_at)}</p><p><b>পণ্য:</b> ${(o.items||[]).map(i=>esc(i.product_name)+' × '+i.quantity).join(', ')}</p><div class="admin-actions">${o.status!=='paid'?'<button class="admin-btn small" data-status="paid" data-id="'+o.id+'">যাচাই করে Paid</button>':''}${o.status!=='rejected'?'<button class="admin-btn danger small" data-status="rejected" data-id="'+o.id+'">Reject</button>':''}</div>${o.downloads?.length?`<div class="order-downloads">${o.downloads.map(x=>`<a target="_blank" rel="noopener" href="${esc(x.url)}">${esc(x.name)} ডাউনলোড লিংক</a>`).join('')}</div>`:''}</article>`).join('')||'<div class="admin-empty">এখনো কোনো অর্ডার নেই।</div>'}

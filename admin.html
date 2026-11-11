@@ -91,7 +91,20 @@ body[data-theme="dark"] .admin-list.list-view .admin-item{background:var(--admin
 #notificationPanel .order-card{border-left-color:#6c9d48}
 #notificationPanel .order-card .order-status{background:#edf6e6;color:#426b2e}
 @media(max-width:620px){#notificationPanel .admin-grid{grid-template-columns:1fr}}
-.admin-theme-icon{width:40px;height:40px;display:grid;place-items:center;padding:0}.admin-theme-icon svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.admin-product-tags{display:flex;flex-wrap:wrap;gap:5px;margin:6px 0}.admin-product-tags span{display:inline-flex;padding:3px 8px;border-radius:20px;background:#eff7e9;color:#3c713c;font-size:10px;font-weight:700}body[data-theme="dark"] .admin-product-tags span{background:#294331;color:#b9e8c4}</style>
+.admin-theme-icon{width:40px;height:40px;display:grid;place-items:center;padding:0}.admin-theme-icon svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.admin-product-tags{display:flex;flex-wrap:wrap;gap:5px;margin:6px 0}.admin-product-tags span{display:inline-flex;padding:3px 8px;border-radius:20px;background:#eff7e9;color:#3c713c;font-size:10px;font-weight:700}body[data-theme="dark"] .admin-product-tags span{background:#294331;color:#b9e8c4}.sales-stats{grid-template-columns:repeat(4,minmax(0,1fr))}
+.sales-stats .order-stat small{display:block;margin-top:5px;color:#748177;font-size:11px}
+.sales-period-tabs{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0 14px}
+.sales-table-wrap{width:100%;overflow-x:auto;border:1px solid var(--admin-line);border-radius:12px}
+.sales-table{width:100%;border-collapse:collapse;min-width:360px;background:var(--admin-card);color:var(--admin-ink)}
+.sales-table th,.sales-table td{padding:12px 14px;text-align:left;border-bottom:1px solid var(--admin-line);font-size:13px}
+.sales-table th{background:#f0f7ef;color:#45604c;font-weight:800}.sales-table td:last-child{font-weight:800;color:#168044}
+.sales-table tbody tr:last-child td{border-bottom:0}
+body[data-theme="dark"] .sales-stats .order-stat small{color:#a4b4a8}
+body[data-theme="dark"] .sales-table th{background:#203729;color:#c4e7cc}
+body[data-theme="dark"] .sales-table td:last-child{color:#8ce5a7}
+@media(max-width:900px){.sales-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:620px){.sales-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.sales-table th,.sales-table td{padding:10px;font-size:12px}}
+</style>
 </head>
 <body>
 <div class="admin-shell">
@@ -108,6 +121,18 @@ body[data-theme="dark"] .admin-list.list-view .admin-item{background:var(--admin
       <a class="admin-brand" href="/"><img src="/sajjadhub-logo.svg" alt="Sajjadhub"></a>
       <div class="admin-top-actions"><div><div class="admin-eyebrow">STORE CONTROL CENTER</div><h1 class="admin-title">অ্যাডমিন ড্যাশবোর্ড</h1></div><button id="themeToggle" class="admin-btn light admin-theme-icon" type="button" aria-label="ডার্ক মোড চালু করুন" title="ডার্ক মোড"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.5 15.5A8.5 8.5 0 0 1 8.5 3.5 8.5 8.5 0 1 0 20.5 15.5Z"/></svg></button><button id="logout" class="admin-btn danger">লগআউট</button></div>
     </header>
+    <section class="admin-panel" id="salesDashboard">
+      <div class="panel-heading"><div><div class="admin-eyebrow">SALES ANALYTICS</div><h2>বিক্রির হিসাব</h2><p>শুধু যাচাই করে Paid করা অর্ডারের বিক্রি এখানে গণনা হবে। তারিখ বাংলাদেশ সময় অনুযায়ী।</p></div><button id="refreshSales" class="admin-btn light small" type="button">হিসাব রিফ্রেশ</button></div>
+      <div class="orders-grid sales-stats">
+        <div class="order-stat"><span>সর্বমোট বিক্রি</span><strong id="salesAllTime">৳০</strong><small id="salesAllTimeOrders">০টি Paid অর্ডার</small></div>
+        <div class="order-stat"><span>এই সপ্তাহের বিক্রি</span><strong id="salesThisWeek">৳০</strong><small id="salesThisWeekOrders">০টি Paid অর্ডার</small></div>
+        <div class="order-stat"><span>এই মাসের বিক্রি</span><strong id="salesThisMonth">৳০</strong><small id="salesThisMonthOrders">০টি Paid অর্ডার</small></div>
+        <div class="order-stat"><span>আজকের বিক্রি</span><strong id="salesToday">৳০</strong><small id="salesTodayOrders">০টি Paid অর্ডার</small></div>
+      </div>
+      <div class="sales-period-tabs" role="group" aria-label="বিক্রির হিসাবের সময়"><button type="button" class="admin-btn small" data-sales-period="daily" aria-pressed="true">দিনভিত্তিক</button><button type="button" class="admin-btn light small" data-sales-period="weekly" aria-pressed="false">সপ্তাহভিত্তিক</button><button type="button" class="admin-btn light small" data-sales-period="monthly" aria-pressed="false">মাসভিত্তিক</button></div>
+      <div class="sales-table-wrap"><table class="sales-table"><thead><tr><th id="salesPeriodHeading">তারিখ</th><th>Paid অর্ডার</th><th>মোট বিক্রি</th></tr></thead><tbody id="salesBreakdown"><tr><td colspan="3">হিসাব লোড হচ্ছে...</td></tr></tbody></table></div>
+      <p id="salesMessage" class="admin-message" role="status"></p>
+    </section>
     <section class="admin-panel" id="heroDesignPanel">
       <div class="panel-heading"><div><div class="admin-eyebrow">HOMEPAGE FEATURED DESIGNS</div><h2>হোমপেজের সেরা দুই ডিজাইন</h2><p>“DESIGN YOUR WORLD” অংশের দুটি বই/পোস্টারে কোন ডিজাইন দেখাবে, এখান থেকে বেছে নিন।</p></div><span class="admin-tag">HERO SHOWCASE</span></div>
       <form id="heroDesignsForm" class="admin-form">
@@ -207,5 +232,5 @@ body[data-theme="dark"] .admin-list.list-view .admin-item{background:var(--admin
   </div>
 </div>
 <dialog id="productModal" class="modal"><div class="modal-inner"><button class="modal-close" data-close="productModal" aria-label="বন্ধ করুন">×</button><div id="productModalContent"></div></div></dialog>
-<script src="admin.js?v=hero-artwork-upload-20261111-1"></script>
+<script src="admin.js?v=sales-dashboard-20261111-1"></script>
 </body></html>
