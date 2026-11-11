@@ -120,37 +120,28 @@ document.getElementById("submitPayment").onclick=async()=>{
       <table class="receipt-table"><thead><tr><th>পণ্য</th><th>পরিমাণ</th><th>মূল্য</th></tr></thead><tbody>${purchasedItems.map(item=>`<tr><td>${escapeHTML(item.name)}</td><td>${item.qty}</td><td>${money(item.price*item.qty)}</td></tr>`).join("")}</tbody></table>
       <div class="receipt-total"><span>সর্বমোট</span><strong>${money(receiptTotal)}</strong></div>
       <div class="receipt-payment"><p>পেমেন্ট মাধ্যম: Nagad Send Money</p><p>TrxID: ${escapeHTML(trx.value.trim())}</p><p>পেমেন্ট স্ট্যাটাস: <strong>Pending (যাচাই অপেক্ষমাণ)</strong></p></div>
-      <p class="receipt-note">এটি অর্ডার জমার রসিদ, পেমেন্ট সম্পন্ন হওয়ার প্রমাণ নয়। অর্ডার নম্বর ও এই ইমেইলটি সংরক্ষণ করুন। পেমেন্ট অনুমোদনের পর Download বাটন পাবেন। পরে ডাউনলোড করতে চাইলে “আমার অর্ডার” অংশে এই রসিদের অর্ডার নম্বর ও ইমেইল দিয়ে আবার ডাউনলোড চালু করতে পারবেন।</p>
+      <p class="receipt-note">এটি অর্ডার জমার রসিদ, পেমেন্ট সম্পন্ন হওয়ার প্রমাণ নয়। অর্ডার নম্বর ও এই ইমেইলটি সংরক্ষণ করুন। পেমেন্ট অনুমোদনের পর “আমার অর্ডার” অংশে নির্দেশনা পাবেন। তখন এই রসিদের অর্ডার নম্বর ও Gmail দিয়ে নিচের রসিদ অনুসন্ধান অংশে আপনার ডিজাইন ডাউনলোড করতে পারবেন।</p>
     `;
     cart=[];renderCart();document.getElementById("checkoutDialog").close();document.getElementById("receiptDialog").showModal();
   }catch(error){msg.textContent=error.message||'সার্ভারের সঙ্গে সংযোগ হয়নি। আবার চেষ্টা করুন।'}finally{btn.disabled=false}
 };
 
-// Customer order cards and secure, payment-gated downloads.
-const pendingDownloadUrls=new Set();
-const downloadResetTimers=new Map();
+// Customer order cards: show guidance first, then reveal downloads after receipt verification.
 function renderMyOrderCard(order){
-  const items=(order.items||[]).map(item=>{
-    const productId=String(item.product_id);
-    const paid=String(order.status||"").trim().toLowerCase()==="paid";
-    const file=(order.downloads||[]).find(download=>
-      String(download.productId??download.product_id??"")===productId && download.url
-    );
-    const downloadUrl=file?.url?new URL(String(file.url),window.location.origin).href:"";
-    const isDownloading=pendingDownloadUrls.has(downloadUrl);
-    const status=paid&&file&&isDownloading
-      ? '<span class="my-order-simple-status is-download-started">ডাউনলোড শুরু হয়েছে</span>'
-      : paid&&file
-        ? '<a class="my-order-simple-status is-download" target="_blank" rel="noopener" href="'+escapeHTML(file.url)+'">Download</a>'
-      : paid
-        ? '<span class="my-order-simple-status is-pending">ফাইল যুক্ত নেই</span>'
-        : '<span class="my-order-simple-status is-pending">Pending</span>';
-    return '<div class="my-order-simple-row"><span class="my-order-product-name">'+escapeHTML(item.product_name)+'</span>'+status+'</div>';
-  }).join("");
-  return items?'<div class="my-order-card">'+items+'</div>':"";
+  const items=(order.items||[]).map(item=>
+    '<div class="my-order-simple-row"><span class="my-order-product-name">'+escapeHTML(item.product_name)+'</span><span class="my-order-item-qty">× '+Number(item.quantity||1)+'</span></div>'
+  ).join("");
+  const paid=String(order.status||"").trim().toLowerCase()==="paid";
+  const hasFiles=(order.downloads||[]).some(file=>file.url);
+  const message=paid
+    ? (hasFiles
+      ? '<div class="my-order-guidance is-approved">আপনার রশিদ ও Gmail দিয়ে আপনার ডিজাইন ডাউনলোড করুন।</div>'
+      : '<div class="my-order-guidance is-pending">আপনার অর্ডার অনুমোদিত হয়েছে, তবে ডিজাইন ফাইল এখনো যুক্ত নেই।</div>')
+    : '<div class="my-order-guidance is-pending">আপনার অর্ডারটি পেন্ডিং আছে। পেমেন্ট যাচাই চলছে। অনুমোদন হলে এখানে জানানো হবে।</div>';
+  return items?'<div class="my-order-card"><div class="my-order-products">'+items+'</div>'+message+'</div>':"";
 }
-async function requestCustomerOrder(entry, renew=false){
-  const response=await fetch("/api/my-orders",{method:"POST",cache:"no-store",headers:{"Content-Type":"application/json"},body:JSON.stringify({orderId:entry.orderId,email:entry.email,renew})});
+async function requestCustomerOrder(entry){
+  const response=await fetch("/api/my-orders",{method:"POST",cache:"no-store",headers:{"Content-Type":"application/json"},body:JSON.stringify({orderId:entry.orderId,email:entry.email})});
   const data=await response.json();
   if(!response.ok||!data.success)throw new Error(data.message||"অর্ডার পাওয়া যায়নি।");
   return data.order;
@@ -158,19 +149,21 @@ async function requestCustomerOrder(entry, renew=false){
 function saveCustomerOrder(entry){
   try{
     const saved=JSON.parse(localStorage.getItem(PURCHASE_STORAGE_KEY)||"[]");
-    const next=[{orderId:String(entry.orderId).replace(/^#/,""),email:String(entry.email).trim().toLowerCase()},...saved.filter(x=>String(x.orderId)!==String(entry.orderId).replace(/^#/,"")||String(x.email).toLowerCase()!==String(entry.email).trim().toLowerCase())];
+    const orderId=String(entry.orderId).replace(/^#/,"");
+    const email=String(entry.email).trim().toLowerCase();
+    const next=[{orderId,email},...saved.filter(x=>String(x.orderId)!==orderId||String(x.email).toLowerCase()!==email)];
     localStorage.setItem(PURCHASE_STORAGE_KEY,JSON.stringify(next.slice(0,30)));
   }catch{}
 }
 async function loadSavedCustomerOrders(silent=false){
   const area=document.getElementById("mySavedOrders");if(!area)return;
   let saved=[];try{saved=JSON.parse(localStorage.getItem(PURCHASE_STORAGE_KEY)||"[]");}catch{}
-  if(!saved.length){area.innerHTML="";return;}
-  if(!silent)area.innerHTML='<p class="my-order-loading">লোড হচ্ছে...</p>';
+  if(!saved.length){if(area.innerHTML)area.innerHTML="";return;}
+  if(!silent)area.innerHTML='<p class="my-order-loading">অর্ডার লোড হচ্ছে...</p>';
   const cards=[];
   for(const entry of saved.slice(0,30)){
     if(!entry||!entry.orderId||!entry.email)continue;
-    try{const order=await requestCustomerOrder(entry,false);cards.push(renderMyOrderCard(order));}catch{}
+    try{const order=await requestCustomerOrder(entry);cards.push(renderMyOrderCard(order));}catch{}
   }
   const nextHtml=cards.join("");
   if(area.innerHTML!==nextHtml)area.innerHTML=nextHtml;
@@ -178,6 +171,13 @@ async function loadSavedCustomerOrders(silent=false){
 document.querySelector('a[href="#my-orders"]')?.addEventListener("click",()=>{loadSavedCustomerOrders();});
 loadSavedCustomerOrders();
 
+function renderReceiptDownloadResult(order){
+  const paid=String(order.status||"").trim().toLowerCase()==="paid";
+  const downloads=(order.downloads||[]).filter(file=>file.url);
+  if(!paid)return '<div class="receipt-download-message is-pending">আপনার অর্ডার পাওয়া গেছে, কিন্তু পেমেন্ট এখনো অনুমোদিত হয়নি। অনুমোদনের পর আবার রসিদ ও Gmail দিয়ে খুঁজুন।</div>';
+  if(!downloads.length)return '<div class="receipt-download-message is-pending">অর্ডার অনুমোদিত হয়েছে, কিন্তু এই পণ্যের ডাউনলোড ফাইল পাওয়া যায়নি। অনুগ্রহ করে Sajjadhub-এর সঙ্গে যোগাযোগ করুন।</div>';
+  return '<div class="receipt-download-box"><strong>আপনার ডিজাইন ডাউনলোডের জন্য প্রস্তুত</strong><p>নিচের বাটনে ক্লিক করে ফাইল সংগ্রহ করুন।</p>'+downloads.map(file=>'<a class="receipt-download-link" data-receipt-download href="'+escapeHTML(file.url)+'" target="_blank" rel="noopener">ডাউনলোড করুন · '+escapeHTML(file.name||"ডিজাইন")+'</a>').join("")+'</div>';
+}
 const receiptLookupForm=document.getElementById("receiptOrderLookup");
 receiptLookupForm?.addEventListener("submit",async event=>{
   event.preventDefault();
@@ -185,49 +185,43 @@ receiptLookupForm?.addEventListener("submit",async event=>{
   const email=document.getElementById("receiptOrderEmail").value.trim();
   const message=document.getElementById("receiptLookupMessage");
   const button=document.getElementById("receiptLookupButton");
+  const result=document.getElementById("receiptLookupResult");
   if(!orderId||!email)return;
-  button.disabled=true;message.textContent="রসিদ যাচাই হচ্ছে...";
+  button.disabled=true;message.textContent="রসিদ ও Gmail যাচাই হচ্ছে...";
+  if(result)result.innerHTML="";
   try{
-    const order=await requestCustomerOrder({orderId,email},true);
+    const order=await requestCustomerOrder({orderId,email});
     saveCustomerOrder({orderId,email});
-    for(const file of order.downloads||[]){
-      const url=new URL(file.url,window.location.origin).href;
-      pendingDownloadUrls.delete(url);
-      const timer=downloadResetTimers.get(url);
-      if(timer)clearTimeout(timer);
-      downloadResetTimers.delete(url);
-    }
     document.getElementById("mySavedOrders").innerHTML=renderMyOrderCard(order);
+    if(result)result.innerHTML=renderReceiptDownloadResult(order);
     message.textContent=String(order.status).toLowerCase()==="paid"
-      ? "অর্ডার পাওয়া গেছে। Download বাটন চালু হয়েছে।"
-      : "অর্ডার পাওয়া গেছে। পেমেন্ট যাচাই হলে Pending থেকে Download হবে।";
-  }catch(error){message.textContent=error.message||"রসিদের তথ্য মেলেনি।";}
-  finally{button.disabled=false;}
-});
-// Download শুরু হলে শুধু বাটনের অবস্থা বদলাবে; ২০ সেকেন্ড পর আগের অবস্থায় ফিরবে।
-document.getElementById("mySavedOrders")?.addEventListener("click",event=>{
-  const link=event.target.closest("a.my-order-simple-status.is-download");
-  if(!link)return;
-  const url=link.href;
-  if(pendingDownloadUrls.has(url)){
-    event.preventDefault();
-    return;
-  }
-  pendingDownloadUrls.add(url);
-  link.textContent="ডাউনলোড শুরু হয়েছে";
-  link.classList.add("is-download-started");
-  const previousTimer=downloadResetTimers.get(url);
-  if(previousTimer)clearTimeout(previousTimer);
-  const timer=setTimeout(()=>{
-    downloadResetTimers.delete(url);
-    pendingDownloadUrls.delete(url);
-    refreshCustomerOrderStatus(true);
-  },20000);
-  downloadResetTimers.set(url,timer);
+      ? "অর্ডার যাচাই হয়েছে। নিচে আপনার ডিজাইন পাবেন।"
+      : "অর্ডার পাওয়া গেছে। পেমেন্ট অনুমোদনের অপেক্ষায় আছে।";
+  }catch(error){
+    message.textContent=error.message||"রসিদের তথ্য মেলেনি।";
+  }finally{button.disabled=false;}
 });
 
-// স্বয়ংক্রিয় অর্ডার স্ট্যাটাস আপডেট: Admin Paid করলে ২০ সেকেন্ডের মধ্যে
-// পেজ রিফ্রেশ ছাড়াই Pending থেকে Download দেখাবে।
+// Download বাটন ২০ সেকেন্ড পর আগের লেখায় ফিরবে; ডাউনলোড লিংক সবসময় পুনরায় ব্যবহার করা যাবে।
+const receiptDownloadTimers=new Map();
+document.getElementById("receiptLookupResult")?.addEventListener("click",event=>{
+  const link=event.target.closest("a[data-receipt-download]");
+  if(!link)return;
+  if(link.dataset.busy==="true"){event.preventDefault();return;}
+  link.dataset.busy="true";
+  link.textContent="ডাউনলোড শুরু হয়েছে";
+  const previous=receiptDownloadTimers.get(link);
+  if(previous)clearTimeout(previous);
+  const timer=setTimeout(()=>{
+    link.dataset.busy="false";
+    link.textContent="ডাউনলোড করুন · "+(link.dataset.label||"ডিজাইন");
+    receiptDownloadTimers.delete(link);
+  },20000);
+  link.dataset.label=link.textContent.replace(/^ডাউনলোড শুরু হয়েছে$/,"ডিজাইন");
+  receiptDownloadTimers.set(link,timer);
+});
+
+// Admin Paid করলে অর্ডারের বার্তা স্বয়ংক্রিয়ভাবে আপডেট হবে।
 let customerOrderRefreshBusy=false;
 let customerOrderRefreshPending=false;
 async function refreshCustomerOrderStatus(silent=true){
