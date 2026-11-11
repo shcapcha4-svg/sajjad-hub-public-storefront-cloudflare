@@ -345,7 +345,7 @@ export async function onRequest({ request, env }) {
       await env.DB.prepare("CREATE TABLE IF NOT EXISTS customer_notifications (id TEXT PRIMARY KEY, title TEXT NOT NULL, message TEXT NOT NULL, type TEXT NOT NULL DEFAULT 'info', target_email TEXT, target_order_id INTEGER, link_url TEXT, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, is_active INTEGER NOT NULL DEFAULT 1)").run();
       const email = String(url.searchParams.get("email") || "").trim().toLowerCase().slice(0, 254);
       const orderIdInput = String(url.searchParams.get("orderId") || "").trim().replace(/^#/, "");
-      const orderIdValue = /^\\d{1,12}$/.test(orderIdInput) ? Number(orderIdInput) : 0;
+      const orderIdValue = /^\d{1,12}$/.test(orderIdInput) ? Number(orderIdInput) : 0;
       const { results = [] } = await env.DB.prepare(
         "SELECT id,title,message,type,link_url,created_at FROM customer_notifications WHERE is_active=1 AND (target_email IS NULL OR target_email='' OR (lower(target_email)=? AND target_order_id=?)) ORDER BY created_at DESC LIMIT 50"
       ).bind(email, orderIdValue).all();
@@ -668,7 +668,7 @@ export async function onRequest({ request, env }) {
           const type = String(body.type || "info");
           const targetEmail = String(body.targetEmail || "").trim().toLowerCase().slice(0, 254);
           const targetOrderIdInput = String(body.targetOrderId || "").trim().replace(/^#/, "");
-          const targetOrderId = /^\\d{1,12}$/.test(targetOrderIdInput) ? Number(targetOrderIdInput) : 0;
+          const targetOrderId = /^\d{1,12}$/.test(targetOrderIdInput) ? Number(targetOrderIdInput) : 0;
           const linkUrl = String(body.linkUrl || "").trim().slice(0, 500);
           if (!title || !message) return json({ success: false, message: "শিরোনাম ও বার্তা লিখুন।" }, 400);
           if (!["offer", "product", "order", "info"].includes(type)) return json({ success: false, message: "বার্তার ধরন সঠিক নয়।" }, 400);
