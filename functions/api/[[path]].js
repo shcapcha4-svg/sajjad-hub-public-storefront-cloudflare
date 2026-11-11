@@ -395,26 +395,8 @@ export async function onRequest({ request, env }) {
         return new Response("ডাউনলোড লিংকটি অবৈধ।", { status: 404 });
       }
 
-      // প্রথমবার ডাউনলোড লিংক খোলার সময় থেকেই ২০ সেকেন্ডের মেয়াদ শুরু হবে।
-      // ফাইলটি ওই প্রথম রিকোয়েস্টে সম্পূর্ণ পাঠানো হবে; মেয়াদ শেষ হলে পরেরবার আর পাওয়া যাবে না।
-      await env.DB.prepare(
-        "CREATE TABLE IF NOT EXISTS download_expirations (token TEXT PRIMARY KEY, expires_at TEXT NOT NULL)"
-      ).run();
-      await env.DB.prepare(
-        "INSERT OR IGNORE INTO download_expirations(token,expires_at) VALUES(?,?)"
-      )
-        .bind(token, new Date(Date.now() + 20000).toISOString())
-        .run();
-
-      const expiry = await env.DB.prepare(
-        "SELECT expires_at FROM download_expirations WHERE token=?"
-      )
-        .bind(token)
-        .first();
-      if (!expiry || !expiry.expires_at || Date.parse(expiry.expires_at) <= Date.now()) {
-        return new Response("ডাউনলোডের সময় শেষ।", { status: 410 });
-      }
-
+      // Paid order-এর ডাউনলোড লিংক সক্রিয় থাকবে; ২০ সেকেন্ডের UI reset
+      // বড় ফাইল ডাউনলোডে বাধা দেবে না এবং প্রয়োজন হলে পুনরায় ডাউনলোড করা যাবে।
       const object = await b2Request(env, "GET", row.file_key);
 
       if (object.status === 404) {
@@ -492,36 +474,8 @@ export async function onRequest({ request, env }) {
           }
         }
 
-        await env.DB.prepare(
-          "CREATE TABLE IF NOT EXISTS download_expirations (token TEXT PRIMARY KEY, expires_at TEXT NOT NULL)"
-        ).run();
-        const { results: tokens = [] } = await env.DB.prepare(
-          "SELECT t.token,t.product_id FROM download_tokens t JOIN products p ON p.id=t.product_id WHERE t.order_id=? AND p.file_url IS NOT NULL AND p.file_url<>''"
-        )
-          .bind(order.id)
-          .all();
-
-        // Normal order refresh never reopens an expired link. Only receipt lookup (renew=true)
-        // explicitly grants a fresh 20-second download window after verifying order ID + email.
-        for (const token of tokens) {
-          const expiresAt = new Date(Date.now() + 20000).toISOString();
-          if (body.renew === true) {
-            await env.DB.prepare(
-              "INSERT INTO download_expirations(token,expires_at) VALUES(?,?) ON CONFLICT(token) DO UPDATE SET expires_at=excluded.expires_at"
-            )
-              .bind(token.token, expiresAt)
-              .run();
-          } else {
-            await env.DB.prepare(
-              "INSERT OR IGNORE INTO download_expirations(token,expires_at) VALUES(?,?)"
-            )
-              .bind(token.token, expiresAt)
-              .run();
-          }
-        }
-
         const { results: tokensWithExpiry = [] } = await env.DB.prepare(
-          "SELECT t.token,t.product_id,e.expires_at,p.name FROM download_tokens t JOIN products p ON p.id=t.product_id LEFT JOIN download_expirations e ON e.token=t.token WHERE t.order_id=? AND p.file_url IS NOT NULL AND p.file_url<>''"
+          "SELECT t.token,t.product_id,p.name FROM download_tokens t JOIN products p ON p.id=t.product_id WHERE t.order_id=? AND p.file_url IS NOT NULL AND p.file_url<>''"
         )
           .bind(order.id)
           .all();
@@ -529,7 +483,6 @@ export async function onRequest({ request, env }) {
         downloads = tokensWithExpiry.map((token) => ({
           productId: token.product_id,
           name: token.name,
-          expiresAt: token.expires_at,
           url: `/api/download/${token.token}`,
         }));
       }
