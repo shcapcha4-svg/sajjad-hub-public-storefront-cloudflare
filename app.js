@@ -193,23 +193,24 @@ receiptLookupForm?.addEventListener("submit",async event=>{
   }finally{button.disabled=false;}
 });
 
-// Download বাটন ২০ সেকেন্ড পর আগের লেখায় ফিরবে; ডাউনলোড লিংক সবসময় পুনরায় ব্যবহার করা যাবে।
-const receiptDownloadTimers=new Map();
+// ডাউনলোডে ক্লিক করার ২০ সেকেন্ড পর ডাউনলোডের ফল ও অর্ডার-স্ট্যাটাসের লেখা মুছে যাবে; শুধু রসিদ/Gmail ফর্ম থাকবে।
+let receiptDownloadResetTimer=null;
 document.getElementById("receiptLookupResult")?.addEventListener("click",event=>{
   const link=event.target.closest("a[data-receipt-download]");
   if(!link)return;
   if(link.dataset.busy==="true"){event.preventDefault();return;}
   link.dataset.busy="true";
-  const originalText=link.textContent;
   link.textContent="ডাউনলোড শুরু হয়েছে";
-  const previous=receiptDownloadTimers.get(link);
-  if(previous)clearTimeout(previous);
-  const timer=setTimeout(()=>{
-    link.dataset.busy="false";
-    link.textContent=originalText;
-    receiptDownloadTimers.delete(link);
+  if(receiptDownloadResetTimer)clearTimeout(receiptDownloadResetTimer);
+  receiptDownloadResetTimer=setTimeout(()=>{
+    const result=document.getElementById("receiptLookupResult");
+    const orders=document.getElementById("mySavedOrders");
+    const message=document.getElementById("receiptLookupMessage");
+    if(result)result.innerHTML="";
+    if(orders)orders.innerHTML="";
+    if(message)message.textContent="";
+    receiptDownloadResetTimer=null;
   },20000);
-  receiptDownloadTimers.set(link,timer);
 });
 
 // Admin Paid করলে অর্ডারের বার্তা স্বয়ংক্রিয়ভাবে আপডেট হবে।
