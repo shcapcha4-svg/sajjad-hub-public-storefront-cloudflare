@@ -15,7 +15,7 @@
   <header class="topbar">
     <details class="category-menu"><summary class="category-menu-trigger">☷ ক্যাটাগরি <span>▾</span></summary><div class="category-menu-dropdown"><a href="#shop" data-category-link="পোস্টার">পোস্টার</a><a href="#shop" data-category-link="ভিজিটিং কার্ড">ভিজিটিং কার্ড</a><a href="#shop" data-category-link="ব্যানার">ব্যানার</a><a href="#shop" data-category-link="PNG">PNG</a><a href="#shop" data-category-link="সোশ্যাল মিডিয়া">সোশ্যাল মিডিয়া</a><a href="#shop" data-category-link="লোগো">লোগো</a><a href="#shop" data-category-link="ক্যাশ মেমো">ক্যাশ মেমো</a><a href="#shop" data-category-link="অন্যান্য">অন্যান্য</a></div></details>
     <a class="brand" href="#" aria-label="Sajjadhub হোম"><img src="/sajjadhub-logo.svg" alt="Sajjadhub — Digital Design Store"></a>
-    <nav><a href="#shop">ডিজাইন</a><a href="#how">কীভাবে কিনবেন</a><a href="#my-orders">আমার অর্ডার</a><a href="#contact">যোগাযোগ</a></nav>
+    <nav><a href="#shop">ডিজাইন</a><a href="#how">কীভাবে কিনবেন</a><a href="#contact">যোগাযোগ</a></nav>
     <button class="theme-toggle" id="themeToggle" type="button" aria-label="ডার্ক মোড চালু করুন">☾ ডার্ক</button>
     <button class="cart-button" id="openCart" aria-label="কার্ট খুলুন">কার্ট <span id="cartCount">0</span></button>
   </header>
@@ -51,22 +51,6 @@
     </section>
 
     <section class="how-section" id="how"><div><span class="eyebrow">SIMPLE & QUICK</span><h2>কেনাকাটা হবে <em>সহজ।</em></h2></div><div class="steps"><article><span>01</span><h3>ডিজাইন বাছাই</h3><p>পছন্দের ডিজাইনটি দেখে কার্টে যোগ করুন।</p></article><article><span>02</span><h3>পেমেন্ট সম্পন্ন</h3><p>চেকআউটে গিয়ে পেমেন্টের ধাপ অনুসরণ করুন।</p></article><article><span>03</span><h3>ডাউনলোড</h3><p>পেমেন্ট যাচাই হলে আপনার ডিজাইনের ডাউনলোড লিংক পাবেন।</p></article></div></section>
-    <section class="my-orders-section" id="my-orders">
-      <div class="my-orders-panel">
-        <div class="my-orders-heading">
-          <h2>আমার অর্ডার</h2>
-        </div>
-        <div id="mySavedOrders" class="my-saved-orders" aria-live="polite"></div>
-        <form id="receiptOrderLookup" class="receipt-order-lookup">
-          <div><strong>রসিদ ও Gmail দিয়ে ডিজাইন ডাউনলোড</strong><small>আপনার রসিদে থাকা অর্ডার নম্বর এবং অর্ডারের সময় দেওয়া Gmail লিখে অর্ডার যাচাই করুন।</small></div>
-          <label>রসিদের অর্ডার নম্বর<input id="receiptOrderId" type="text" inputmode="numeric" placeholder="যেমন: 1001" required></label>
-          <label>রসিদের Gmail<input id="receiptOrderEmail" type="email" inputmode="email" placeholder="name@gmail.com" required></label>
-          <button id="receiptLookupButton" class="checkout-button" type="submit">ডিজাইন খুঁজুন</button>
-          <p id="receiptLookupMessage" role="status" aria-live="polite"></p>
-        </form>
-        <div id="receiptLookupResult" class="receipt-lookup-result" aria-live="polite"></div>
-      </div>
-    </section>
   </main>
 
   <footer id="contact">
@@ -93,6 +77,6 @@
       </div>
     </div>
   </dialog>
-  <script src="app.js?v=order-status-plain-text-20261111-3"></script>
+  <script src="app.js?v=remove-my-orders-pending-download-20261111-1"></script>
 </body>
 </html>
