@@ -499,3 +499,5 @@ body[data-theme="dark"] .my-order-result-card>p{background:#344a35;color:#d8efc2
 .my-order-result-card>p{line-height:1.8}
 @media(max-width:620px){.order-notice-button{padding:8px 10px;font-size:12px}.floating-whatsapp-chat{right:13px;bottom:13px;padding:8px 13px 8px 9px}.floating-whatsapp-chat .chat-icon{width:34px;height:34px}.floating-whatsapp-chat strong{font-size:12px}.floating-whatsapp-chat small{font-size:9px}}
 body[data-theme="dark"] .order-notice-button{background:#263523;color:#d8efb8;border-color:#465b3c}
+
+/* Trigger final Demo preview build after order tools update */
