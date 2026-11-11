@@ -744,7 +744,7 @@ body[data-theme="dark"] .favorites-dialog .dialog-close{background:#1f2937;color
 
 /* Admin-managed featured artwork in the DESIGN YOUR WORLD hero */
 .poster.has-featured-design{padding:0;overflow:hidden;display:block;background:#f1f4ef}
-.hero-feature-image{display:block;width:100%;height:100%;object-fit:contain;background:#f7f8f5}
+.hero-feature-image{display:block;width:100%;height:100%;object-fit:contain;background:transparent}
 .hero-feature-caption{position:absolute;left:0;right:0;bottom:0;padding:24px 12px 10px;background:linear-gradient(transparent,#0009);color:#fff;font:700 11px "Hind Siliguri",sans-serif;letter-spacing:.2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .hero-admin-previews{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:10px 0 15px}
 .hero-admin-preview{min-width:0;min-height:130px;padding:12px;border:1px dashed #b8d8c0;border-radius:12px;background:#f6faf4;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;color:#829188;font-size:12px;text-align:center}
@@ -753,3 +753,6 @@ body[data-theme="dark"] .favorites-dialog .dialog-close{background:#1f2937;color
 body[data-theme="dark"] .hero-admin-preview{background:#1e3024;border-color:#405746;color:#c4d7c8}
 body[data-theme="dark"] .hero-admin-preview strong{color:#b8edc6}
 @media(max-width:620px){.hero-admin-previews{grid-template-columns:1fr 1fr;gap:8px}.hero-admin-preview{padding:8px}.hero-admin-preview img{height:125px}}
+
+.hero-upload-grid input[type="file"]{display:block;width:100%;margin-top:8px}
+.hero-upload-grid small{display:block;color:var(--muted,#667085);font-size:12px;margin-top:5px;overflow-wrap:anywhere}
