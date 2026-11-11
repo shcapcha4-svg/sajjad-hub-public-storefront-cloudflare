@@ -65,6 +65,8 @@ $('#heroDesignsForm').addEventListener('submit',async e=>{
   e.preventDefault();
   const firstId=$('#heroDesignOne').value,secondId=$('#heroDesignTwo').value,button=$('#saveHeroDesigns');
   if(!firstId||!secondId||firstId===secondId){message($('#heroDesignMessage'),'দুটি আলাদা ডিজাইন নির্বাচন করুন।',true);return;}
+  try{for(const input of [$('#heroImageOne'),$('#heroImageTwo')])if(input.files[0])await inspectHeroArtwork(input.files[0]);}
+  catch(error){message($('#heroDesignMessage'),error.message,true);return;}
   button.disabled=true;message($('#heroDesignMessage'),'হোমপেজের ডিজাইন সংরক্ষণ হচ্ছে...');
   try{
     const data=new FormData();data.append('firstId',firstId);data.append('secondId',secondId);
