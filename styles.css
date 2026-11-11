@@ -601,3 +601,5 @@ body[data-theme="dark"] .my-orders-button,body[data-theme="dark"] .notification-
 .notification-footnote{padding-top:4px}
 body[data-theme="dark"] .notification-refresh-row{color:#d8e8d5}
 @media(max-width:430px){.notification-refresh-row{align-items:flex-start;flex-direction:column}.notification-refresh-row .notification-load-button{width:100%}}
+
+/* Rebuild Demo preview after notification and header refinements */
