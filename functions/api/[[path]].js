@@ -550,11 +550,11 @@ export async function onRequest({ request, env }) {
         );
       }
 
+      await ensureProductColumns(env);
       let total = 0;
       const valid = [];
 
       for (const item of items) {
-        await ensureProductColumns(env);
         const product = await env.DB.prepare(
           "SELECT id, name, price, offer_price FROM products WHERE id=? AND is_active=1 AND COALESCE(is_deleted,0)=0"
         )
