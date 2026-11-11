@@ -557,3 +557,47 @@ body[data-theme="dark"] .notification-empty{border-color:#405a49;color:#a0b0a5}
 @media(max-width:620px){.notification-bell{width:36px;height:36px;flex-basis:36px}.notification-bell svg{width:19px;height:19px}.notifications-hero{padding:27px 21px 22px}.notifications-body{padding:19px 18px 20px}.notifications-hero h2{font-size:25px}.notification-card{padding:12px;grid-template-columns:33px minmax(0,1fr);gap:9px}.notification-card-icon{width:32px;height:32px}}
 
 /* Trigger fresh preview for full notification center and private order updates */
+
+
+/* Sajjadhub signature header — unified navigation and larger logo */
+.topbar{height:auto;min-height:88px;padding:12px clamp(16px,4vw,56px);display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:clamp(14px,2.2vw,32px);align-items:center;background:rgba(255,255,255,.96);border-bottom:1px solid #e8eee5;box-shadow:0 8px 28px #173b2610;backdrop-filter:blur(16px)}
+.topbar>.brand{display:flex;align-items:center;min-width:0}
+.topbar>.brand img{display:block;width:190px;height:auto;max-height:54px;object-fit:contain}
+.header-navigation{display:flex;align-items:center;justify-content:center;gap:9px;min-width:0;padding:6px;border:1px solid #e8eee2;border-radius:18px;background:linear-gradient(135deg,#f8fbf4,#f1f6eb);box-shadow:inset 0 1px #fff}
+.category-menu{position:relative;flex:0 0 auto}
+.category-menu-trigger{display:flex;align-items:center;gap:8px;min-height:40px;padding:0 13px;border:1px solid #dce8cf;border-radius:12px;background:#fff;color:#36552c;font-size:13px;font-weight:800;cursor:pointer;list-style:none;white-space:nowrap}
+.category-menu-trigger::-webkit-details-marker{display:none}
+.category-chevron{font-size:11px;color:#82966c}
+.category-menu-dropdown{position:absolute;top:calc(100% + 10px);left:0;z-index:20;display:grid;min-width:190px;padding:8px;border:1px solid #e0e8da;border-radius:14px;background:#fff;box-shadow:0 18px 45px #172b1b24}
+.category-menu-dropdown a{padding:9px 11px;border-radius:8px;color:#344b38;font-size:13px}
+.category-menu-dropdown a:hover{background:#eff6e7;color:#2f5b25}
+.primary-nav{display:flex;align-items:center;justify-content:center;gap:4px;min-width:0;color:#5f6e62;font-size:13px}
+.primary-nav a{padding:10px 12px;border-radius:10px;white-space:nowrap;transition:background .18s,color .18s}
+.primary-nav a:hover{background:#e8f1df;color:#315b2b}
+.header-actions{display:flex;align-items:center;gap:7px;padding:6px;border:1px solid #e7ece3;border-radius:17px;background:#fff;box-shadow:0 4px 15px #173b260a}
+.header-actions button{min-height:40px}
+.theme-toggle{width:40px;height:40px;display:grid;place-items:center;padding:0;border-color:#e5eadf;background:#f7f9f4;color:#52634b;font-size:18px}
+.cart-button{display:flex;align-items:center;gap:8px;padding:0 12px;background:#173e31;border-radius:12px;font-size:13px;font-weight:800;white-space:nowrap}
+.cart-button span#cartCount{margin:0;width:22px;height:22px}
+.my-orders-button{display:flex;align-items:center;gap:6px;min-height:40px;padding:0 12px;border:1px solid #dce8cf;border-radius:12px;background:#f3f8ed;color:#36572e;font-size:12px;font-weight:800;white-space:nowrap;cursor:pointer}
+.my-orders-button:hover{background:#e7f1dc}
+.notification-bell{width:40px;height:40px;flex:0 0 40px;border-radius:12px;background:#f3f8ed;border-color:#dce8cf}
+.notification-bell:hover{background:#e7f1dc}
+body[data-theme="dark"] .topbar{background:rgba(31,41,55,.96);border-bottom-color:#374151}
+body[data-theme="dark"] .header-navigation{background:linear-gradient(135deg,#202d26,#26372d);border-color:#405447;box-shadow:none}
+body[data-theme="dark"] .category-menu-trigger,body[data-theme="dark"] .category-menu-dropdown,body[data-theme="dark"] .header-actions{background:#1f2937;border-color:#405447;color:#e5efdf}
+body[data-theme="dark"] .category-menu-dropdown a{color:#e5efdf}
+body[data-theme="dark"] .category-menu-dropdown a:hover{background:#344a35}
+body[data-theme="dark"] .primary-nav{color:#cbd5e1}
+body[data-theme="dark"] .primary-nav a:hover{background:#344a35;color:#e5efdf}
+body[data-theme="dark"] .my-orders-button,body[data-theme="dark"] .notification-bell,body[data-theme="dark"] .theme-toggle{background:#263523;border-color:#465b3c;color:#d8efb8}
+@media(max-width:1080px){.topbar{grid-template-columns:auto 1fr;gap:10px 16px}.header-navigation{grid-column:1/-1;grid-row:2;justify-content:center;order:3}.header-actions{grid-column:2;grid-row:1;justify-self:end}.topbar>.brand img{width:176px}}
+@media(max-width:620px){.topbar{min-height:0;padding:10px 12px;grid-template-columns:minmax(0,1fr) auto;gap:9px}.topbar>.brand img{width:145px;max-height:42px}.header-actions{gap:4px;padding:4px;border-radius:13px}.header-actions button{min-height:35px}.theme-toggle{width:34px;height:35px;font-size:16px}.cart-button{padding:0 8px;gap:5px;font-size:11px}.cart-button span#cartCount{width:19px;height:19px;font-size:10px}.my-orders-button{padding:0 8px;font-size:10px;gap:4px}.notification-bell{width:35px;height:35px;flex-basis:35px;border-radius:10px}.notification-bell svg{width:18px;height:18px}.header-navigation{grid-column:1/-1;grid-row:2;justify-content:flex-start;overflow:visible;padding:5px;border-radius:13px}.category-menu-trigger{min-height:34px;padding:0 9px;font-size:11px}.primary-nav{justify-content:flex-start;overflow-x:auto;scrollbar-width:none}.primary-nav::-webkit-scrollbar{display:none}.primary-nav a{padding:8px 9px;font-size:11px}.category-menu-dropdown{max-height:65vh;overflow:auto}}
+@media(max-width:380px){.topbar>.brand img{width:124px}.header-actions{gap:3px}.my-orders-button{font-size:9px;padding:0 6px}.cart-button .cart-label{display:none}}
+
+/* Notification center: no duplicate order form; order lookup stays in My Orders */
+.notification-refresh-row{display:flex;align-items:center;justify-content:space-between;gap:12px;color:#304b37;font-size:12px;font-weight:800}
+.notification-refresh-row .notification-load-button{min-height:37px;padding:0 13px;white-space:nowrap}
+.notification-footnote{padding-top:4px}
+body[data-theme="dark"] .notification-refresh-row{color:#d8e8d5}
+@media(max-width:430px){.notification-refresh-row{align-items:flex-start;flex-direction:column}.notification-refresh-row .notification-load-button{width:100%}}
