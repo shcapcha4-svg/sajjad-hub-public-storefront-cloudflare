@@ -103,6 +103,7 @@ const safeProduct = (row) => ({
   ink: "#344054",
   title: "DESIGN",
   sub: "DIGITAL DESIGN",
+  createdAt: row.created_at || null,
   imageUrl: row.image_url ? `/api/media/${encodeURIComponent(row.image_url)}` : null,
   hasFile: !!row.file_url,
   active: !!row.is_active,
@@ -756,6 +757,25 @@ export async function onRequest({ request, env }) {
           { success: false, message: "অনুমতি নেই। আবার লগইন করুন।" },
           401
         );
+      }
+
+      if (route === "admin/sales-summary" && method === "GET") {
+        const paidFilter = "payment_status='paid' AND COALESCE(payment_method,'') <> 'TEST MODE'";
+        const [totalsResult,dailyResult,weeklyResult,monthlyResult] = await Promise.all([
+          env.DB.prepare(`SELECT COUNT(*) AS total_orders,COALESCE(SUM(total_amount),0) AS total_sales,
+          SUM(CASE WHEN date(datetime(COALESCE(verified_at,created_at),'+6 hours'))=date('now','+6 hours') THEN 1 ELSE 0 END) AS today_orders,
+          COALESCE(SUM(CASE WHEN date(datetime(COALESCE(verified_at,created_at),'+6 hours'))=date('now','+6 hours') THEN total_amount ELSE 0 END),0) AS today_sales,
+          SUM(CASE WHEN date(datetime(COALESCE(verified_at,created_at),'+6 hours'))>=date('now','+6 hours','-6 days','weekday 1') THEN 1 ELSE 0 END) AS week_orders,
+          COALESCE(SUM(CASE WHEN date(datetime(COALESCE(verified_at,created_at),'+6 hours'))>=date('now','+6 hours','-6 days','weekday 1') THEN total_amount ELSE 0 END),0) AS week_sales,
+          SUM(CASE WHEN date(datetime(COALESCE(verified_at,created_at),'+6 hours'))>=date('now','+6 hours','start of month') THEN 1 ELSE 0 END) AS month_orders,
+          COALESCE(SUM(CASE WHEN date(datetime(COALESCE(verified_at,created_at),'+6 hours'))>=date('now','+6 hours','start of month') THEN total_amount ELSE 0 END),0) AS month_sales
+          FROM orders WHERE ${paidFilter}`).first(),
+          env.DB.prepare(`SELECT date(datetime(COALESCE(verified_at,created_at),'+6 hours')) AS period,COUNT(*) AS orders,COALESCE(SUM(total_amount),0) AS sales FROM orders WHERE ${paidFilter} GROUP BY period ORDER BY period DESC`).all(),
+          env.DB.prepare(`SELECT date(datetime(COALESCE(verified_at,created_at),'+6 hours'),'-6 days','weekday 1') AS period,COUNT(*) AS orders,COALESCE(SUM(total_amount),0) AS sales FROM orders WHERE ${paidFilter} GROUP BY period ORDER BY period DESC`).all(),
+          env.DB.prepare(`SELECT strftime('%Y-%m',datetime(COALESCE(verified_at,created_at),'+6 hours')) AS period,COUNT(*) AS orders,COALESCE(SUM(total_amount),0) AS sales FROM orders WHERE ${paidFilter} GROUP BY period ORDER BY period DESC`).all()
+        ]);
+        const totals=totalsResult||{};
+        return json({success:true,allTime:{orders:Number(totals.total_orders||0),sales:Number(totals.total_sales||0)},today:{orders:Number(totals.today_orders||0),sales:Number(totals.today_sales||0)},thisWeek:{orders:Number(totals.week_orders||0),sales:Number(totals.week_sales||0)},thisMonth:{orders:Number(totals.month_orders||0),sales:Number(totals.month_sales||0)},daily:dailyResult.results||[],weekly:weeklyResult.results||[],monthly:monthlyResult.results||[]});
       }
 
       if (route === "admin/hero-designs" && method === "GET") {
