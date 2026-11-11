@@ -484,3 +484,5 @@ body[data-theme="dark"] .orders-form-body label small,body[data-theme="dark"] .o
 body[data-theme="dark"] .my-order-result-card{background:#203329;border-color:#405a49;color:#edf5ec}
 body[data-theme="dark"] .my-order-result-card>p{background:#344a35;color:#d8efc2}
 @media(max-width:430px){.orders-hero{padding:29px 21px 22px}.orders-form-body{padding:23px 20px}.orders-steps{gap:6px;font-size:9px}.orders-steps b{width:19px;height:19px}}
+
+/* Demo preview refresh: premium My Orders design verification 2026-11-11 */
