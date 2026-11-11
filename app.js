@@ -148,7 +148,9 @@ function saveCustomerOrder(entry){
     localStorage.setItem(PURCHASE_STORAGE_KEY,JSON.stringify(next.slice(0,30)));
   }catch{}
 }
+let customerOrderStatusClearedAfterDownload=false;
 async function loadSavedCustomerOrders(silent=false){
+  if(customerOrderStatusClearedAfterDownload)return;
   const area=document.getElementById("mySavedOrders");if(!area)return;
   let saved=[];try{saved=JSON.parse(localStorage.getItem(PURCHASE_STORAGE_KEY)||"[]");}catch{}
   if(!saved.length){if(area.innerHTML)area.innerHTML="";return;}
@@ -180,6 +182,7 @@ receiptLookupForm?.addEventListener("submit",async event=>{
   const button=document.getElementById("receiptLookupButton");
   const result=document.getElementById("receiptLookupResult");
   if(!orderId||!email)return;
+  customerOrderStatusClearedAfterDownload=false;
   button.disabled=true;message.textContent="";
   if(result)result.innerHTML="";
   try{
@@ -203,6 +206,7 @@ document.getElementById("receiptLookupResult")?.addEventListener("click",event=>
   link.textContent="ডাউনলোড শুরু হয়েছে";
   if(receiptDownloadResetTimer)clearTimeout(receiptDownloadResetTimer);
   receiptDownloadResetTimer=setTimeout(()=>{
+    customerOrderStatusClearedAfterDownload=true;
     const result=document.getElementById("receiptLookupResult");
     const orders=document.getElementById("mySavedOrders");
     const message=document.getElementById("receiptLookupMessage");
