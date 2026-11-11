@@ -25,25 +25,46 @@ function renderHeroDesignOptions(){
 }
 function renderHeroDesignPreviews(){
   const ids=[$('#heroDesignOne').value,$('#heroDesignTwo').value];
-  $('#heroAdminPreviews').innerHTML=ids.map((id,index)=>{const p=products.find(item=>String(item.id)===String(id));return p?'<div class="hero-admin-preview"><img src="'+esc(p.imageUrl)+'" alt="'+esc(p.name)+'"><strong>'+(index===0?'পেছনের ডিজাইন: ':'সামনের ডিজাইন: ')+esc(p.name)+'</strong></div>':'<div class="hero-admin-preview">'+(index===0?'প্রথম ডিজাইন নির্বাচন করুন':'দ্বিতীয় ডিজাইন নির্বাচন করুন')+'</div>'}).join('');
+  const existing=window.heroDesignSettings||{};
+  const files=[$('#heroImageOne').files[0],$('#heroImageTwo').files[0]];
+  const urls=[existing.firstImageUrl,existing.secondImageUrl];
+  $('#heroAdminPreviews').innerHTML=ids.map((id,index)=>{
+    const p=products.find(item=>String(item.id)===String(id)),src=files[index]?URL.createObjectURL(files[index]):urls[index];
+    return '<div class="hero-admin-preview">'+(src?'<img src="'+esc(src)+'" alt="নির্বাচিত পোস্টার ছবি">':'<div class="admin-empty">আলাদা পোস্টার ছবি আপলোড করুন</div>')+(p?'<strong>'+(index===0?'পেছনের সোর্স: ':'সামনের সোর্স: ')+esc(p.name)+'</strong>':'<strong>সোর্স ডিজাইন নির্বাচন করুন</strong>')+'</div>';
+  }).join('');
 }
 async function loadHeroDesigns(){
   renderHeroDesignOptions();
   const d=await api('/api/admin/hero-designs');
+  window.heroDesignSettings=d.designs||{};
   $('#heroDesignOne').value=String(d.designs?.firstId||'');
   $('#heroDesignTwo').value=String(d.designs?.secondId||'');
+  $('#heroImageOneName').textContent=d.designs?.firstImageKey?'আগের ছবি সংরক্ষিত আছে':'কোনো ছবি নির্বাচন করা হয়নি';
+  $('#heroImageTwoName').textContent=d.designs?.secondImageKey?'আগের ছবি সংরক্ষিত আছে':'কোনো ছবি নির্বাচন করা হয়নি';
+  $('#heroImageOne').value='';$('#heroImageTwo').value='';
   renderHeroDesignPreviews();
   message($('#heroDesignMessage'),'সংরক্ষিত হোমপেজ ডিজাইন লোড হয়েছে।');
 }
 $('#heroDesignOne').addEventListener('change',renderHeroDesignPreviews);
 $('#heroDesignTwo').addEventListener('change',renderHeroDesignPreviews);
+$('#heroImageOne').addEventListener('change',()=>{$('#heroImageOneName').textContent=$('#heroImageOne').files[0]?.name||'আগের ছবি অপরিবর্তিত থাকবে';renderHeroDesignPreviews()});
+$('#heroImageTwo').addEventListener('change',()=>{$('#heroImageTwoName').textContent=$('#heroImageTwo').files[0]?.name||'আগের ছবি অপরিবর্তিত থাকবে';renderHeroDesignPreviews()});
 $('#refreshHeroDesigns').addEventListener('click',()=>loadHeroDesigns().catch(error=>message($('#heroDesignMessage'),error.message,true)));
 $('#heroDesignsForm').addEventListener('submit',async e=>{
   e.preventDefault();
   const firstId=$('#heroDesignOne').value,secondId=$('#heroDesignTwo').value,button=$('#saveHeroDesigns');
   if(!firstId||!secondId||firstId===secondId){message($('#heroDesignMessage'),'দুটি আলাদা ডিজাইন নির্বাচন করুন।',true);return;}
   button.disabled=true;message($('#heroDesignMessage'),'হোমপেজের ডিজাইন সংরক্ষণ হচ্ছে...');
-  try{await api('/api/admin/hero-designs',{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify({firstId,secondId})});message($('#heroDesignMessage'),'সফল! হোমপেজের দুটি ডিজাইন সংরক্ষণ হয়েছে।');renderHeroDesignPreviews();}
+  try{
+    const data=new FormData();data.append('firstId',firstId);data.append('secondId',secondId);
+    if($('#heroImageOne').files[0])data.append('firstImage',$('#heroImageOne').files[0]);
+    if($('#heroImageTwo').files[0])data.append('secondImage',$('#heroImageTwo').files[0]);
+    const result=await api('/api/admin/hero-designs',{method:'PUT',body:data});
+    window.heroDesignSettings={...window.heroDesignSettings,...result.designs};
+    $('#heroImageOne').value='';$('#heroImageTwo').value='';
+    $('#heroImageOneName').textContent='ছবি সংরক্ষিত আছে';$('#heroImageTwoName').textContent='ছবি সংরক্ষিত আছে';
+    message($('#heroDesignMessage'),'সফল! সোর্স ডিজাইন ও আলাদা পোস্টার ছবি সংরক্ষণ হয়েছে।');renderHeroDesignPreviews();
+  }
   catch(error){message($('#heroDesignMessage'),error.message,true)}
   finally{button.disabled=false}
 });
