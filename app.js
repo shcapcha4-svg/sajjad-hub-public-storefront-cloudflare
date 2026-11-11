@@ -128,7 +128,7 @@ document.getElementById("submitPayment").onclick=async()=>{
 
 // Customer order cards and secure, payment-gated downloads.
 const pendingDownloadUrls=new Set();
-const expiredDownloadUrls=new Set();
+const downloadResetTimers=new Map();
 function renderMyOrderCard(order){
   const items=(order.items||[]).map(item=>{
     const productId=String(item.product_id);
@@ -137,14 +137,9 @@ function renderMyOrderCard(order){
       String(download.productId??download.product_id??"")===productId && download.url
     );
     const downloadUrl=file?.url?new URL(String(file.url),window.location.origin).href:"";
-    const serverExpired=Boolean(file?.expiresAt&&Date.parse(file.expiresAt)<=Date.now());
-    const isExpired=serverExpired||expiredDownloadUrls.has(downloadUrl);
-    if(file?.expiresAt&&downloadUrl)scheduleDownloadExpiry(downloadUrl,file.expiresAt);
     const isDownloading=pendingDownloadUrls.has(downloadUrl);
-    const status=paid&&file&&isExpired
-      ? '<span class="my-order-simple-status is-pending">আপনার কোনো ডাউনলোড ফাইল নেই</span>'
-      : paid&&file&&isDownloading
-        ? '<span class="my-order-simple-status is-download-started">ডাউনলোড শুরু হয়েছে</span>'
+    const status=paid&&file&&isDownloading
+      ? '<span class="my-order-simple-status is-download-started">ডাউনলোড শুরু হয়েছে</span>'
       : paid&&file
         ? '<a class="my-order-simple-status is-download" target="_blank" rel="noopener" href="'+escapeHTML(file.url)+'">Download</a>'
       : paid
@@ -167,17 +162,18 @@ function saveCustomerOrder(entry){
     localStorage.setItem(PURCHASE_STORAGE_KEY,JSON.stringify(next.slice(0,30)));
   }catch{}
 }
-async function loadSavedCustomerOrders(){
+async function loadSavedCustomerOrders(silent=false){
   const area=document.getElementById("mySavedOrders");if(!area)return;
   let saved=[];try{saved=JSON.parse(localStorage.getItem(PURCHASE_STORAGE_KEY)||"[]");}catch{}
   if(!saved.length){area.innerHTML="";return;}
-  area.innerHTML='<p class="my-order-loading">লোড হচ্ছে...</p>';
+  if(!silent)area.innerHTML='<p class="my-order-loading">লোড হচ্ছে...</p>';
   const cards=[];
   for(const entry of saved.slice(0,30)){
     if(!entry||!entry.orderId||!entry.email)continue;
     try{const order=await requestCustomerOrder(entry,false);cards.push(renderMyOrderCard(order));}catch{}
   }
-  area.innerHTML=cards.join("");
+  const nextHtml=cards.join("");
+  if(area.innerHTML!==nextHtml)area.innerHTML=nextHtml;
 }
 document.querySelector('a[href="#my-orders"]')?.addEventListener("click",()=>{loadSavedCustomerOrders();});
 loadSavedCustomerOrders();
@@ -196,8 +192,10 @@ receiptLookupForm?.addEventListener("submit",async event=>{
     saveCustomerOrder({orderId,email});
     for(const file of order.downloads||[]){
       const url=new URL(file.url,window.location.origin).href;
-      expiredDownloadUrls.delete(url);
       pendingDownloadUrls.delete(url);
+      const timer=downloadResetTimers.get(url);
+      if(timer)clearTimeout(timer);
+      downloadResetTimers.delete(url);
     }
     document.getElementById("mySavedOrders").innerHTML=renderMyOrderCard(order);
     message.textContent=String(order.status).toLowerCase()==="paid"
@@ -206,41 +204,35 @@ receiptLookupForm?.addEventListener("submit",async event=>{
   }catch(error){message.textContent=error.message||"রসিদের তথ্য মেলেনি।";}
   finally{button.disabled=false;}
 });
-// Download access ends 20 seconds after it is issued; receipt lookup can renew it.
-const orderExpiryTimers=new Map();
-function scheduleDownloadExpiry(url,expiresAt){
-  const expiryTime=Date.parse(expiresAt||"");
-  if(!Number.isFinite(expiryTime))return;
-  const existing=orderExpiryTimers.get(url);
-  if(existing)clearTimeout(existing);
-  const timer=setTimeout(()=>{
-    orderExpiryTimers.delete(url);
-    pendingDownloadUrls.delete(url);
-    expiredDownloadUrls.add(url);
-    refreshCustomerOrderStatus();
-  },Math.max(0,expiryTime-Date.now())+80);
-  orderExpiryTimers.set(url,timer);
-}
+// Download শুরু হলে শুধু বাটনের অবস্থা বদলাবে; ২০ সেকেন্ড পর আগের অবস্থায় ফিরবে।
 document.getElementById("mySavedOrders")?.addEventListener("click",event=>{
   const link=event.target.closest("a.my-order-simple-status.is-download");
   if(!link)return;
   const url=link.href;
-  if(pendingDownloadUrls.has(url)||expiredDownloadUrls.has(url)){
+  if(pendingDownloadUrls.has(url)){
     event.preventDefault();
     return;
   }
   pendingDownloadUrls.add(url);
   link.textContent="ডাউনলোড শুরু হয়েছে";
   link.classList.add("is-download-started");
+  const previousTimer=downloadResetTimers.get(url);
+  if(previousTimer)clearTimeout(previousTimer);
+  const timer=setTimeout(()=>{
+    downloadResetTimers.delete(url);
+    pendingDownloadUrls.delete(url);
+    refreshCustomerOrderStatus(true);
+  },20000);
+  downloadResetTimers.set(url,timer);
 });
 
 // স্বয়ংক্রিয় অর্ডার স্ট্যাটাস আপডেট: Admin Paid করলে ২০ সেকেন্ডের মধ্যে
 // পেজ রিফ্রেশ ছাড়াই Pending থেকে Download দেখাবে।
 let customerOrderRefreshBusy=false;
-async function refreshCustomerOrderStatus(){
+async function refreshCustomerOrderStatus(silent=true){
   if(customerOrderRefreshBusy||document.hidden)return;
   customerOrderRefreshBusy=true;
-  try{await loadSavedCustomerOrders();}finally{customerOrderRefreshBusy=false;}
+  try{await loadSavedCustomerOrders(silent);}finally{customerOrderRefreshBusy=false;}
 }
 setInterval(refreshCustomerOrderStatus,20000);
 window.addEventListener("focus",refreshCustomerOrderStatus);
