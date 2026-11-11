@@ -623,3 +623,36 @@ body[data-theme="dark"] .header-icon-button.notification-bell .notification-unre
 .product-tag-chip{display:inline-flex;align-items:center;padding:3px 8px;border-radius:20px;background:#edf6e8;color:#426b35;border:1px solid #dcebd4;font-size:10px;font-weight:700;line-height:1.4}
 .detail-product-tags{margin:10px 0}
 body[data-theme="dark"] .product-tag-chip{background:#263f2b;border-color:#3c5d40;color:#bce8ae}
+
+
+/* My Orders is a readable text action; keep all header controls separated */
+.header-actions{flex:0 0 auto;min-width:0;gap:7px}
+.header-icon-button{flex:0 0 auto}
+.header-icon-button.my-orders-button{
+  display:inline-flex;
+  width:auto;
+  min-width:max-content;
+  height:44px;
+  padding:0 13px;
+  gap:0;
+  white-space:nowrap;
+  font-family:"Hind Siliguri",sans-serif;
+  font-size:13px;
+  font-weight:700;
+  line-height:1;
+}
+.header-icon-button.my-orders-button span{display:block;white-space:nowrap}
+@media(max-width:620px){
+  .header-actions{gap:4px;padding:4px}
+  .header-icon-button.my-orders-button{height:37px;min-width:max-content;padding:0 9px;font-size:11px;border-radius:11px}
+}
+@media(max-width:380px){
+  .topbar{column-gap:6px}
+  .topbar>.brand{min-width:0}
+  .topbar>.brand img{width:clamp(94px,31vw,116px);max-width:100%;height:auto}
+  .header-actions{gap:3px;padding:3px}
+  .header-icon-button{width:32px;height:34px;min-width:32px}
+  .header-icon-button.my-orders-button{width:auto;min-width:max-content;height:34px;padding:0 7px;font-size:10px}
+  .header-icon-button.cart-button{padding:0 6px}
+}
+body[data-theme="dark"] .header-icon-button.my-orders-button{background:#263a2c;border-color:#405746;color:#d8efb8}
