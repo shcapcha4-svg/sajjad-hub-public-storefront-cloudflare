@@ -668,8 +668,8 @@ export async function onRequest({ request, env }) {
           const linkUrl = String(body.linkUrl || "").trim().slice(0, 500);
           if (!title || !message) return json({ success: false, message: "শিরোনাম ও বার্তা লিখুন।" }, 400);
           if (!["offer", "product", "order", "info"].includes(type)) return json({ success: false, message: "বার্তার ধরন সঠিক নয়।" }, 400);
-          if (targetEmail && !/^\\S+@\\S+\\.\\S+$/.test(targetEmail)) return json({ success: false, message: "ক্রেতার ইমেইল সঠিক নয়।" }, 400);
-          if (linkUrl && !(linkUrl.startsWith("/") && !linkUrl.startsWith("//")) && !/^https:\\/\\//i.test(linkUrl)) return json({ success: false, message: "লিংকটি সঠিক নয়।" }, 400);
+          if (targetEmail && !/^\S+@\S+\.\S+$/.test(targetEmail)) return json({ success: false, message: "ক্রেতার ইমেইল সঠিক নয়।" }, 400);
+          if (linkUrl && !(linkUrl.startsWith("/") && !linkUrl.startsWith("//")) && !/^https:\/\//i.test(linkUrl)) return json({ success: false, message: "লিংকটি সঠিক নয়।" }, 400);
           const notificationId = id();
           await env.DB.prepare(
             "INSERT INTO customer_notifications(id,title,message,type,target_email,link_url) VALUES(?,?,?,?,?,?)"
