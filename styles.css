@@ -424,9 +424,7 @@ body[data-theme="dark"] .receipt-order-lookup input{background:#111827;border-co
 /* Receipt + Gmail gated download flow */
 .my-order-products{display:grid;gap:0}
 .my-order-item-qty{font-size:13px;color:var(--muted,#667085);font-weight:700}
-.my-order-guidance{margin-top:12px;padding:13px 15px;border-radius:10px;font-size:13px;line-height:1.75;font-weight:700}
-.my-order-guidance.is-pending{background:#fff4db;color:#8a5a00;border:1px solid #f3dfad}
-.my-order-guidance.is-approved{background:#eaf8ef;color:#176b3a;border:1px solid #c8e8d2}
+.my-order-guidance{display:block;margin:8px 0 14px;padding:0;border:0;border-radius:0;background:transparent;color:var(--text,#344054);font-size:14px;line-height:1.8;font-weight:700}
 .receipt-lookup-result{max-width:620px;margin:12px auto 0}
 .receipt-download-box,.receipt-download-message{padding:16px;border:1px solid var(--line,#e4e7ec);border-radius:12px;background:var(--surface,#fff);line-height:1.7}
 .receipt-download-box>strong{display:block;margin-bottom:4px}
@@ -434,7 +432,6 @@ body[data-theme="dark"] .receipt-order-lookup input{background:#111827;border-co
 .receipt-download-link{display:block;margin-top:9px;padding:13px 16px;border-radius:9px;background:#087443;color:#fff;text-align:center;text-decoration:none;font-weight:800}
 .receipt-download-link:hover{background:#065f37}
 .receipt-download-message.is-pending{background:#fff7e6;border-color:#f3dfad;color:#8a5a00;font-size:13px}
-body[data-theme="dark"] .my-order-guidance.is-pending{background:#473719;border-color:#665126;color:#ffdf91}
-body[data-theme="dark"] .my-order-guidance.is-approved{background:#173d2b;border-color:#24563c;color:#a7f3c0}
+body[data-theme="dark"] .my-order-guidance{color:#e5e7eb}
 body[data-theme="dark"] .receipt-download-box,body[data-theme="dark"] .receipt-download-message{background:#1f2937;border-color:#475569;color:#e5e7eb}
-@media(max-width:620px){.my-order-guidance{font-size:12px;padding:11px}.receipt-download-box,.receipt-download-message{padding:13px}}
+@media(max-width:620px){.my-order-guidance{font-size:13px;padding:0}.receipt-download-box,.receipt-download-message{padding:13px}}
