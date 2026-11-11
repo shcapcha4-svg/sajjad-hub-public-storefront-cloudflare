@@ -373,7 +373,7 @@ export async function onRequest({ request, env }) {
       const orderIdInput = String(url.searchParams.get("orderId") || "").trim().replace(/^#/, "");
       const orderIdValue = /^\d{1,12}$/.test(orderIdInput) ? Number(orderIdInput) : 0;
       const { results = [] } = await env.DB.prepare(
-        "SELECT id,title,message,type,link_url,created_at FROM customer_notifications WHERE is_active=1 AND (target_email IS NULL OR target_email='' OR (lower(target_email)=? AND target_order_id=?)) ORDER BY created_at DESC LIMIT 50"
+        "SELECT id,title,message,type,link_url,created_at FROM customer_notifications WHERE is_active=1 AND (target_email IS NULL OR target_email='' OR (lower(target_email)=? AND target_order_id=?)) ORDER BY created_at DESC, rowid DESC LIMIT 50"
       ).bind(email, orderIdValue).all();
       return json({ success: true, notifications: results });
     }
