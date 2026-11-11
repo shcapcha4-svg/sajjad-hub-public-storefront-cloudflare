@@ -14,10 +14,14 @@ async function check(){try{const d=await api('/api/admin/me');if(d.success){show
 $('#loginForm').addEventListener('submit',async e=>{e.preventDefault();message($('#loginMessage'),'লগইন হচ্ছে...');try{await api('/api/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:$('#password').value})});showDashboard()}catch(err){message($('#loginMessage'),err.message,true)}});
 $('#logout').onclick=async()=>{try{await api('/api/admin/logout',{method:'POST'})}finally{location.reload()}};
 async function loadAll(){try{await loadProducts()}catch(error){message($('#productMessage'),error.message,true)}await Promise.allSettled([loadHeroDesigns(),loadOrders(),loadNotifications(),loadCustomers()])}
-async function loadProducts(){const d=await api('/api/admin/products');products=d.products||[];renderProducts()}
+async function loadProducts(){const d=await api('/api/admin/products');products=d.products||[];renderProducts();renderHeroDesignOptions()}
 function renderHeroDesignOptions(){
+  const first=$('#heroDesignOne').value,second=$('#heroDesignTwo').value;
   const options='<option value="">ডিজাইন নির্বাচন করুন</option>'+products.filter(p=>p.active&&p.imageUrl).map(p=>'<option value="'+esc(p.id)+'">'+esc(p.name)+' · #'+esc(p.id)+'</option>').join('');
   $('#heroDesignOne').innerHTML=options;$('#heroDesignTwo').innerHTML=options;
+  if(products.some(p=>p.active&&p.imageUrl&&String(p.id)===first))$('#heroDesignOne').value=first;
+  if(products.some(p=>p.active&&p.imageUrl&&String(p.id)===second))$('#heroDesignTwo').value=second;
+  renderHeroDesignPreviews();
 }
 function renderHeroDesignPreviews(){
   const ids=[$('#heroDesignOne').value,$('#heroDesignTwo').value];
