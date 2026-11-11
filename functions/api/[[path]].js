@@ -777,8 +777,8 @@ export async function onRequest({ request, env }) {
         const secondImage = form.get("secondImage");
         const validateImage = (file) => {
           if (!(file instanceof File) || !file.size) return null;
-          if (!/^image\/(png|jpeg|webp|gif)$/.test(file.type) || file.size > 8 * 1024 * 1024) {
-            throw new Error("ছবি JPG, PNG, WEBP বা GIF হতে হবে এবং সর্বোচ্চ ৮ MB হতে পারবে।");
+          if (!/^image\/(png|jpeg|webp|gif)$/.test(file.type) || file.size > 2 * 1024 * 1024) {
+            throw new Error("ছবি JPG, PNG, WEBP বা GIF হতে হবে এবং সর্বোচ্চ ২ MB হতে পারবে।");
           }
           return file;
         };
