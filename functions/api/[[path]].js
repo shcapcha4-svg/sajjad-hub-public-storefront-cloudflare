@@ -438,8 +438,10 @@ export async function onRequest({ request, env }) {
     if (route === "hero-designs" && method === "GET") {
       await env.DB.prepare("CREATE TABLE IF NOT EXISTS store_settings (setting_key TEXT PRIMARY KEY, setting_value TEXT NOT NULL, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)").run();
       const setting = await env.DB.prepare("SELECT setting_value FROM store_settings WHERE setting_key='hero_designs'").first();
-      let designs = { firstId: "", secondId: "" };
+      let designs = { firstId: "", secondId: "", firstImageKey: "", secondImageKey: "" };
       try { if (setting?.setting_value) designs = { ...designs, ...JSON.parse(setting.setting_value) }; } catch {}
+      designs.firstImageUrl = designs.firstImageKey ? "/api/media/" + encodeURIComponent(designs.firstImageKey) : null;
+      designs.secondImageUrl = designs.secondImageKey ? "/api/media/" + encodeURIComponent(designs.secondImageKey) : null;
       return json({ success: true, designs });
     }
 
@@ -748,29 +750,56 @@ export async function onRequest({ request, env }) {
       if (route === "admin/hero-designs" && method === "GET") {
         await env.DB.prepare("CREATE TABLE IF NOT EXISTS store_settings (setting_key TEXT PRIMARY KEY, setting_value TEXT NOT NULL, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)").run();
         const setting = await env.DB.prepare("SELECT setting_value FROM store_settings WHERE setting_key='hero_designs'").first();
-        let designs = { firstId: "", secondId: "" };
+        let designs = { firstId: "", secondId: "", firstImageKey: "", secondImageKey: "" };
         try { if (setting?.setting_value) designs = { ...designs, ...JSON.parse(setting.setting_value) }; } catch {}
+        designs.firstImageUrl = designs.firstImageKey ? "/api/media/" + encodeURIComponent(designs.firstImageKey) : null;
+        designs.secondImageUrl = designs.secondImageKey ? "/api/media/" + encodeURIComponent(designs.secondImageKey) : null;
         return json({ success: true, designs });
       }
 
       if (route === "admin/hero-designs" && method === "PUT") {
-        const body = await request.json();
-        const firstId = String(body.firstId || "").trim();
-        const secondId = String(body.secondId || "").trim();
+        const form = await request.formData();
+        const firstId = String(form.get("firstId") || "").trim();
+        const secondId = String(form.get("secondId") || "").trim();
         if (!firstId || !secondId || firstId === secondId) {
-          return json({ success: false, message: "দুটি আলাদা ডিজাইন নির্বাচন করুন।" }, 400);
+          return json({ success: false, message: "দুটি আলাদা সোর্স ডিজাইন নির্বাচন করুন।" }, 400);
         }
         const selected = await env.DB.prepare(
           "SELECT id FROM products WHERE id IN (?,?) AND is_active=1 AND COALESCE(is_deleted,0)=0 AND image_url IS NOT NULL"
         ).bind(firstId, secondId).all();
         if ((selected.results || []).length !== 2) {
-          return json({ success: false, message: "নির্বাচিত দুটি ডিজাইনই প্রকাশিত ও প্রিভিউ ছবি-সহ থাকতে হবে।" }, 400);
+          return json({ success: false, message: "নির্বাচিত দুটি সোর্স ডিজাইনই প্রকাশিত ও প্রিভিউ ছবি-সহ থাকতে হবে।" }, 400);
         }
-        await env.DB.prepare("CREATE TABLE IF NOT EXISTS store_settings (setting_key TEXT PRIMARY KEY, setting_value TEXT NOT NULL, updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP)").run();
-        await env.DB.prepare(
-          "INSERT INTO store_settings(setting_key,setting_value,updated_at) VALUES('hero_designs',?,CURRENT_TIMESTAMP) ON CONFLICT(setting_key) DO UPDATE SET setting_value=excluded.setting_value,updated_at=CURRENT_TIMESTAMP"
-        ).bind(JSON.stringify({ firstId, secondId })).run();
-        return json({ success: true, designs: { firstId, secondId }, message: "হোমপেজের দুটি ফিচার্ড ডিজাইন সংরক্ষণ হয়েছে।" });
+        const setting = await env.DB.prepare("SELECT setting_value FROM store_settings WHERE setting_key='hero_designs'").first();
+        let designs = { firstId: "", secondId: "", firstImageKey: "", secondImageKey: "" };
+        try { if (setting?.setting_value) designs = { ...designs, ...JSON.parse(setting.setting_value) }; } catch {}
+        const firstImage = form.get("firstImage");
+        const secondImage = form.get("secondImage");
+        const validateImage = (file) => {
+          if (!(file instanceof File) || !file.size) return null;
+          if (!/^image\/(png|jpeg|webp|gif)$/.test(file.type) || file.size > 8 * 1024 * 1024) {
+            throw new Error("ছবি JPG, PNG, WEBP বা GIF হতে হবে এবং সর্বোচ্চ ৮ MB হতে পারবে।");
+          }
+          return file;
+        };
+        const firstUpload = validateImage(firstImage);
+        const secondUpload = validateImage(secondImage);
+        if (!firstUpload && !designs.firstImageKey || !secondUpload && !designs.secondImageKey) {
+          return json({ success: false, message: "প্রথমবার দুটি পোস্টারের আলাদা ছবি আপলোড করুন।" }, 400);
+        }
+        if (firstUpload) {
+          designs.firstImageKey = "previews/hero/" + id();
+          await putB2(env, designs.firstImageKey, firstUpload, firstUpload.type);
+        }
+        if (secondUpload) {
+          designs.secondImageKey = "previews/hero/" + id();
+          await putB2(env, designs.secondImageKey, secondUpload, secondUpload.type);
+        }
+        designs.firstId = firstId;
+        designs.secondId = secondId;
+        await env.DB.prepare("INSERT INTO store_settings(setting_key,setting_value,updated_at) VALUES('hero_designs',?,CURRENT_TIMESTAMP) ON CONFLICT(setting_key) DO UPDATE SET setting_value=excluded.setting_value,updated_at=CURRENT_TIMESTAMP")
+          .bind(JSON.stringify(designs)).run();
+        return json({ success: true, designs: { firstId, secondId, firstImageUrl: "/api/media/" + encodeURIComponent(designs.firstImageKey), secondImageUrl: "/api/media/" + encodeURIComponent(designs.secondImageKey) }, message: "সোর্স ডিজাইন ও আলাদা পোস্টার ছবি সংরক্ষণ হয়েছে।" });
       }
 
       if (route === "admin/customers" && method === "GET") {
