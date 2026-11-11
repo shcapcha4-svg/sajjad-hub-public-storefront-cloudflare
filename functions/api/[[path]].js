@@ -65,14 +65,14 @@ const cookie = (value, maxAge) =>
   `sh_admin=${value}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${maxAge}`;
 
 
-async function ensureProductTagColumn(env) {
-  const { results = [] } = await env.DB.prepare("PRAGMA table_info(products)").all();
-  if (results.some((column) => column.name === "tag")) return;
-  try {
-    await env.DB.prepare("ALTER TABLE products ADD COLUMN tag TEXT NOT NULL DEFAULT ''").run();
-  } catch (error) {
-    const { results: refreshed = [] } = await env.DB.prepare("PRAGMA table_info(products)").all();
-    if (!refreshed.some((column) => column.name === "tag")) throw error;
+async function ensureProductColumns(env) {
+  const columns = [["tag", "ALTER TABLE products ADD COLUMN tag TEXT NOT NULL DEFAULT ''"], ["offer_price", "ALTER TABLE products ADD COLUMN offer_price INTEGER"], ["is_deleted", "ALTER TABLE products ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0"]];
+  let { results = [] } = await env.DB.prepare("PRAGMA table_info(products)").all();
+  for (const [name, sql] of columns) {
+    if (results.some((column) => column.name === name)) continue;
+    try { await env.DB.prepare(sql).run(); }
+    catch (error) { const refreshed = await env.DB.prepare("PRAGMA table_info(products)").all(); if (!(refreshed.results || []).some((column) => column.name === name)) throw error; }
+    const refreshed = await env.DB.prepare("PRAGMA table_info(products)").all(); results = refreshed.results || results;
   }
 }
 
@@ -81,6 +81,7 @@ const safeProduct = (row) => ({
   name: row.name,
   category: row.category,
   price: row.price,
+  offerPrice: row.offer_price == null ? null : Number(row.offer_price),
   tag: row.tag || "",
   description: row.description || "",
   fileType: "",
@@ -368,8 +369,9 @@ export async function onRequest({ request, env }) {
     }
 
     if (route === "products" && method === "GET") {
+      await ensureProductColumns(env);
       const { results = [] } = await env.DB.prepare(
-        "SELECT * FROM products WHERE is_active=1 ORDER BY created_at DESC"
+        "SELECT * FROM products WHERE is_active=1 AND COALESCE(is_deleted,0)=0 ORDER BY created_at DESC"
       ).all();
 
       return json({
@@ -552,8 +554,9 @@ export async function onRequest({ request, env }) {
       const valid = [];
 
       for (const item of items) {
+        await ensureProductColumns(env);
         const product = await env.DB.prepare(
-          "SELECT id, name, price FROM products WHERE id=? AND is_active=1"
+          "SELECT id, name, price, offer_price FROM products WHERE id=? AND is_active=1 AND COALESCE(is_deleted,0)=0"
         )
           .bind(String(item.id))
           .first();
@@ -573,8 +576,9 @@ export async function onRequest({ request, env }) {
           );
         }
 
-        total += product.price * quantity;
-        valid.push({ product, quantity });
+        const payablePrice = product.offer_price != null && Number(product.offer_price) >= 0 && Number(product.offer_price) < Number(product.price) ? Number(product.offer_price) : Number(product.price);
+        total += payablePrice * quantity;
+        valid.push({ product: { ...product, payablePrice }, quantity });
       }
 
       const first = valid[0].product;
@@ -593,7 +597,7 @@ export async function onRequest({ request, env }) {
             orderId,
             item.product.id,
             item.product.name,
-            item.product.price,
+            item.product.payablePrice,
             item.quantity
           )
           .run();
@@ -704,9 +708,9 @@ export async function onRequest({ request, env }) {
       }
 
       if (route === "admin/products" && method === "GET") {
-        await ensureProductTagColumn(env);
+        await ensureProductColumns(env);
         const { results = [] } = await env.DB.prepare(
-          "SELECT * FROM products ORDER BY created_at DESC"
+          "SELECT * FROM products WHERE COALESCE(is_deleted,0)=0 ORDER BY created_at DESC"
         ).all();
 
         return json({
@@ -716,16 +720,18 @@ export async function onRequest({ request, env }) {
       }
 
       if (route === "admin/products" && method === "POST") {
-        await ensureProductTagColumn(env);
+        await ensureProductColumns(env);
         const form = await request.formData();
         const name = String(form.get("name") || "").trim();
         const category = String(form.get("category") || "").trim();
         const tag = String(form.get("tag") || "").trim().slice(0, 300);
         const price = Number(form.get("price"));
+        const offerRaw = String(form.get("offerPrice") || "").trim();
+        const offerPrice = offerRaw === "" ? null : Number(offerRaw);
 
-        if (!name || !category || !Number.isFinite(price) || price < 0) {
+        if (!name || !category || !Number.isFinite(price) || price < 0 || (offerPrice !== null && (!Number.isFinite(offerPrice) || offerPrice < 0 || offerPrice >= price))) {
           return json(
-            { success: false, message: "নাম, ক্যাটাগরি ও সঠিক দাম দিন।" },
+            { success: false, message: "নাম, ক্যাটাগরি ও সঠিক দাম দিন। অফার মূল্য দিলে তা মূল দামের চেয়ে কম হতে হবে।" },
             400
           );
         }
@@ -774,14 +780,14 @@ export async function onRequest({ request, env }) {
         }
 
         const inserted = await env.DB.prepare(
-          "INSERT INTO products(name,description,price,image_url,category,file_url,is_active,tag) VALUES(?,?,?,?,?,?,1,?)"
+          "INSERT INTO products(name,description,price,image_url,category,file_url,is_active,tag,offer_price,is_deleted) VALUES(?,?,?,?,?,?,1,?,?,0)"
         )
-          .bind(name, String(form.get("description") || ""), Math.round(price), imageKey, category, fileKey, tag)
+          .bind(name, String(form.get("description") || ""), Math.round(price), imageKey, category, fileKey, tag, offerPrice === null ? null : Math.round(offerPrice))
           .run();
 
         return json({ success: true, id: inserted.meta.last_row_id });
       }      if (parts[1] === "products" && parts[2] && method === "PUT") {
-        await ensureProductTagColumn(env);
+        await ensureProductColumns(env);
         const productId = parts[2];
         const form = await request.formData();
 
@@ -844,19 +850,19 @@ export async function onRequest({ request, env }) {
         const value = (field, oldField = field) =>
           form.has(field) ? String(form.get(field)) : old[oldField];
 
-        const price = form.has("price")
-          ? Number(form.get("price"))
-          : old.price;
+        const price = form.has("price") ? Number(form.get("price")) : old.price;
+        const offerRaw = form.has("offerPrice") ? String(form.get("offerPrice") || "").trim() : (old.offer_price == null ? "" : String(old.offer_price));
+        const offerPrice = offerRaw === "" ? null : Number(offerRaw);
 
-        if (!Number.isFinite(price) || price < 0) {
+        if (!Number.isFinite(price) || price < 0 || (offerPrice !== null && (!Number.isFinite(offerPrice) || offerPrice < 0 || offerPrice >= price))) {
           return json(
-            { success: false, message: "দাম সঠিক নয়।" },
+            { success: false, message: "দাম সঠিক নয়। অফার মূল্য দিলে তা মূল দামের চেয়ে কম হতে হবে।" },
             400
           );
         }
 
         await env.DB.prepare(
-          "UPDATE products SET name=?,category=?,price=?,description=?,image_url=?,file_url=?,is_active=1,tag=? WHERE id=?"
+          "UPDATE products SET name=?,category=?,price=?,description=?,image_url=?,file_url=?,is_active=1,tag=?,offer_price=? WHERE id=?"
         )
           .bind(
             value("name"),
@@ -866,6 +872,7 @@ export async function onRequest({ request, env }) {
             imageKey,
             fileKey,
             value("tag", "tag"),
+            offerPrice === null ? null : Math.round(offerPrice),
             productId
           )
           .run();
@@ -894,10 +901,8 @@ export async function onRequest({ request, env }) {
         ).bind(productId, productId).first();
 
         if (Number(orderRefs?.item_count || 0) > 0 || Number(orderRefs?.order_count || 0) > 0) {
-          return json({
-            success: false,
-            message: "এই ডিজাইনের অর্ডার ইতিহাস আছে। পুরোনো ক্রেতাদের ডাউনলোড ও রসিদ ঠিক রাখতে এটি স্থায়ীভাবে ডিলিট করা যাবে না। চাইলে ‘লুকান’ বাটনে চাপ দিয়ে সাইট থেকে সরিয়ে রাখতে পারেন।"
-          }, 409);
+          await env.DB.prepare("UPDATE products SET is_active=0, is_deleted=1 WHERE id=?").bind(productId).run();
+          return json({ success: true, archived: true, message: "ডিজাইনটি অ্যাডমিন ও ওয়েবসাইট—দুই জায়গা থেকেই সরানো হয়েছে। পুরোনো অর্ডারের ডাউনলোড ঠিক রাখতে এর সংরক্ষিত কপি নিরাপদে রাখা হয়েছে।" });
         }
 
         await env.DB.batch([
