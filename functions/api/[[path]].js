@@ -794,13 +794,13 @@ export async function onRequest({ request, env }) {
           env.DB.prepare(`SELECT COUNT(*) AS total_orders,COALESCE(SUM(total_amount),0) AS total_sales,
           SUM(CASE WHEN date(datetime(COALESCE(verified_at,created_at),'+6 hours'))=date('now','+6 hours') THEN 1 ELSE 0 END) AS today_orders,
           COALESCE(SUM(CASE WHEN date(datetime(COALESCE(verified_at,created_at),'+6 hours'))=date('now','+6 hours') THEN total_amount ELSE 0 END),0) AS today_sales,
-          SUM(CASE WHEN date(datetime(COALESCE(verified_at,created_at),'+6 hours'))>=date('now','+6 hours','-6 days','weekday 1') THEN 1 ELSE 0 END) AS week_orders,
-          COALESCE(SUM(CASE WHEN date(datetime(COALESCE(verified_at,created_at),'+6 hours'))>=date('now','+6 hours','-6 days','weekday 1') THEN total_amount ELSE 0 END),0) AS week_sales,
+          SUM(CASE WHEN date(datetime(COALESCE(verified_at,created_at),'+6 hours'))>=date('now','+6 hours','-' || ((CAST(strftime('%w',datetime('now','+6 hours')) AS INTEGER)+6)%7) || ' days') THEN 1 ELSE 0 END) AS week_orders,
+          COALESCE(SUM(CASE WHEN date(datetime(COALESCE(verified_at,created_at),'+6 hours'))>=date('now','+6 hours','-' || ((CAST(strftime('%w',datetime('now','+6 hours')) AS INTEGER)+6)%7) || ' days') THEN total_amount ELSE 0 END),0) AS week_sales,
           SUM(CASE WHEN date(datetime(COALESCE(verified_at,created_at),'+6 hours'))>=date('now','+6 hours','start of month') THEN 1 ELSE 0 END) AS month_orders,
           COALESCE(SUM(CASE WHEN date(datetime(COALESCE(verified_at,created_at),'+6 hours'))>=date('now','+6 hours','start of month') THEN total_amount ELSE 0 END),0) AS month_sales
           FROM orders WHERE ${paidFilter}`).first(),
           env.DB.prepare(`SELECT date(datetime(COALESCE(verified_at,created_at),'+6 hours')) AS period,COUNT(*) AS orders,COALESCE(SUM(total_amount),0) AS sales FROM orders WHERE ${paidFilter} GROUP BY period ORDER BY period DESC`).all(),
-          env.DB.prepare(`SELECT date(datetime(COALESCE(verified_at,created_at),'+6 hours'),'-6 days','weekday 1') AS period,COUNT(*) AS orders,COALESCE(SUM(total_amount),0) AS sales FROM orders WHERE ${paidFilter} GROUP BY period ORDER BY period DESC`).all(),
+          env.DB.prepare(`SELECT date(datetime(COALESCE(verified_at,created_at),'+6 hours'),'-' || ((CAST(strftime('%w',datetime(COALESCE(verified_at,created_at),'+6 hours')) AS INTEGER)+6)%7) || ' days') AS period,COUNT(*) AS orders,COALESCE(SUM(total_amount),0) AS sales FROM orders WHERE ${paidFilter} GROUP BY period ORDER BY period DESC`).all(),
           env.DB.prepare(`SELECT strftime('%Y-%m',datetime(COALESCE(verified_at,created_at),'+6 hours')) AS period,COUNT(*) AS orders,COALESCE(SUM(total_amount),0) AS sales FROM orders WHERE ${paidFilter} GROUP BY period ORDER BY period DESC`).all()
         ]);
         const totals=totalsResult||{};
