@@ -743,6 +743,8 @@ body[data-theme="dark"] .favorites-dialog .dialog-close{background:#1f2937;color
 
 
 /* Admin-managed featured artwork in the DESIGN YOUR WORLD hero */
+.hero-art:not(.hero-ready) .poster{visibility:hidden}
+.poster{width:205px;height:auto;aspect-ratio:3/4;padding:0;overflow:hidden}
 .poster.has-featured-design{padding:0;overflow:hidden;display:block;background:#f1f4ef}
 .hero-feature-image{display:block;width:100%;height:100%;object-fit:contain;background:transparent}
 .hero-feature-caption{position:absolute;left:0;right:0;bottom:0;padding:24px 12px 10px;background:linear-gradient(transparent,#0009);color:#fff;font:700 11px "Hind Siliguri",sans-serif;letter-spacing:.2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
