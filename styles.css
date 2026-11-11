@@ -603,3 +603,23 @@ body[data-theme="dark"] .notification-refresh-row{color:#d8e8d5}
 @media(max-width:430px){.notification-refresh-row{align-items:flex-start;flex-direction:column}.notification-refresh-row .notification-load-button{width:100%}}
 
 /* Rebuild Demo preview after notification and header refinements */
+
+.header-actions{display:flex;align-items:center;gap:8px;padding:6px;border:1px solid #e7ece3;border-radius:17px;background:#fff;box-shadow:0 4px 15px #173b260a}
+.header-icon-button{position:relative;width:44px;height:44px;min-width:44px;display:inline-grid;place-items:center;padding:0;border:1px solid #e1e9dc;border-radius:13px;background:#f5f8f1;color:#315b3b;cursor:pointer;transition:transform .18s,background .18s,border-color .18s}
+.header-icon-button:hover{transform:translateY(-2px);background:#eaf3e3;border-color:#cbdcbe}
+.header-icon-button svg{display:block;width:21px;height:21px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.header-icon-button.cart-button{background:#173e31;color:#fff;border-color:#173e31}
+.header-icon-button.cart-button:hover{background:#245b42}
+.header-icon-button.cart-button #cartCount{position:absolute;top:-6px;right:-6px;display:grid;place-items:center;width:19px;height:19px;margin:0;border:2px solid #fff;border-radius:50%;background:#c7f36b;color:#17220b;font:800 10px Inter,sans-serif}
+.header-icon-button.notification-bell .notification-unread{position:absolute;top:5px;right:6px;width:8px;height:8px;border:1.5px solid #fff;border-radius:50%;background:#ef4444}
+body[data-theme="dark"] .header-actions{background:#1f2937;border-color:#405447}
+body[data-theme="dark"] .header-icon-button{background:#263a2c;border-color:#405746;color:#d8efb8}
+body[data-theme="dark"] .header-icon-button.cart-button{background:#c7f36b;border-color:#c7f36b;color:#17220b}
+body[data-theme="dark"] .header-icon-button.cart-button #cartCount{border-color:#c7f36b;background:#173e31;color:#fff}
+body[data-theme="dark"] .header-icon-button.notification-bell .notification-unread{border-color:#263a2c}
+@media(max-width:620px){.header-actions{gap:5px;padding:4px}.header-icon-button{width:37px;height:37px;min-width:37px;border-radius:11px}.header-icon-button svg{width:19px;height:19px}}
+@media(max-width:380px){.header-actions{gap:4px}.header-icon-button{width:34px;height:35px;min-width:34px}.header-icon-button svg{width:18px;height:18px}}
+.product-tag-list{display:flex;flex-wrap:wrap;gap:5px;margin:7px 0 2px}
+.product-tag-chip{display:inline-flex;align-items:center;padding:3px 8px;border-radius:20px;background:#edf6e8;color:#426b35;border:1px solid #dcebd4;font-size:10px;font-weight:700;line-height:1.4}
+.detail-product-tags{margin:10px 0}
+body[data-theme="dark"] .product-tag-chip{background:#263f2b;border-color:#3c5d40;color:#bce8ae}
