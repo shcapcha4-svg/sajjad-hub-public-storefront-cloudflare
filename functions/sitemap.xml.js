@@ -9,6 +9,7 @@ export async function onRequest({ request, env }) {
     const today = new Date().toISOString().slice(0, 10);
     const urls = [
       `<url><loc>${xmlEscape(origin)}/</loc><lastmod>${today}</lastmod><changefreq>daily</changefreq><priority>1.0</priority></url>`,
+      ...["design-guide.html", "privacy-policy.html", "terms.html", "refund-policy.html", "contact.html"].map((page) => `<url><loc>${xmlEscape(origin)}/${page}</loc><lastmod>${today}</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>`),
       ...results.map((product) => {
         const rawDate = String(product.created_at || "");
         const parsed = Date.parse(rawDate.includes("T") ? rawDate : rawDate.replace(" ", "T") + "Z");
