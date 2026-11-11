@@ -24,12 +24,14 @@ function renderHeroDesignOptions(){
   renderHeroDesignPreviews();
 }
 function renderHeroDesignPreviews(){
+  (window.heroPreviewObjectUrls||[]).forEach(url=>URL.revokeObjectURL(url));window.heroPreviewObjectUrls=[];
   const ids=[$('#heroDesignOne').value,$('#heroDesignTwo').value];
   const existing=window.heroDesignSettings||{};
   const files=[$('#heroImageOne').files[0],$('#heroImageTwo').files[0]];
   const urls=[existing.firstImageUrl,existing.secondImageUrl];
   $('#heroAdminPreviews').innerHTML=ids.map((id,index)=>{
-    const p=products.find(item=>String(item.id)===String(id)),src=files[index]?URL.createObjectURL(files[index]):urls[index];
+    const p=products.find(item=>String(item.id)===String(id));
+    let src=urls[index];if(files[index]){src=URL.createObjectURL(files[index]);window.heroPreviewObjectUrls.push(src);}
     return '<div class="hero-admin-preview">'+(src?'<img src="'+esc(src)+'" alt="নির্বাচিত পোস্টার ছবি">':'<div class="admin-empty">আলাদা পোস্টার ছবি আপলোড করুন</div>')+(p?'<strong>'+(index===0?'পেছনের সোর্স: ':'সামনের সোর্স: ')+esc(p.name)+'</strong>':'<strong>সোর্স ডিজাইন নির্বাচন করুন</strong>')+'</div>';
   }).join('');
 }
