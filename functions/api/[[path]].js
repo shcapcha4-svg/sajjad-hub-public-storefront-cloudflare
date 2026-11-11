@@ -673,6 +673,11 @@ export async function onRequest({ request, env }) {
           if (!title || !message) return json({ success: false, message: "শিরোনাম ও বার্তা লিখুন।" }, 400);
           if (!["offer", "product", "order", "info"].includes(type)) return json({ success: false, message: "বার্তার ধরন সঠিক নয়।" }, 400);
           if (targetEmail && !/^\S+@\S+\.\S+$/.test(targetEmail)) return json({ success: false, message: "ক্রেতার ইমেইল সঠিক নয়।" }, 400);
+          if (!!targetEmail !== !!targetOrderId) return json({ success: false, message: "ব্যক্তিগত বার্তার জন্য ক্রেতার ইমেইল ও অর্ডার নম্বর দুটিই দিন।" }, 400);
+          if (targetEmail) {
+            const customerOrder = await env.DB.prepare("SELECT id FROM orders WHERE id=? AND lower(customer_email)=? LIMIT 1").bind(targetOrderId, targetEmail).first();
+            if (!customerOrder) return json({ success: false, message: "এই অর্ডার নম্বর ও ইমেইল মিলছে না।" }, 400);
+          }
           if (linkUrl && !(linkUrl.startsWith("/") && !linkUrl.startsWith("//")) && !/^https:\/\//i.test(linkUrl)) return json({ success: false, message: "লিংকটি সঠিক নয়।" }, 400);
           const notificationId = id();
           await env.DB.prepare(
