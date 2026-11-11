@@ -345,7 +345,7 @@ export async function onRequest({ request, env }) {
       await env.DB.prepare("CREATE TABLE IF NOT EXISTS customer_notifications (id TEXT PRIMARY KEY, title TEXT NOT NULL, message TEXT NOT NULL, type TEXT NOT NULL DEFAULT 'info', target_email TEXT, link_url TEXT, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, is_active INTEGER NOT NULL DEFAULT 1)").run();
       const email = String(url.searchParams.get("email") || "").trim().toLowerCase().slice(0, 254);
       const { results = [] } = await env.DB.prepare(
-        "SELECT id,title,message,type,target_email,link_url,created_at FROM customer_notifications WHERE is_active=1 AND (target_email IS NULL OR target_email='' OR lower(target_email)=?) ORDER BY created_at DESC LIMIT 50"
+        "SELECT id,title,message,type,link_url,created_at FROM customer_notifications WHERE is_active=1 AND (target_email IS NULL OR target_email='' OR lower(target_email)=?) ORDER BY created_at DESC LIMIT 50"
       ).bind(email).all();
       return json({ success: true, notifications: results });
     }
