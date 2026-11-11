@@ -32,7 +32,6 @@ const search = document.getElementById("searchInput");
 const filter = document.getElementById("categoryFilter");
 const productImageUrls = new Map();
 const purchaseStatusByProduct = new Map();
-const PURCHASE_STORAGE_KEY = "sajjadhub-purchases";
 function escapeHTML(value="") { return String(value).replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch])); }
 function productArtwork(p, extraClass="") {
   if (p.imageUrl) return `<img class="${extraClass}" src="${escapeHTML(p.imageUrl)}" alt="${escapeHTML(p.name)}" loading="lazy">`;
@@ -104,8 +103,6 @@ document.getElementById("submitPayment").onclick=async()=>{
     const response=await fetch('/api/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({customerName:name.value.trim(),email:email.value.trim(),phone:sender.value.trim(),trxId:trx.value.trim(),items:cart.map(x=>({id:x.id,qty:x.qty}))})});
     const data=await response.json();if(!response.ok||!data.success)throw new Error(data.message||'অর্ডার জমা হয়নি।');
     const purchasedItems=cart.map(item=>({...item}));
-    try{const saved=JSON.parse(localStorage.getItem(PURCHASE_STORAGE_KEY)||"[]");saved.unshift({orderId:String(data.orderId),email:email.value.trim()});localStorage.setItem(PURCHASE_STORAGE_KEY,JSON.stringify(saved.slice(0,30)));}catch{}
-    await loadSavedCustomerOrders();
     const receiptTotal=Number(data.total)||purchasedItems.reduce((sum,item)=>sum+item.price*item.qty,0);
     document.getElementById("receiptContent").innerHTML=`
       <div class="receipt-brand"><span class="brand-mark">S</span><strong>Sajjad<span>hub</span></strong></div>
@@ -119,123 +116,12 @@ document.getElementById("submitPayment").onclick=async()=>{
       <h3>পণ্যের বিবরণ</h3>
       <table class="receipt-table"><thead><tr><th>পণ্য</th><th>পরিমাণ</th><th>মূল্য</th></tr></thead><tbody>${purchasedItems.map(item=>`<tr><td>${escapeHTML(item.name)}</td><td>${item.qty}</td><td>${money(item.price*item.qty)}</td></tr>`).join("")}</tbody></table>
       <div class="receipt-total"><span>সর্বমোট</span><strong>${money(receiptTotal)}</strong></div>
-      <div class="receipt-payment"><p>পেমেন্ট মাধ্যম: Nagad Send Money</p><p>TrxID: ${escapeHTML(trx.value.trim())}</p><p>পেমেন্ট স্ট্যাটাস: <strong>Pending (যাচাই অপেক্ষমাণ)</strong></p></div>
-      <p class="receipt-note">এটি অর্ডার জমার রসিদ, পেমেন্ট সম্পন্ন হওয়ার প্রমাণ নয়। অর্ডার নম্বর ও এই ইমেইলটি সংরক্ষণ করুন। পেমেন্ট অনুমোদনের পর “আমার অর্ডার” অংশে নির্দেশনা পাবেন। তখন এই রসিদের অর্ডার নম্বর ও Gmail দিয়ে নিচের রসিদ অনুসন্ধান অংশে আপনার ডিজাইন ডাউনলোড করতে পারবেন।</p>
+      <div class="receipt-payment"><p>পেমেন্ট মাধ্যম: Nagad Send Money</p><p>TrxID: ${escapeHTML(trx.value.trim())}</p></div>
+      <p class="receipt-note">এটি আপনার অর্ডার জমার রসিদ। ভবিষ্যৎ প্রয়োজনে অর্ডার নম্বর, এই রসিদ এবং দেওয়া ইমেইলটি সংরক্ষণ করুন।</p>
     `;
     cart=[];renderCart();document.getElementById("checkoutDialog").close();document.getElementById("receiptDialog").showModal();
   }catch(error){msg.textContent=error.message||'সার্ভারের সঙ্গে সংযোগ হয়নি। আবার চেষ্টা করুন।'}finally{btn.disabled=false}
 };
-
-// “আমার অর্ডার” অংশে শুধু একটি সরল নির্দেশনা থাকবে—কোনো লোডিং/ফাইল-স্ট্যাটাস/ডাউনলোড লিংক নয়।
-function renderMyOrderCard(order){
-  const paid=String(order.status||"").trim().toLowerCase()==="paid";
-  return paid
-    ? '<p class="my-order-guidance">আপনার অর্ডার অনুমোদিত হয়েছে। আপনার রশিদ ও Gmail দিয়ে আপনার ডিজাইন ডাউনলোড করুন।</p>'
-    : '<p class="my-order-guidance">আপনার অর্ডারটি পেন্ডিং আছে। পেমেন্ট যাচাই চলছে।</p>';
-}
-async function requestCustomerOrder(entry){
-  const response=await fetch("/api/my-orders",{method:"POST",cache:"no-store",headers:{"Content-Type":"application/json"},body:JSON.stringify({orderId:entry.orderId,email:entry.email})});
-  const data=await response.json();
-  if(!response.ok||!data.success)throw new Error(data.message||"অর্ডার পাওয়া যায়নি।");
-  return data.order;
-}
-function saveCustomerOrder(entry){
-  try{
-    const saved=JSON.parse(localStorage.getItem(PURCHASE_STORAGE_KEY)||"[]");
-    const orderId=String(entry.orderId).replace(/^#/,"");
-    const email=String(entry.email).trim().toLowerCase();
-    const next=[{orderId,email},...saved.filter(x=>String(x.orderId)!==orderId||String(x.email).toLowerCase()!==email)];
-    localStorage.setItem(PURCHASE_STORAGE_KEY,JSON.stringify(next.slice(0,30)));
-  }catch{}
-}
-let customerOrderStatusClearedAfterDownload=false;
-async function loadSavedCustomerOrders(silent=false){
-  if(customerOrderStatusClearedAfterDownload)return;
-  const area=document.getElementById("mySavedOrders");if(!area)return;
-  let saved=[];try{saved=JSON.parse(localStorage.getItem(PURCHASE_STORAGE_KEY)||"[]");}catch{}
-  if(!saved.length){if(area.innerHTML)area.innerHTML="";return;}
-  const cards=[];
-  for(const entry of saved.slice(0,30)){
-    if(!entry||!entry.orderId||!entry.email)continue;
-    try{const order=await requestCustomerOrder(entry);cards.push(renderMyOrderCard(order));}catch{}
-  }
-  const nextHtml=cards.join("");
-  // Network refresh ব্যর্থ হলে আগের অর্ডার কার্ড সরানো হবে না।
-  if(cards.length&&area.innerHTML!==nextHtml)area.innerHTML=nextHtml;
-}
-document.querySelector('a[href="#my-orders"]')?.addEventListener("click",()=>{loadSavedCustomerOrders();});
-loadSavedCustomerOrders();
-
-function renderReceiptDownloadResult(order){
-  const paid=String(order.status||"").trim().toLowerCase()==="paid";
-  const downloads=(order.downloads||[]).filter(file=>file.url);
-  if(!paid)return '<div class="receipt-download-message is-pending">আপনার অর্ডার পাওয়া গেছে, কিন্তু পেমেন্ট এখনো অনুমোদিত হয়নি। অনুমোদনের পর আবার রসিদ ও Gmail দিয়ে খুঁজুন।</div>';
-  if(!downloads.length)return "";
-  return '<div class="receipt-download-box"><strong>আপনার ডিজাইন ডাউনলোডের জন্য প্রস্তুত</strong><p>নিচের বাটনে ক্লিক করে ফাইল সংগ্রহ করুন।</p>'+downloads.map(file=>'<a class="receipt-download-link" data-receipt-download href="'+escapeHTML(file.url)+'" target="_blank" rel="noopener">ডাউনলোড করুন · '+escapeHTML(file.name||"ডিজাইন")+'</a>').join("")+'</div>';
-}
-const receiptLookupForm=document.getElementById("receiptOrderLookup");
-receiptLookupForm?.addEventListener("submit",async event=>{
-  event.preventDefault();
-  const orderId=document.getElementById("receiptOrderId").value.trim();
-  const email=document.getElementById("receiptOrderEmail").value.trim();
-  const message=document.getElementById("receiptLookupMessage");
-  const button=document.getElementById("receiptLookupButton");
-  const result=document.getElementById("receiptLookupResult");
-  if(!orderId||!email)return;
-  customerOrderStatusClearedAfterDownload=false;
-  button.disabled=true;message.textContent="";
-  if(result)result.innerHTML="";
-  try{
-    const order=await requestCustomerOrder({orderId,email});
-    saveCustomerOrder({orderId,email});
-    document.getElementById("mySavedOrders").innerHTML=renderMyOrderCard(order);
-    if(result)result.innerHTML=renderReceiptDownloadResult(order);
-    message.textContent="";
-  }catch(error){
-    message.textContent=error.message||"রসিদের তথ্য মেলেনি।";
-  }finally{button.disabled=false;}
-});
-
-// ডাউনলোডে ক্লিক করার ২০ সেকেন্ড পর ডাউনলোডের ফল ও অর্ডার-স্ট্যাটাসের লেখা মুছে যাবে; শুধু রসিদ/Gmail ফর্ম থাকবে।
-let receiptDownloadResetTimer=null;
-document.getElementById("receiptLookupResult")?.addEventListener("click",event=>{
-  const link=event.target.closest("a[data-receipt-download]");
-  if(!link)return;
-  if(link.dataset.busy==="true"){event.preventDefault();return;}
-  link.dataset.busy="true";
-  link.textContent="ডাউনলোড শুরু হয়েছে";
-  if(receiptDownloadResetTimer)clearTimeout(receiptDownloadResetTimer);
-  receiptDownloadResetTimer=setTimeout(()=>{
-    customerOrderStatusClearedAfterDownload=true;
-    const result=document.getElementById("receiptLookupResult");
-    const orders=document.getElementById("mySavedOrders");
-    const message=document.getElementById("receiptLookupMessage");
-    if(result)result.innerHTML="";
-    if(orders)orders.innerHTML="";
-    if(message)message.textContent="";
-    receiptDownloadResetTimer=null;
-  },20000);
-});
-
-// Admin Paid করলে অর্ডারের বার্তা স্বয়ংক্রিয়ভাবে আপডেট হবে।
-let customerOrderRefreshBusy=false;
-let customerOrderRefreshPending=false;
-async function refreshCustomerOrderStatus(silent=true){
-  if(document.hidden)return;
-  if(customerOrderRefreshBusy){customerOrderRefreshPending=true;return;}
-  customerOrderRefreshBusy=true;
-  try{await loadSavedCustomerOrders(silent);}
-  finally{
-    customerOrderRefreshBusy=false;
-    if(customerOrderRefreshPending){
-      customerOrderRefreshPending=false;
-      refreshCustomerOrderStatus(true);
-    }
-  }
-}
-setInterval(refreshCustomerOrderStatus,20000);
-window.addEventListener("focus",refreshCustomerOrderStatus);
-document.addEventListener("visibilitychange",()=>{if(!document.hidden)refreshCustomerOrderStatus();});
 
 search.addEventListener("input",renderProducts);filter.addEventListener("change",renderProducts);
 document.querySelector(".category-menu-dropdown")?.addEventListener("click",e=>{const link=e.target.closest("[data-category-link]");if(!link)return;const category=link.dataset.categoryLink;filter.value=category;document.querySelectorAll(".category-pills button").forEach(b=>b.classList.toggle("active",b.dataset.category===category));renderProducts();document.querySelector(".category-menu")?.removeAttribute("open")});
