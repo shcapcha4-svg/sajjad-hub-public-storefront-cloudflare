@@ -341,6 +341,15 @@ export async function onRequest({ request, env }) {
   const method = request.method;
 
   try {
+    if (route === "notifications" && method === "GET") {
+      await env.DB.prepare("CREATE TABLE IF NOT EXISTS customer_notifications (id TEXT PRIMARY KEY, title TEXT NOT NULL, message TEXT NOT NULL, type TEXT NOT NULL DEFAULT 'info', target_email TEXT, link_url TEXT, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, is_active INTEGER NOT NULL DEFAULT 1)").run();
+      const email = String(url.searchParams.get("email") || "").trim().toLowerCase().slice(0, 254);
+      const { results = [] } = await env.DB.prepare(
+        "SELECT id,title,message,type,target_email,link_url,created_at FROM customer_notifications WHERE is_active=1 AND (target_email IS NULL OR target_email='' OR lower(target_email)=?) ORDER BY created_at DESC LIMIT 50"
+      ).bind(email).all();
+      return json({ success: true, notifications: results });
+    }
+
     if (route === "health" && method === "GET") {
       return json({ success: true, message: "Sajjadhub API online" });
     }
@@ -638,6 +647,40 @@ export async function onRequest({ request, env }) {
           { success: false, message: "অনুমতি নেই। আবার লগইন করুন।" },
           401
         );
+      }
+
+      if (route.startsWith("admin/notifications")) {
+        await env.DB.prepare("CREATE TABLE IF NOT EXISTS customer_notifications (id TEXT PRIMARY KEY, title TEXT NOT NULL, message TEXT NOT NULL, type TEXT NOT NULL DEFAULT 'info', target_email TEXT, link_url TEXT, created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP, is_active INTEGER NOT NULL DEFAULT 1)").run();
+
+        if (route === "admin/notifications" && method === "GET") {
+          const { results = [] } = await env.DB.prepare(
+            "SELECT id,title,message,type,target_email,link_url,created_at,is_active FROM customer_notifications ORDER BY created_at DESC LIMIT 100"
+          ).all();
+          return json({ success: true, notifications: results });
+        }
+
+        if (route === "admin/notifications" && method === "POST") {
+          const body = await request.json();
+          const title = String(body.title || "").trim().slice(0, 120);
+          const message = String(body.message || "").trim().slice(0, 1000);
+          const type = String(body.type || "info");
+          const targetEmail = String(body.targetEmail || "").trim().toLowerCase().slice(0, 254);
+          const linkUrl = String(body.linkUrl || "").trim().slice(0, 500);
+          if (!title || !message) return json({ success: false, message: "শিরোনাম ও বার্তা লিখুন।" }, 400);
+          if (!["offer", "product", "order", "info"].includes(type)) return json({ success: false, message: "বার্তার ধরন সঠিক নয়।" }, 400);
+          if (targetEmail && !/^\\S+@\\S+\\.\\S+$/.test(targetEmail)) return json({ success: false, message: "ক্রেতার ইমেইল সঠিক নয়।" }, 400);
+          if (linkUrl && !(linkUrl.startsWith("/") && !linkUrl.startsWith("//")) && !/^https:\\/\\//i.test(linkUrl)) return json({ success: false, message: "লিংকটি সঠিক নয়।" }, 400);
+          const notificationId = id();
+          await env.DB.prepare(
+            "INSERT INTO customer_notifications(id,title,message,type,target_email,link_url) VALUES(?,?,?,?,?,?)"
+          ).bind(notificationId, title, message, type, targetEmail || null, linkUrl || null).run();
+          return json({ success: true, id: notificationId });
+        }
+
+        if (parts[2] && method === "DELETE") {
+          await env.DB.prepare("UPDATE customer_notifications SET is_active=0 WHERE id=?").bind(parts[2]).run();
+          return json({ success: true });
+        }
       }
 
       if (route === "admin/products" && method === "GET") {
