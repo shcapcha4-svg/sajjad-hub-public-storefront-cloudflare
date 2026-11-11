@@ -32,7 +32,6 @@ const search = document.getElementById("searchInput");
 const filter = document.getElementById("categoryFilter");
 const productImageUrls = new Map();
 const purchaseStatusByProduct = new Map();
-const PURCHASE_STORAGE_KEY = "sajjadhub-purchases";
 function escapeHTML(value="") { return String(value).replace(/[&<>"']/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch])); }
 function productArtwork(p, extraClass="") {
   if (p.imageUrl) return `<img class="${extraClass}" src="${escapeHTML(p.imageUrl)}" alt="${escapeHTML(p.name)}" loading="lazy">`;
@@ -104,8 +103,6 @@ document.getElementById("submitPayment").onclick=async()=>{
     const response=await fetch('/api/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({customerName:name.value.trim(),email:email.value.trim(),phone:sender.value.trim(),trxId:trx.value.trim(),items:cart.map(x=>({id:x.id,qty:x.qty}))})});
     const data=await response.json();if(!response.ok||!data.success)throw new Error(data.message||'অর্ডার জমা হয়নি।');
     const purchasedItems=cart.map(item=>({...item}));
-    try{const saved=JSON.parse(localStorage.getItem(PURCHASE_STORAGE_KEY)||"[]");saved.unshift({orderId:String(data.orderId),email:email.value.trim()});localStorage.setItem(PURCHASE_STORAGE_KEY,JSON.stringify(saved.slice(0,30)));}catch{}
-    await loadSavedCustomerOrders();
     const receiptTotal=Number(data.total)||purchasedItems.reduce((sum,item)=>sum+item.price*item.qty,0);
     document.getElementById("receiptContent").innerHTML=`
       <div class="receipt-brand"><span class="brand-mark">S</span><strong>Sajjad<span>hub</span></strong></div>
@@ -119,133 +116,12 @@ document.getElementById("submitPayment").onclick=async()=>{
       <h3>পণ্যের বিবরণ</h3>
       <table class="receipt-table"><thead><tr><th>পণ্য</th><th>পরিমাণ</th><th>মূল্য</th></tr></thead><tbody>${purchasedItems.map(item=>`<tr><td>${escapeHTML(item.name)}</td><td>${item.qty}</td><td>${money(item.price*item.qty)}</td></tr>`).join("")}</tbody></table>
       <div class="receipt-total"><span>সর্বমোট</span><strong>${money(receiptTotal)}</strong></div>
-      <div class="receipt-payment"><p>পেমেন্ট মাধ্যম: Nagad Send Money</p><p>TrxID: ${escapeHTML(trx.value.trim())}</p><p>পেমেন্ট স্ট্যাটাস: <strong>Pending (যাচাই অপেক্ষমাণ)</strong></p></div>
-      <p class="receipt-note">এটি অর্ডার জমার রসিদ, পেমেন্ট সম্পন্ন হওয়ার প্রমাণ নয়। অর্ডার নম্বর ও এই ইমেইলটি সংরক্ষণ করুন। পেমেন্ট অনুমোদনের পর Download বাটন পাবেন। পরে ডাউনলোড করতে চাইলে “আমার অর্ডার” অংশে এই রসিদের অর্ডার নম্বর ও ইমেইল দিয়ে আবার ডাউনলোড চালু করতে পারবেন।</p>
+      <div class="receipt-payment"><p>পেমেন্ট মাধ্যম: Nagad Send Money</p><p>TrxID: ${escapeHTML(trx.value.trim())}</p></div>
+      <p class="receipt-note">এটি আপনার অর্ডার জমার রসিদ। ভবিষ্যৎ প্রয়োজনে অর্ডার নম্বর, এই রসিদ এবং দেওয়া ইমেইলটি সংরক্ষণ করুন।</p>
     `;
     cart=[];renderCart();document.getElementById("checkoutDialog").close();document.getElementById("receiptDialog").showModal();
   }catch(error){msg.textContent=error.message||'সার্ভারের সঙ্গে সংযোগ হয়নি। আবার চেষ্টা করুন।'}finally{btn.disabled=false}
 };
-
-// Customer order cards and secure, payment-gated downloads.
-const pendingDownloadUrls=new Set();
-const downloadResetTimers=new Map();
-function renderMyOrderCard(order){
-  const items=(order.items||[]).map(item=>{
-    const productId=String(item.product_id);
-    const paid=String(order.status||"").trim().toLowerCase()==="paid";
-    const file=(order.downloads||[]).find(download=>
-      String(download.productId??download.product_id??"")===productId && download.url
-    );
-    const downloadUrl=file?.url?new URL(String(file.url),window.location.origin).href:"";
-    const isDownloading=pendingDownloadUrls.has(downloadUrl);
-    const status=paid&&file&&isDownloading
-      ? '<span class="my-order-simple-status is-download-started">ডাউনলোড শুরু হয়েছে</span>'
-      : paid&&file
-        ? '<a class="my-order-simple-status is-download" target="_blank" rel="noopener" href="'+escapeHTML(file.url)+'">Download</a>'
-      : paid
-        ? '<span class="my-order-simple-status is-pending">ফাইল যুক্ত নেই</span>'
-        : '<span class="my-order-simple-status is-pending">Pending</span>';
-    return '<div class="my-order-simple-row"><span class="my-order-product-name">'+escapeHTML(item.product_name)+'</span>'+status+'</div>';
-  }).join("");
-  return items?'<div class="my-order-card">'+items+'</div>':"";
-}
-async function requestCustomerOrder(entry, renew=false){
-  const response=await fetch("/api/my-orders",{method:"POST",cache:"no-store",headers:{"Content-Type":"application/json"},body:JSON.stringify({orderId:entry.orderId,email:entry.email,renew})});
-  const data=await response.json();
-  if(!response.ok||!data.success)throw new Error(data.message||"অর্ডার পাওয়া যায়নি।");
-  return data.order;
-}
-function saveCustomerOrder(entry){
-  try{
-    const saved=JSON.parse(localStorage.getItem(PURCHASE_STORAGE_KEY)||"[]");
-    const next=[{orderId:String(entry.orderId).replace(/^#/,""),email:String(entry.email).trim().toLowerCase()},...saved.filter(x=>String(x.orderId)!==String(entry.orderId).replace(/^#/,"")||String(x.email).toLowerCase()!==String(entry.email).trim().toLowerCase())];
-    localStorage.setItem(PURCHASE_STORAGE_KEY,JSON.stringify(next.slice(0,30)));
-  }catch{}
-}
-async function loadSavedCustomerOrders(silent=false){
-  const area=document.getElementById("mySavedOrders");if(!area)return;
-  let saved=[];try{saved=JSON.parse(localStorage.getItem(PURCHASE_STORAGE_KEY)||"[]");}catch{}
-  if(!saved.length){area.innerHTML="";return;}
-  if(!silent)area.innerHTML='<p class="my-order-loading">লোড হচ্ছে...</p>';
-  const cards=[];
-  for(const entry of saved.slice(0,30)){
-    if(!entry||!entry.orderId||!entry.email)continue;
-    try{const order=await requestCustomerOrder(entry,false);cards.push(renderMyOrderCard(order));}catch{}
-  }
-  const nextHtml=cards.join("");
-  if(area.innerHTML!==nextHtml)area.innerHTML=nextHtml;
-}
-document.querySelector('a[href="#my-orders"]')?.addEventListener("click",()=>{loadSavedCustomerOrders();});
-loadSavedCustomerOrders();
-
-const receiptLookupForm=document.getElementById("receiptOrderLookup");
-receiptLookupForm?.addEventListener("submit",async event=>{
-  event.preventDefault();
-  const orderId=document.getElementById("receiptOrderId").value.trim();
-  const email=document.getElementById("receiptOrderEmail").value.trim();
-  const message=document.getElementById("receiptLookupMessage");
-  const button=document.getElementById("receiptLookupButton");
-  if(!orderId||!email)return;
-  button.disabled=true;message.textContent="রসিদ যাচাই হচ্ছে...";
-  try{
-    const order=await requestCustomerOrder({orderId,email},true);
-    saveCustomerOrder({orderId,email});
-    for(const file of order.downloads||[]){
-      const url=new URL(file.url,window.location.origin).href;
-      pendingDownloadUrls.delete(url);
-      const timer=downloadResetTimers.get(url);
-      if(timer)clearTimeout(timer);
-      downloadResetTimers.delete(url);
-    }
-    document.getElementById("mySavedOrders").innerHTML=renderMyOrderCard(order);
-    message.textContent=String(order.status).toLowerCase()==="paid"
-      ? "অর্ডার পাওয়া গেছে। Download বাটন চালু হয়েছে।"
-      : "অর্ডার পাওয়া গেছে। পেমেন্ট যাচাই হলে Pending থেকে Download হবে।";
-  }catch(error){message.textContent=error.message||"রসিদের তথ্য মেলেনি।";}
-  finally{button.disabled=false;}
-});
-// ডাউনলোড শুরু হলে শুধু বাটনের অবস্থা বদলাবে; ২০ সেকেন্ড পর আগের অবস্থায় ফিরবে।
-document.getElementById("mySavedOrders")?.addEventListener("click",event=>{
-  const link=event.target.closest("a.my-order-simple-status.is-download");
-  if(!link)return;
-  const url=link.href;
-  if(pendingDownloadUrls.has(url)){
-    event.preventDefault();
-    return;
-  }
-  pendingDownloadUrls.add(url);
-  link.textContent="ডাউনলোড শুরু হয়েছে";
-  link.classList.add("is-download-started");
-  const previousTimer=downloadResetTimers.get(url);
-  if(previousTimer)clearTimeout(previousTimer);
-  const timer=setTimeout(()=>{
-    downloadResetTimers.delete(url);
-    pendingDownloadUrls.delete(url);
-    refreshCustomerOrderStatus(true);
-  },20000);
-  downloadResetTimers.set(url,timer);
-});
-
-// স্বয়ংক্রিয় অর্ডার স্ট্যাটাস আপডেট: Admin Paid করলে ২০ সেকেন্ডের মধ্যে
-// পেজ রিফ্রেশ ছাড়াই Pending থেকে Download দেখাবে।
-let customerOrderRefreshBusy=false;
-let customerOrderRefreshPending=false;
-async function refreshCustomerOrderStatus(silent=true){
-  if(document.hidden)return;
-  if(customerOrderRefreshBusy){customerOrderRefreshPending=true;return;}
-  customerOrderRefreshBusy=true;
-  try{await loadSavedCustomerOrders(silent);}
-  finally{
-    customerOrderRefreshBusy=false;
-    if(customerOrderRefreshPending){
-      customerOrderRefreshPending=false;
-      refreshCustomerOrderStatus(true);
-    }
-  }
-}
-setInterval(refreshCustomerOrderStatus,20000);
-window.addEventListener("focus",refreshCustomerOrderStatus);
-document.addEventListener("visibilitychange",()=>{if(!document.hidden)refreshCustomerOrderStatus();});
 
 search.addEventListener("input",renderProducts);filter.addEventListener("change",renderProducts);
 document.querySelector(".category-menu-dropdown")?.addEventListener("click",e=>{const link=e.target.closest("[data-category-link]");if(!link)return;const category=link.dataset.categoryLink;filter.value=category;document.querySelectorAll(".category-pills button").forEach(b=>b.classList.toggle("active",b.dataset.category===category));renderProducts();document.querySelector(".category-menu")?.removeAttribute("open")});
