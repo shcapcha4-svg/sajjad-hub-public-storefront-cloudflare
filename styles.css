@@ -984,3 +984,8 @@ body[data-theme="dark"] .sh-touch-ripple{border-color:rgba(190,244,144,.78);back
 .payment-method-option small{font-size:11px;color:var(--muted,#667085)}
 .nagad-box #paymentNumber{display:block;font-size:clamp(21px,5vw,27px);letter-spacing:.5px}
 @media(max-width:420px){.payment-method-grid{gap:7px}.payment-method-option{padding:11px 5px}.payment-method-option.active{padding:10px 4px}.payment-brand-logo{font-size:13px;gap:4px}.payment-brand-symbol{width:22px;height:22px}}
+
+/* Brand logo image sizing for manual payment selector */
+.payment-brand-logo img{display:block;width:auto;height:30px;max-width:92px;object-fit:contain}
+.payment-brand-logo strong{font-weight:800}
+@media(max-width:420px){.payment-brand-logo img{height:25px;max-width:76px}}
