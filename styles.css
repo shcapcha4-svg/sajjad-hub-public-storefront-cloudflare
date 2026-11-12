@@ -1228,19 +1228,26 @@ body[data-theme="dark"] .checkout-modal::after{opacity:.065}
 
 
 
-/* Sajjadhub logo: safe full-mark float and a faint shine contained inside the logo */
-.brand,.footer-brand{position:relative;overflow:visible;isolation:isolate}
+/* Sajjadhub logo: animate the complete bounded logo and clip shine to its exact box */
+.brand,.footer-brand{
+  position:relative;display:inline-flex!important;align-items:center;
+  width:fit-content;max-width:100%;height:auto;line-height:0;
+  overflow:hidden;contain:paint;isolation:isolate;
+  animation:shLogoFloat 4.2s ease-in-out infinite;
+}
 .brand img,.footer-brand img{
-  position:relative;z-index:1;display:block;max-width:100%;height:auto;
-  transform-origin:50% 50%;animation:shLogoFloat 4.2s ease-in-out infinite;
-  will-change:transform;
+  position:relative;z-index:1;display:block;flex:none;
+  max-width:100%;height:auto;object-fit:contain;
+  animation:none!important;transform:none!important;
+  filter:none!important;transition:none!important;will-change:auto;
 }
 .brand::after,.footer-brand::after{
-  content:"";position:absolute;z-index:2;inset:0;pointer-events:none;
+  content:"";position:absolute;z-index:2;inset:0;
+  display:block;overflow:hidden;pointer-events:none;
   clip-path:inset(0);
-  background:linear-gradient(110deg,transparent 0%,transparent 43%,rgba(255,255,255,.08) 47%,rgba(255,255,255,.22) 50%,rgba(255,255,255,.08) 53%,transparent 58%,transparent 100%);
-  background-size:220% 100%;background-position:100% 0;
-  opacity:.38;animation:shLogoShine 6s ease-in-out infinite;
+  background:linear-gradient(110deg,transparent 0%,transparent 43%,rgba(255,255,255,.035) 47%,rgba(255,255,255,.13) 50%,rgba(255,255,255,.035) 53%,transparent 58%,transparent 100%);
+  background-size:260% 100%;background-position:100% 0;
+  opacity:0;animation:shLogoShine 6.5s ease-in-out infinite;
 }
 @keyframes shLogoFloat{
   0%,100%{transform:translate3d(0,0,0)}
@@ -1248,14 +1255,14 @@ body[data-theme="dark"] .checkout-modal::after{opacity:.065}
 }
 @keyframes shLogoShine{
   0%,12%{background-position:100% 0;opacity:0}
-  22%{opacity:.38}
-  55%{background-position:0% 0;opacity:.28}
-  68%,100%{background-position:0% 0;opacity:0}
+  24%{opacity:.55}
+  56%{background-position:0% 0;opacity:.42}
+  70%,100%{background-position:0% 0;opacity:0}
 }
 body[data-theme="dark"] .brand::after,body[data-theme="dark"] .footer-brand::after{
-  background-image:linear-gradient(110deg,transparent 0%,transparent 43%,rgba(255,255,255,.10) 47%,rgba(218,255,220,.24) 50%,rgba(255,255,255,.10) 53%,transparent 58%,transparent 100%);
+  background-image:linear-gradient(110deg,transparent 0%,transparent 43%,rgba(255,255,255,.04) 47%,rgba(218,255,220,.15) 50%,rgba(255,255,255,.04) 53%,transparent 58%,transparent 100%);
 }
 @media(prefers-reduced-motion:reduce){
-  .brand img,.footer-brand img{animation:none;transform:none;will-change:auto}
-  .brand::after,.footer-brand::after{animation:none;display:none}
+  .brand,.footer-brand{animation:none!important;transform:none!important}
+  .brand::after,.footer-brand::after{animation:none!important;display:none!important}
 }
