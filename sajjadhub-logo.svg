@@ -1,34 +1,24 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="900" height="220" viewBox="0 0 900 220" role="img" aria-labelledby="logoTitle logoDesc">
 <title id="logoTitle">Sajjadhub</title>
-<desc id="logoDesc">Sajjadhub Digital Design Store — two gently floating books beside the wordmark.</desc>
+<desc id="logoDesc">Sajjadhub shopping bag mark with the letter S and DIGITAL DESIGN STORE wordmark.</desc>
 <defs>
-  <linearGradient id="backCover" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ffb45d"/><stop offset="1" stop-color="#e66a27"/></linearGradient>
-  <linearGradient id="frontCover" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#48e17a"/><stop offset="1" stop-color="#087b45"/></linearGradient>
-  <linearGradient id="pages" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#fff"/><stop offset="1" stop-color="#e9f2e8"/></linearGradient>
-  <filter id="bookShadow" x="-35%" y="-25%" width="180%" height="170%"><feGaussianBlur in="SourceAlpha" stdDeviation="5"/><feOffset dy="6"/><feComponentTransfer><feFuncA type="linear" slope=".2"/></feComponentTransfer><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  <linearGradient id="bag" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#62f28a"/><stop offset="1" stop-color="#16a34a"/></linearGradient>
+  <linearGradient id="swoosh" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#ff8a00"/><stop offset="1" stop-color="#ffc52e"/></linearGradient>
+  <linearGradient id="bagSide" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#087b45"/><stop offset="1" stop-color="#16a34a"/></linearGradient>
+  <filter id="markShadow" x="-30%" y="-30%" width="170%" height="180%"><feGaussianBlur in="SourceAlpha" stdDeviation="4"/><feOffset dy="5"/><feComponentTransfer><feFuncA type="linear" slope=".22"/></feComponentTransfer><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
 </defs>
 <style>
-  .logo-book{transform-box:fill-box;transform-origin:center;filter:url(#bookShadow);will-change:transform}
-  .logo-book-back{animation:logoBookBack 5.2s ease-in-out infinite}
-  .logo-book-front{animation:logoBookFront 4.6s ease-in-out infinite}
-  @keyframes logoBookBack{0%,100%{transform:rotate(-11deg) translateY(0)}50%{transform:rotate(-11deg) translateY(-10px)}}
-  @keyframes logoBookFront{0%,100%{transform:rotate(8deg) translateY(0)}50%{transform:rotate(8deg) translateY(-13px)}}
-  @media(prefers-reduced-motion:reduce){.logo-book{animation:none!important;will-change:auto}}
+  .brand-mark{transform-box:fill-box;transform-origin:center;filter:url(#markShadow);animation:brandFloat 4.8s ease-in-out infinite;will-change:transform}
+  @keyframes brandFloat{0%,100%{transform:perspective(520px) rotateY(-5deg) rotateX(1deg) translateY(0)}50%{transform:perspective(520px) rotateY(5deg) rotateX(-1deg) translateY(-6px)}}
+  @media(prefers-reduced-motion:reduce){.brand-mark{animation:none!important;will-change:auto}}
 </style>
-<g class="logo-book logo-book-back">
-  <rect x="24" y="35" width="112" height="154" rx="10" fill="url(#backCover)"/>
-  <path d="M39 49h82v123H39z" fill="url(#pages)"/>
-  <path d="M48 64h62M48 76h62M48 88h49" fill="none" stroke="#d5a17b" stroke-width="3" stroke-linecap="round"/>
-  <path d="M31 42v139" stroke="#b94f20" stroke-width="5" stroke-linecap="round"/>
-  <path d="M39 172h82" stroke="#d7dfd4" stroke-width="2"/>
-</g>
-<g class="logo-book logo-book-front">
-  <rect x="78" y="42" width="112" height="154" rx="10" fill="url(#frontCover)"/>
-  <path d="M93 56h82v123H93z" fill="url(#pages)"/>
-  <path d="M103 73h62M103 86h62M103 99h48" fill="none" stroke="#8cae8e" stroke-width="3" stroke-linecap="round"/>
-  <path d="M85 49v139" stroke="#087b45" stroke-width="5" stroke-linecap="round"/>
-  <path d="M93 179h82" stroke="#d7dfd4" stroke-width="2"/>
-  <path d="M128 124l8 8 17-19" fill="none" stroke="#16a34a" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/>
+<g class="brand-mark" transform="translate(14 14)">
+  <path d="M44 65V48a48 48 0 0 1 96 0v17" fill="none" stroke="#16a34a" stroke-width="13" stroke-linecap="round"/>
+  <rect x="20" y="62" width="145" height="133" rx="24" fill="url(#bag)"/>
+  <path d="M153 76v93a24 24 0 0 1-24 24h12a24 24 0 0 0 24-24V86z" fill="url(#bagSide)" opacity=".38"/>
+  <path d="M121 91c-25-26-72-12-72 18 0 20 24 29 48 41 21 11 25 27 8 39-18 13-48 4-63-12 17 32 67 43 91 14 25-31 1-51-28-66-20-10-34-18-25-29 8-10 26-9 41 0z" fill="#fff"/>
+  <path d="M15 173c43 36 128 32 174-7" fill="none" stroke="url(#swoosh)" stroke-width="11" stroke-linecap="round"/>
+  <path d="M131 46c13-20 30-24 45-20-4 19-17 31-38 31" fill="#8be34c"/>
 </g>
 <text x="225" y="127" font-family="Arial,sans-serif" font-size="94" font-weight="800" letter-spacing="-5" fill="#122b32">Sajjad</text>
 <text x="528" y="127" font-family="Arial,sans-serif" font-size="94" font-weight="800" letter-spacing="-5" fill="#16a34a">hub</text>

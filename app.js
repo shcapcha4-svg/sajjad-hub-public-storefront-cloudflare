@@ -291,3 +291,22 @@ document.getElementById("year").textContent=new Date().getFullYear();
 renderProducts();renderCart();
 (async()=>{try{const r=await fetch('/api/products');const d=await r.json();if(r.ok&&d.success){products=d.products;try{const heroResponse=await fetch('/api/hero-designs');const heroData=await heroResponse.json();if(heroResponse.ok&&heroData.success)applyHeroFeaturedDesigns(heroData.designs);}catch(heroError){console.warn('Featured hero designs unavailable.',heroError)}const availableIds=new Set(products.map(p=>String(p.id)));favoriteIds=favoriteIds.filter(id=>availableIds.has(id));saveFavorites();renderProducts();renderFavorites();const requestedProduct=new URLSearchParams(location.search).get("product");if(requestedProduct){const selected=products.find(p=>String(p.id)===String(requestedProduct));if(selected){showProductDetails(selected.id);document.getElementById("productDetailContent").insertAdjacentHTML("beforeend",'<p class="product-seo-link"><a href="/product/'+encodeURIComponent(selected.id)+'">এই ডিজাইনের শেয়ারযোগ্য পেজ দেখুন ↗</a></p>');}}}}catch(e){console.warn('Products API unavailable; no sample products are shown.',e)}})();
 // Product SEO deep links are initialized after the live product catalog loads.
+
+/* Dismiss the category popover on outside click and provide mouse/touch feedback. */
+(function(){
+ const menu=document.querySelector(".category-menu");
+ if(menu){
+  document.addEventListener("pointerdown",event=>{if(menu.open&&!menu.contains(event.target))menu.removeAttribute("open")},true);
+  document.addEventListener("keydown",event=>{if(event.key==="Escape"&&menu.open){menu.removeAttribute("open");menu.querySelector("summary")?.focus()}});
+ }
+ if(window.matchMedia&&window.matchMedia("(hover: hover) and (pointer: fine)").matches){
+  const aura=document.createElement("div");aura.id="sh-pointer-aura";document.body.appendChild(aura);
+  window.addEventListener("pointermove",event=>{aura.style.transform="translate3d("+event.clientX+"px,"+event.clientY+"px,0)";aura.classList.add("is-visible")},{passive:true});
+  document.addEventListener("pointerleave",()=>aura.classList.remove("is-visible"));
+ }
+ document.addEventListener("pointerdown",event=>{
+  if(event.pointerType!=="touch"&&event.pointerType!=="pen")return;
+  const ripple=document.createElement("span");ripple.className="sh-touch-ripple";ripple.style.left=event.clientX+"px";ripple.style.top=event.clientY+"px";document.body.appendChild(ripple);
+  ripple.addEventListener("animationend",()=>ripple.remove(),{once:true});window.setTimeout(()=>ripple.remove(),850);
+ },{passive:true});
+})();
