@@ -778,3 +778,194 @@ body[data-theme="dark"] .hero-admin-preview strong{color:#b8edc6}
 .floating-chip{border:0;cursor:pointer;font:inherit;transition:transform .18s,box-shadow .18s}.floating-chip:hover{transform:translateY(-3px);box-shadow:0 14px 30px #0003}.floating-chip:focus-visible{outline:3px solid #c7f36b;outline-offset:4px}
 
 .footer-policy-links{display:flex;gap:12px;flex-wrap:wrap}.footer-policy-links a{color:inherit;font-size:12px;text-decoration:none}.footer-policy-links a:hover{color:#138347;text-decoration:underline}@media(max-width:620px){.footer-policy-links{justify-content:center}}
+
+
+/* Sajjadhub visual polish pass — preserve the existing brand and layout */
+:root{
+  color-scheme:light;
+  scroll-padding-top:96px;
+}
+html{
+  scroll-behavior:smooth;
+  text-rendering:optimizeLegibility;
+  -webkit-text-size-adjust:100%;
+}
+body{
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+}
+::selection{
+  background:#d9f0b4;
+  color:#17220b;
+}
+:where(a,button,input,select,textarea,summary,[tabindex]):focus-visible{
+  outline:3px solid #91bd4c;
+  outline-offset:3px;
+}
+.topbar{
+  box-shadow:0 5px 22px rgba(16,24,40,.035);
+  transition:box-shadow .2s ease,background-color .2s ease;
+}
+.primary-nav a,
+.category-menu-trigger,
+.header-icon-button{
+  transition:color .18s ease,background-color .18s ease,border-color .18s ease,transform .18s ease,box-shadow .18s ease;
+}
+.primary-nav a:hover,
+.category-menu-dropdown a:hover{
+  color:#527b22;
+}
+.header-icon-button:hover{
+  transform:translateY(-1px);
+  box-shadow:0 5px 14px rgba(16,24,40,.10);
+}
+.product-card{
+  overflow:hidden;
+  border:1px solid rgba(16,24,40,.055);
+  box-shadow:0 3px 14px rgba(16,24,40,.035);
+  transition:transform .22s ease,box-shadow .22s ease,border-color .22s ease;
+}
+.product-card:hover{
+  transform:translateY(-4px);
+  border-color:rgba(145,189,76,.42);
+  box-shadow:0 16px 34px rgba(16,24,40,.105);
+}
+.product-thumb img{
+  transition:transform .35s cubic-bezier(.2,.7,.2,1);
+}
+.product-card:hover .product-thumb img{
+  transform:scale(1.035);
+}
+.product-open,
+.product-title-button,
+.add-button,
+.details-link,
+.favorite-heart{
+  -webkit-tap-highlight-color:transparent;
+}
+.add-button,
+.checkout-button,
+.primary-link,
+.detail-cart-button,
+.detail-buy-button{
+  transition:transform .18s ease,box-shadow .18s ease,background-color .18s ease;
+}
+.add-button:hover,
+.checkout-button:not(:disabled):hover,
+.detail-cart-button:hover,
+.detail-buy-button:hover{
+  transform:translateY(-2px);
+  box-shadow:0 8px 18px rgba(16,24,40,.12);
+}
+.shop-tools input,
+.shop-tools select,
+.checkout-modal label input,
+.my-order-form input{
+  transition:border-color .18s ease,box-shadow .18s ease;
+}
+.shop-tools input:focus,
+.shop-tools select:focus,
+.checkout-modal label input:focus,
+.my-order-form input:focus{
+  outline:none;
+  border-color:#8dbb49;
+  box-shadow:0 0 0 4px rgba(141,187,73,.16);
+}
+.category-pills{
+  scroll-snap-type:x proximity;
+  overscroll-behavior-inline:contain;
+  -webkit-overflow-scrolling:touch;
+}
+.category-pills button{
+  scroll-snap-align:start;
+  transition:background-color .18s ease,color .18s ease,border-color .18s ease,transform .18s ease;
+}
+.category-pills button:active,
+.header-icon-button:active,
+.add-button:active{
+  transform:scale(.97);
+}
+body[data-theme="dark"] .topbar{
+  box-shadow:0 5px 24px rgba(0,0,0,.18);
+}
+body[data-theme="dark"] .product-card{
+  border-color:rgba(255,255,255,.07);
+  box-shadow:0 4px 16px rgba(0,0,0,.16);
+}
+body[data-theme="dark"] .product-card:hover{
+  border-color:rgba(199,243,107,.38);
+  box-shadow:0 16px 34px rgba(0,0,0,.28);
+}
+@media(max-width:620px){
+  :root{scroll-padding-top:76px}
+  .product-card:hover{transform:none}
+  .product-card:active{transform:scale(.99)}
+  .add-button,.checkout-button,.detail-cart-button,.detail-buy-button{
+    min-height:40px;
+  }
+  .shop-tools input,.shop-tools select{
+    min-height:42px;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  *,*::before,*::after{
+    scroll-behavior:auto!important;
+    animation-duration:.01ms!important;
+    animation-iteration-count:1!important;
+    transition-duration:.01ms!important;
+  }
+}
+
+/* Premium Sajjadhub emerald visual system */
+:root{--sh-green:#147b50;--sh-lime:#b9ed72;--sh-gold:#f2b85b}
+body{background-color:#f6f8f4;background-image:radial-gradient(700px circle at 8% 12%,rgba(185,237,114,.10),transparent 55%),radial-gradient(600px circle at 94% 38%,rgba(242,184,91,.08),transparent 58%)}
+.topbar{background:rgba(255,255,255,.92);backdrop-filter:blur(18px) saturate(145%);-webkit-backdrop-filter:blur(18px) saturate(145%);border-bottom-color:rgba(28,75,49,.10)}
+.brand img{transform-style:preserve-3d;filter:drop-shadow(0 5px 5px rgba(14,65,42,.14)) drop-shadow(0 13px 18px rgba(14,65,42,.09));transition:filter .3s ease,transform .35s cubic-bezier(.2,.8,.2,1)}
+.brand:hover img{transform:perspective(900px) rotateY(-5deg) rotateX(3deg) translateY(-2px) scale(1.025);filter:drop-shadow(0 8px 7px rgba(14,65,42,.19)) drop-shadow(0 18px 22px rgba(14,65,42,.13))}
+.header-navigation{background:linear-gradient(135deg,rgba(247,251,243,.96),rgba(232,243,225,.88));border-color:rgba(63,111,63,.15);box-shadow:inset 0 1px rgba(255,255,255,.95),0 7px 20px rgba(24,70,42,.045)}
+.category-menu-trigger{color:#244c35;border-color:#d4e4cb;background:linear-gradient(145deg,#fff,#f2f8ec);box-shadow:0 2px 5px rgba(20,65,39,.06)}
+.category-menu[open] .category-menu-trigger,.category-menu-trigger:hover{color:#174d31;background:#e3f2d5;border-color:#a9ce8e}
+.category-menu-dropdown{padding:9px;border-radius:15px;box-shadow:0 22px 55px rgba(12,39,25,.20);animation:shMenuIn .17s ease-out both;transform-origin:top left}
+.category-menu-dropdown a{color:#263e30;font-weight:650;transition:background .16s ease,color .16s ease,transform .16s ease}
+.category-menu-dropdown a:hover,.category-menu-dropdown a:focus-visible{color:#155b38;background:#e9f5df;transform:translateX(2px)}
+@keyframes shMenuIn{from{opacity:0;transform:translateY(-5px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+.product-card{border-radius:17px;border-color:rgba(34,77,48,.09);box-shadow:0 5px 18px rgba(20,55,33,.045)}
+.product-card:hover{border-color:rgba(34,139,82,.30);box-shadow:0 20px 45px rgba(20,65,39,.13)}
+.add-button{background:linear-gradient(135deg,#eff8e5,#e1f1cf);color:#285a32}
+.add-button:hover{background:linear-gradient(135deg,#c9ef8d,#a9dc68);color:#18391f}
+.primary-link{background:linear-gradient(120deg,#d3f58f,#b6e66d);box-shadow:0 7px 22px rgba(174,220,105,.22)}
+body[data-theme="dark"]{color:#e6eee8;background-color:#0c1713;background-image:radial-gradient(780px circle at 8% 10%,rgba(40,145,89,.14),transparent 55%),radial-gradient(680px circle at 94% 38%,rgba(184,139,61,.10),transparent 58%)}
+body[data-theme="dark"] .topbar{background:rgba(15,29,23,.92);border-bottom-color:rgba(176,218,184,.12)}
+body[data-theme="dark"] .header-navigation{background:linear-gradient(135deg,rgba(26,48,36,.96),rgba(20,39,31,.94));border-color:#355642;box-shadow:inset 0 1px rgba(255,255,255,.035),0 8px 22px rgba(0,0,0,.18)}
+body[data-theme="dark"] .category-menu-trigger,body[data-theme="dark"] .category-menu[open] .category-menu-trigger{color:#e5f6df;background:linear-gradient(145deg,#294b36,#203c2d);border-color:#547b5d}
+body[data-theme="dark"] .category-chevron{color:#b9d6ad}
+body[data-theme="dark"] .category-menu-dropdown{background:#172a21;border-color:#45634d;box-shadow:0 22px 55px rgba(0,0,0,.48)}
+body[data-theme="dark"] .category-menu-dropdown a{color:#e5eee7}
+body[data-theme="dark"] .category-menu-dropdown a:hover,body[data-theme="dark"] .category-menu-dropdown a:focus-visible{color:#efffdf;background:#31553b}
+body[data-theme="dark"] .product-card{background:#17251e;border-color:rgba(190,226,195,.12);box-shadow:0 8px 24px rgba(0,0,0,.20)}
+body[data-theme="dark"] .product-card:hover{border-color:rgba(185,237,114,.42);box-shadow:0 18px 42px rgba(0,0,0,.34)}
+body[data-theme="dark"] .product-info h3,body[data-theme="dark"] .product-meta,body[data-theme="dark"] .price{color:#edf5ee}
+body[data-theme="dark"] .add-button{color:#e7f8d8;background:linear-gradient(135deg,#294b34,#345b3c);border:1px solid #52764b}
+body[data-theme="dark"] .add-button:hover{color:#102316;background:linear-gradient(135deg,#d2f58e,#a9dc68)}
+body[data-theme="dark"] .shop-tools input,body[data-theme="dark"] .shop-tools select{color:#e6eee8;background:#172820;border-color:#3a5845}
+body[data-theme="dark"] .shop-tools input::placeholder{color:#a3b7a8}
+body[data-theme="dark"] .category-pills button{color:#c9d9cd;border-color:#3a5945;background:#172820}
+body[data-theme="dark"] .category-pills button.active,body[data-theme="dark"] .category-pills button:hover{color:#102316;background:#c4ed83;border-color:#c4ed83}
+body[data-theme="dark"] .section-heading h2,body[data-theme="dark"] .how-section h2,body[data-theme="dark"] .how-section h3{color:#edf5ee}
+body[data-theme="dark"] .how-section{background:#14251c}
+body[data-theme="dark"] .how-section p,body[data-theme="dark"] .steps p{color:#bdcfc2}
+body[data-theme="dark"] footer{color:#aabeb0;background:#101d16;border-top:1px solid #294333}
+body[data-theme="dark"] .trust-strip{background:#14231b;border-color:#294333}
+body[data-theme="dark"] .trust-strip div{color:#d0dfd3}
+body[data-theme="dark"] .brand img{filter:drop-shadow(0 5px 7px rgba(0,0,0,.38)) drop-shadow(0 13px 18px rgba(0,0,0,.24))}
+body[data-theme="dark"] .brand:hover img{filter:drop-shadow(0 8px 9px rgba(0,0,0,.48)) drop-shadow(0 18px 23px rgba(0,0,0,.32))}
+#sh-pointer-aura{position:fixed;left:0;top:0;width:390px;height:390px;margin:-195px 0 0 -195px;border-radius:50%;pointer-events:none;z-index:4;opacity:0;background:radial-gradient(circle,rgba(88,190,112,.13),rgba(185,237,114,.07) 34%,transparent 70%);mix-blend-mode:multiply;will-change:transform,opacity;transition:opacity .25s ease}
+body[data-theme="dark"] #sh-pointer-aura{background:radial-gradient(circle,rgba(87,230,145,.17),rgba(185,237,114,.07) 35%,transparent 70%);mix-blend-mode:screen}
+#sh-pointer-aura.is-visible{opacity:1}
+.sh-touch-ripple{position:fixed;z-index:9999;width:22px;height:22px;border:1.5px solid rgba(39,153,91,.62);border-radius:50%;pointer-events:none;transform:translate(-50%,-50%) scale(.2);background:radial-gradient(circle,rgba(185,237,114,.27),rgba(39,153,91,.09) 58%,transparent 72%);animation:shTouchRipple .62s cubic-bezier(.16,.7,.25,1) forwards}
+body[data-theme="dark"] .sh-touch-ripple{border-color:rgba(190,244,144,.78);background:radial-gradient(circle,rgba(185,237,114,.25),rgba(54,179,112,.12) 58%,transparent 72%)}
+@keyframes shTouchRipple{0%{opacity:.9;transform:translate(-50%,-50%) scale(.2)}75%{opacity:.5}100%{opacity:0;transform:translate(-50%,-50%) scale(4.2)}}
+@media(hover:none),(pointer:coarse){#sh-pointer-aura{display:none}}
+@media(max-width:620px){.brand img{max-width:clamp(104px,34vw,145px)}.category-menu-dropdown{min-width:180px;max-height:min(62vh,420px);overflow:auto}body[data-theme="dark"] .category-menu-dropdown{background:#172a21}}
+@media(prefers-reduced-motion:reduce){.category-menu-dropdown{animation:none}.sh-touch-ripple{animation-duration:.01ms}.brand img{transition:none}}

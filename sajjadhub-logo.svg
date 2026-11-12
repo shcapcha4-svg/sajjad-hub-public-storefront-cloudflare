@@ -8,11 +8,11 @@
   <filter id="bookShadow" x="-35%" y="-25%" width="180%" height="170%"><feGaussianBlur in="SourceAlpha" stdDeviation="5"/><feOffset dy="6"/><feComponentTransfer><feFuncA type="linear" slope=".2"/></feComponentTransfer><feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge></filter>
 </defs>
 <style>
-  .logo-book{transform-box:fill-box;transform-origin:center;filter:url(#bookShadow);will-change:transform}
+  .logo-book{transform-box:fill-box;transform-origin:center;transform-style:preserve-3d;filter:url(#bookShadow);will-change:transform}
   .logo-book-back{animation:logoBookBack 5.2s ease-in-out infinite}
   .logo-book-front{animation:logoBookFront 4.6s ease-in-out infinite}
-  @keyframes logoBookBack{0%,100%{transform:rotate(-11deg) translateY(0)}50%{transform:rotate(-11deg) translateY(-10px)}}
-  @keyframes logoBookFront{0%,100%{transform:rotate(8deg) translateY(0)}50%{transform:rotate(8deg) translateY(-13px)}}
+  @keyframes logoBookBack{0%,100%{transform:perspective(520px) rotateX(5deg) rotateY(-15deg) rotate(-11deg) translateY(0)}50%{transform:perspective(520px) rotateX(5deg) rotateY(-15deg) rotate(-11deg) translateY(-11px)}}
+  @keyframes logoBookFront{0%,100%{transform:perspective(520px) rotateX(-4deg) rotateY(13deg) rotate(8deg) translateY(0)}50%{transform:perspective(520px) rotateX(-4deg) rotateY(13deg) rotate(8deg) translateY(-14px)}}
   @media(prefers-reduced-motion:reduce){.logo-book{animation:none!important;will-change:auto}}
 </style>
 <g class="logo-book logo-book-back">
