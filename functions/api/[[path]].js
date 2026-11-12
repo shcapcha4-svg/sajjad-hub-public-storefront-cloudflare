@@ -1152,6 +1152,19 @@ export async function onRequest({ request, env }) {
         });
       }
 
+      if (parts[1] === "products" && parts[2] && parts[3] === "publish" && method === "POST") {
+        await ensureProductColumns(env);
+        const productId = parts[2];
+        const result = await env.DB.prepare(
+          "UPDATE products SET is_active=1, is_deleted=0 WHERE id=?"
+        ).bind(productId).run();
+        if (!result.meta?.changes) {
+          const exists = await env.DB.prepare("SELECT id FROM products WHERE id=?").bind(productId).first();
+          if (!exists) return json({ success: false, message: "পণ্য পাওয়া যায়নি।" }, 404);
+        }
+        return json({ success: true, message: "ডিজাইনটি আবার প্রকাশ করা হয়েছে।" });
+      }
+
       if (parts[1] === "products" && parts[2] && method === "DELETE") {
   const productId = parts[2];
 
