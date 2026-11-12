@@ -1228,12 +1228,12 @@ body[data-theme="dark"] .checkout-modal::after{opacity:.065}
 
 
 
-/* Sajjadhub logo: animate the complete bounded logo and clip shine to its exact box */
+/* Sajjadhub logo: alpha-masked soft shine follows only the visible logo silhouette */
 .brand,.footer-brand{
   position:relative;display:inline-flex!important;align-items:center;
   width:fit-content;max-width:100%;height:auto;line-height:0;
   overflow:hidden;contain:paint;isolation:isolate;
-  animation:shLogoFloat 4.2s ease-in-out infinite;
+  animation:shLogoFloat 3.2s ease-in-out infinite;
 }
 .brand img,.footer-brand img{
   position:relative;z-index:1;display:block;flex:none;
@@ -1243,24 +1243,36 @@ body[data-theme="dark"] .checkout-modal::after{opacity:.065}
 }
 .brand::after,.footer-brand::after{
   content:"";position:absolute;z-index:2;inset:0;
-  display:block;overflow:hidden;pointer-events:none;
-  clip-path:inset(0);
-  background:linear-gradient(110deg,transparent 0%,transparent 43%,rgba(255,255,255,.035) 47%,rgba(255,255,255,.13) 50%,rgba(255,255,255,.035) 53%,transparent 58%,transparent 100%);
-  background-size:260% 100%;background-position:100% 0;
-  opacity:0;animation:shLogoShine 6.5s ease-in-out infinite;
+  display:block;pointer-events:none;
+  background:linear-gradient(108deg,
+    transparent 0%,transparent 38%,
+    rgba(255,255,255,.025) 43%,
+    rgba(255,255,255,.12) 48%,
+    rgba(255,255,255,.20) 50%,
+    rgba(255,255,255,.12) 52%,
+    rgba(255,255,255,.025) 57%,
+    transparent 62%,transparent 100%);
+  background-size:240% 100%;background-position:100% 0;
+  opacity:0;
+  filter:blur(1.8px);
+  mix-blend-mode:screen;
+  -webkit-mask-image:url("/sajjadhub-logo.svg");
+  mask-image:url("/sajjadhub-logo.svg");
+  -webkit-mask-mode:alpha;mask-mode:alpha;
+  -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;
+  -webkit-mask-position:center;-webkit-mask-size:100% 100%;
+  mask-repeat:no-repeat;mask-position:center;mask-size:100% 100%;
+  animation:shLogoShine 3.1s cubic-bezier(.35,0,.2,1) infinite;
 }
 @keyframes shLogoFloat{
   0%,100%{transform:translate3d(0,0,0)}
   50%{transform:translate3d(0,-1px,0)}
 }
 @keyframes shLogoShine{
-  0%,12%{background-position:100% 0;opacity:0}
-  24%{opacity:.55}
-  56%{background-position:0% 0;opacity:.42}
-  70%,100%{background-position:0% 0;opacity:0}
-}
-body[data-theme="dark"] .brand::after,body[data-theme="dark"] .footer-brand::after{
-  background-image:linear-gradient(110deg,transparent 0%,transparent 43%,rgba(255,255,255,.04) 47%,rgba(218,255,220,.15) 50%,rgba(255,255,255,.04) 53%,transparent 58%,transparent 100%);
+  0%,8%{background-position:100% 0;opacity:0}
+  18%{opacity:.62}
+  58%{background-position:0% 0;opacity:.48}
+  72%,100%{background-position:0% 0;opacity:0}
 }
 @media(prefers-reduced-motion:reduce){
   .brand,.footer-brand{animation:none!important;transform:none!important}
