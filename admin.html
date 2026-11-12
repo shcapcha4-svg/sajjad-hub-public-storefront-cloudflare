@@ -5,7 +5,7 @@
 <title>Sajjadhub · Admin</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700;800&family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="styles.css?v=hero-artwork-upload-20261111-1">
+<link rel="stylesheet" href="styles.css?v=admin-logo-darkmode-20261112-1">
 <style>
 .admin-layout{display:grid;grid-template-columns:238px minmax(0,1fr);gap:18px;align-items:start}.admin-sidebar{position:sticky;top:18px;background:var(--admin-card);border:1px solid var(--admin-line);border-radius:16px;padding:12px;box-shadow:0 8px 28px #153b2409}.admin-nav-title{font:800 10px Inter,sans-serif;letter-spacing:1.4px;color:var(--admin-muted);padding:9px 11px 12px}.admin-nav{display:grid;gap:5px}.admin-nav button{display:flex;align-items:center;gap:10px;width:100%;border:0;border-radius:9px;padding:11px 12px;background:transparent;color:var(--admin-ink);font:600 14px "Hind Siliguri",sans-serif;text-align:left;cursor:pointer}.admin-nav button:hover{background:#edf7ed}.admin-nav button[aria-current="page"]{background:#e7f5e8;color:#087443;font-weight:800}.admin-nav button span{width:22px;text-align:center;font-size:16px}.admin-content{min-width:0}.admin-content>.admin-panel{margin-bottom:0}#products{display:block}.admin-table-wrap{width:100%;overflow-x:auto;border:1px solid var(--admin-line);border-radius:12px}.admin-data-table{width:100%;border-collapse:collapse;min-width:620px;background:var(--admin-card);color:var(--admin-ink)}.admin-data-table th,.admin-data-table td{padding:11px 13px;text-align:left;border-bottom:1px solid var(--admin-line);font-size:13px;vertical-align:middle}.admin-data-table th{background:#f0f7ef;color:#45604c;font-weight:800;white-space:nowrap}.admin-data-table tr:last-child td{border-bottom:0}.admin-data-table a{color:#087443;font-weight:700;text-decoration:underline}.admin-date-filter{display:flex;gap:8px;align-items:end;flex-wrap:wrap}.admin-date-filter label{font-size:12px;color:var(--admin-muted);font-weight:700}.admin-date-filter input{display:block;padding:9px;border:1px solid var(--admin-line);border-radius:8px;background:var(--admin-card);color:var(--admin-ink)}.admin-page-intro{margin-bottom:18px;padding:18px 20px;border:1px solid var(--admin-line);border-radius:14px;background:linear-gradient(120deg,#f2faf1,#fff)}.admin-page-intro h2{margin:0 0 4px;font-size:21px}.admin-page-intro p{margin:0;color:var(--admin-muted);font-size:13px}body[data-theme="dark"] .admin-sidebar{background:var(--admin-card);border-color:var(--admin-line)}body[data-theme="dark"] .admin-nav button:hover{background:#26392c}body[data-theme="dark"] .admin-nav button[aria-current="page"]{background:#244b31;color:#a8efbb}body[data-theme="dark"] .admin-data-table th{background:#203729;color:#c4e7cc}body[data-theme="dark"] .admin-data-table a{color:#8ce5a7}body[data-theme="dark"] .admin-page-intro{background:linear-gradient(120deg,#203729,#1a2a20)}@media(max-width:900px){.admin-layout{grid-template-columns:1fr}.admin-sidebar{position:static}.admin-nav{grid-template-columns:repeat(3,minmax(0,1fr))}.admin-nav button{justify-content:center;padding:9px 6px;font-size:12px}.admin-nav button span{display:none}}@media(max-width:620px){.admin-nav{grid-template-columns:repeat(2,minmax(0,1fr))}.admin-nav button{justify-content:flex-start}.admin-nav button span{display:inline-block}.admin-content>.admin-panel{padding:14px}.admin-data-table th,.admin-data-table td{padding:9px;font-size:12px}}
 
@@ -106,13 +106,122 @@ body[data-theme="dark"] .sales-table th{background:#203729;color:#c4e7cc}
 body[data-theme="dark"] .sales-table td:last-child{color:#8ce5a7}
 @media(max-width:900px){.sales-stats{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:620px){.sales-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.sales-table th,.sales-table td{padding:10px;font-size:12px}}
+
+
+/* Admin brand motion and logo-shaped light sweep */
+.admin-brand,.admin-login-brand{
+  position:relative;display:inline-flex;align-items:center;justify-content:center;
+  width:fit-content;max-width:100%;height:auto;line-height:0;
+  overflow:hidden;contain:paint;isolation:isolate;
+  animation:adminLogoFloat 3.2s ease-in-out infinite;
+}
+.admin-brand img,.admin-login-brand img{
+  position:relative;z-index:1;display:block;max-width:100%;height:auto;
+  object-fit:contain;animation:none!important;transform:none!important;
+  filter:none!important;transition:none!important;
+}
+.admin-brand::after,.admin-login-brand::after{
+  content:"";position:absolute;z-index:2;inset:0;display:block;pointer-events:none;
+  background:linear-gradient(108deg,
+    transparent 0%,transparent 34%,
+    rgba(255,255,255,.10) 40%,
+    rgba(255,255,255,.42) 46%,
+    rgba(255,255,255,.88) 49.5%,
+    rgba(255,255,255,.72) 51%,
+    rgba(255,255,255,.32) 55%,
+    rgba(255,255,255,.08) 60%,
+    transparent 66%,transparent 100%);
+  background-size:260% 100%;background-position:100% 0;opacity:0;
+  filter:blur(1.15px);mix-blend-mode:screen;
+  -webkit-mask-image:url("/sajjadhub-logo.svg");mask-image:url("/sajjadhub-logo.svg");
+  -webkit-mask-mode:alpha;mask-mode:alpha;
+  -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;
+  -webkit-mask-position:center;-webkit-mask-size:100% 100%;
+  mask-repeat:no-repeat;mask-position:center;mask-size:100% 100%;
+  animation:adminLogoShine 6.5s cubic-bezier(.35,0,.2,1) infinite;
+}
+.admin-login-brand{margin-bottom:16px}
+.admin-login-brand .admin-login-logo{display:block;width:230px;max-width:100%;margin:0}
+@keyframes adminLogoFloat{
+  0%,100%{transform:translate3d(0,0,0)}
+  50%{transform:translate3d(0,-1px,0)}
+}
+@keyframes adminLogoShine{
+  0%,8%{background-position:100% 0;opacity:0}
+  15%{opacity:1}
+  58%{background-position:0% 0;opacity:.92}
+  72%,100%{background-position:0% 0;opacity:0}
+}
+
+/* Dark mode polish across every Admin workspace */
+body[data-theme="dark"] .admin-eyebrow{color:#9be7ae}
+body[data-theme="dark"] .admin-form label,
+body[data-theme="dark"] .admin-login label{color:#d5e6d8}
+body[data-theme="dark"] .admin-nav button{color:#d9e8dc}
+body[data-theme="dark"] .admin-nav button:hover{background:#263d2d;color:#c7f36b}
+body[data-theme="dark"] .admin-nav button[aria-current="page"]{
+  background:linear-gradient(110deg,#244b31,#294331);
+  color:#c7f36b;box-shadow:inset 3px 0 0 #9bdc55;
+}
+body[data-theme="dark"] .admin-page-intro{
+  background:linear-gradient(120deg,#203729,#19271e);
+  border-color:#344f3b;
+}
+body[data-theme="dark"] .admin-data-table{background:var(--admin-card);color:var(--admin-ink)}
+body[data-theme="dark"] .admin-data-table th{background:#203729;color:#d3ead8}
+body[data-theme="dark"] .admin-data-table td{border-color:#34483a}
+body[data-theme="dark"] .admin-data-table a,
+body[data-theme="dark"] .order-downloads a{color:#9be7ae}
+body[data-theme="dark"] .admin-table-wrap{border-color:#34483a}
+body[data-theme="dark"] .admin-search,
+body[data-theme="dark"] .admin-filter,
+body[data-theme="dark"] .admin-date-filter input{
+  background:#111d16;border-color:#405746;color:#edf6ee;color-scheme:dark;
+}
+body[data-theme="dark"] .admin-search::placeholder,
+body[data-theme="dark"] .admin-form input::placeholder,
+body[data-theme="dark"] .admin-form textarea::placeholder{color:#82968a}
+body[data-theme="dark"] .admin-count,
+body[data-theme="dark"] .admin-no-image{color:#a4b4a8}
+body[data-theme="dark"] .file-pick strong{color:#d9e8dc}
+body[data-theme="dark"] .file-pick small{color:#a4b4a8}
+body[data-theme="dark"] .admin-item-image{background:linear-gradient(135deg,#22372a,#1a2a20)}
+body[data-theme="dark"] .admin-empty{
+  background:#17251c;border-color:#405746;color:#b8c9bc;
+}
+body[data-theme="dark"] .asset-status{
+  background:#203729;border:1px solid #3b6045;color:#c4e7cc;
+}
+body[data-theme="dark"] .admin-message{color:#9be7ae}
+body[data-theme="dark"] .admin-message.error{color:#ffaaa0}
+body[data-theme="dark"] .admin-btn.light{
+  background:#263d2d;border-color:#3b6045;color:#c7f3d2;
+}
+body[data-theme="dark"] .admin-btn.light:hover{background:#304d38}
+body[data-theme="dark"] .admin-btn.orange{color:#281b08}
+body[data-theme="dark"] .admin-btn.danger{
+  background:#482824;border-color:#704139;color:#ffc1b6;
+}
+body[data-theme="dark"] .modal-close{background:#304436;color:#e7f0e8}
+body[data-theme="dark"] .modal-product img{background:#26392c}
+body[data-theme="dark"] .admin-product-tags span{background:#294331;color:#c7f3d2}
+body[data-theme="dark"] .sales-table th{background:#203729;color:#d3ead8}
+body[data-theme="dark"] .sales-table td{border-color:#34483a}
+body[data-theme="dark"] :is(button,a,input,select,textarea):focus-visible{
+  outline:2px solid #a6e86b;outline-offset:2px;
+}
+@media(prefers-reduced-motion:reduce){
+  .admin-brand,.admin-login-brand{animation:none!important;transform:none!important}
+  .admin-brand::after,.admin-login-brand::after{animation:none!important;display:none!important}
+}
+
 </style>
 </head>
 <body>
 <div class="admin-shell">
   <section id="loginView" class="admin-login" hidden>
     <div class="admin-panel">
-      <img class="admin-login-logo" src="/sajjadhub-logo.svg" alt="Sajjadhub">
+      <span class="admin-login-brand"><img class="admin-login-logo" src="/sajjadhub-logo.svg" alt="Sajjadhub"></span>
       <div class="admin-eyebrow">SECURE ADMIN ACCESS</div><h1>অ্যাডমিন লগইন</h1><p class="admin-hint">শুধু সাইট পরিচালকের জন্য।</p>
       <form id="loginForm"><label>অ্যাডমিন পাসওয়ার্ড<input id="password" type="password" required autocomplete="current-password"></label><button class="admin-btn" type="submit">নিরাপদে লগইন করুন</button></form>
       <p id="loginMessage" class="admin-message"></p>
@@ -242,5 +351,5 @@ body[data-theme="dark"] .sales-table td:last-child{color:#8ce5a7}
   </div>
 </div>
 <dialog id="productModal" class="modal"><div class="modal-inner"><button class="modal-close" data-close="productModal" aria-label="বন্ধ করুন">×</button><div id="productModalContent"></div></div></dialog>
-<script src="admin.js?v=bkash-rocket-preview-20261112-1"></script>
+<script src="admin.js?v=admin-logo-darkmode-20261112-1"></script>
 </body></html>
