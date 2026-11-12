@@ -28,6 +28,7 @@ let products = [];
 let newCollectionMode = false;
 const money = n => "৳" + Number(n).toLocaleString("bn-BD");
 let cart = [];
+let selectedPaymentMethod = "Nagad";
 const grid = document.getElementById("productGrid");
 const search = document.getElementById("searchInput");
 const filter = document.getElementById("categoryFilter");
@@ -248,14 +249,21 @@ document.getElementById("lookupMyOrder").addEventListener("click",async()=>{
  finally{button.disabled=false;}
 });
 document.getElementById("checkoutButton").onclick=()=>{closeCart();unlockCheckoutCustomerFields();document.getElementById("checkoutDialog").showModal();document.getElementById("checkoutMessage").textContent=""};
-document.getElementById("copyNagad").onclick=async()=>{try{await navigator.clipboard.writeText("01951608000");document.getElementById("checkoutMessage").textContent="Nagad নম্বর কপি হয়েছে।"}catch{document.getElementById("checkoutMessage").textContent="Nagad নম্বর: 01951608000"}};
+function renderPaymentMethod(){
+  const config={Nagad:{number:"01951608000",label:"Nagad-এ টাকা পাঠানোর নম্বর",trx:"Nagad TrxID"},bKash:{number:"01405825850",label:"bKash-এ টাকা পাঠানোর নম্বর",trx:"bKash TrxID"},Rocket:{number:"01405825850-3",label:"Rocket-এ টাকা পাঠানোর নম্বর",trx:"Rocket TrxID"}}[selectedPaymentMethod];
+  document.querySelectorAll("[data-payment-method]").forEach(button=>{const active=button.dataset.paymentMethod===selectedPaymentMethod;button.classList.toggle("active",active);button.setAttribute("aria-pressed",String(active));});
+  document.getElementById("paymentNumberLabel").textContent=config.label;document.getElementById("paymentNumber").textContent=config.number;document.getElementById("paymentTrxLabel").textContent=config.trx;
+}
+document.querySelector(".payment-method-grid").addEventListener("click",event=>{const button=event.target.closest("[data-payment-method]");if(!button)return;selectedPaymentMethod=button.dataset.paymentMethod;renderPaymentMethod();document.getElementById("checkoutMessage").textContent="";});
+document.getElementById("copyPaymentNumber").onclick=async()=>{const number=({Nagad:"01951608000",bKash:"01405825850",Rocket:"01405825850-3"})[selectedPaymentMethod];try{await navigator.clipboard.writeText(number);document.getElementById("checkoutMessage").textContent=selectedPaymentMethod+" নম্বর কপি হয়েছে।"}catch{document.getElementById("checkoutMessage").textContent=selectedPaymentMethod+" নম্বর: "+number}};
+renderPaymentMethod();
 document.getElementById("submitPayment").onclick=async()=>{
   const name=document.getElementById("buyerName"), email=document.getElementById("buyerEmail"), sender=document.getElementById("senderPhone"), trx=document.getElementById("trxId"), msg=document.getElementById("checkoutMessage"), btn=document.getElementById("submitPayment");
   if(!name.reportValidity()||!email.reportValidity()||!sender.reportValidity()||!trx.reportValidity())return;
   if(!cart.length){msg.textContent="আপনার কার্ট খালি।";return;}
   btn.disabled=true;msg.textContent="অর্ডার জমা হচ্ছে...";
   try{
-    const response=await fetch('/api/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({customerName:name.value.trim(),email:email.value.trim(),phone:sender.value.trim(),trxId:trx.value.trim(),items:cart.map(x=>({id:x.id,qty:x.qty}))})});
+    const response=await fetch('/api/checkout',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({customerName:name.value.trim(),email:email.value.trim(),phone:sender.value.trim(),trxId:trx.value.trim(),paymentMethod:selectedPaymentMethod,items:cart.map(x=>({id:x.id,qty:x.qty}))})});
     const data=await response.json();if(!response.ok||!data.success)throw new Error(data.message||'অর্ডার জমা হয়নি।');
     try{sessionStorage.setItem("sajjadhub-notification-order",JSON.stringify({orderId:String(data.orderId),email:email.value.trim()}));}catch{}updateNotificationBadge();
     const purchasedItems=cart.map(item=>({...item}));
@@ -272,7 +280,7 @@ document.getElementById("submitPayment").onclick=async()=>{
       <h3>পণ্যের বিবরণ</h3>
       <table class="receipt-table"><thead><tr><th>পণ্য</th><th>পরিমাণ</th><th>মূল্য</th></tr></thead><tbody>${purchasedItems.map(item=>`<tr><td>${escapeHTML(item.name)}</td><td>${item.qty}</td><td>${money(item.price*item.qty)}</td></tr>`).join("")}</tbody></table>
       <div class="receipt-total"><span>সর্বমোট</span><strong>${money(receiptTotal)}</strong></div>
-      <div class="receipt-payment"><p>পেমেন্ট মাধ্যম: Nagad Send Money</p><p>TrxID: ${escapeHTML(trx.value.trim())}</p></div>
+      <div class="receipt-payment"><p>পেমেন্ট মাধ্যম: ${escapeHTML(selectedPaymentMethod)} Send Money</p><p>TrxID: ${escapeHTML(trx.value.trim())}</p></div>
       <p class="receipt-note">এটি আপনার অর্ডার জমার রসিদ। ভবিষ্যৎ প্রয়োজনে অর্ডার নম্বর, এই রসিদ এবং দেওয়া ইমেইলটি সংরক্ষণ করুন।</p>
     `;
     cart=[];renderCart();document.getElementById("checkoutDialog").close();document.getElementById("receiptDialog").showModal();

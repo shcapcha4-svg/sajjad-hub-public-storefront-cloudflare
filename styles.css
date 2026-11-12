@@ -969,3 +969,123 @@ body[data-theme="dark"] .sh-touch-ripple{border-color:rgba(190,244,144,.78);back
 @media(hover:none),(pointer:coarse){#sh-pointer-aura{display:none}}
 @media(max-width:620px){.brand img{max-width:clamp(104px,34vw,145px)}.category-menu-dropdown{min-width:180px;max-height:min(62vh,420px);overflow:auto}body[data-theme="dark"] .category-menu-dropdown{background:#172a21}}
 @media(prefers-reduced-motion:reduce){.category-menu-dropdown{animation:none}.sh-touch-ripple{animation-duration:.01ms}.brand img{transition:none}}
+
+/* Manual multi-provider checkout — bKash / Rocket / Nagad */
+.payment-method-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:18px 0 14px}
+.payment-method-option{appearance:none;border:1px solid var(--line,#dce6dd);border-radius:15px;background:var(--surface,#fff);color:var(--text,#172b25);padding:13px 9px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-width:0;cursor:pointer;transition:border-color .2s,box-shadow .2s,transform .2s}
+.payment-method-option:hover{transform:translateY(-2px);border-color:#a7c8b0}
+.payment-method-option.active{border:2px solid var(--accent,#16834a);padding:12px 8px;box-shadow:0 0 0 3px rgba(22,131,74,.09)}
+.payment-brand-logo{display:flex;align-items:center;justify-content:center;gap:6px;font-family:Inter,"Hind Siliguri",sans-serif;font-size:15px;font-weight:800;letter-spacing:-.45px;white-space:nowrap}
+.payment-brand-symbol{width:25px;height:25px;border-radius:8px;display:grid;place-items:center;font-size:17px;font-weight:900;line-height:1}
+.nagad-brand{color:#f05a28}.nagad-brand .payment-brand-symbol{background:#f05a28;color:white;border-radius:50%}
+.bkash-brand{color:#d12053}.bkash-brand .payment-brand-symbol{background:#d12053;color:#fff;border-radius:50%;font-family:Arial,sans-serif;font-style:italic}
+.rocket-brand{color:#54278f}.rocket-brand .payment-brand-symbol{background:#54278f;color:#fff;border-radius:50%}
+.rocket-brand svg{width:17px;height:17px;fill:none;stroke:#fff;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.payment-method-option small{font-size:11px;color:var(--muted,#667085)}
+.nagad-box #paymentNumber{display:block;font-size:clamp(21px,5vw,27px);letter-spacing:.5px}
+@media(max-width:420px){.payment-method-grid{gap:7px}.payment-method-option{padding:11px 5px}.payment-method-option.active{padding:10px 4px}.payment-brand-logo{font-size:13px;gap:4px}.payment-brand-symbol{width:22px;height:22px}}
+
+/* Brand logo image sizing for manual payment selector */
+.payment-brand-logo img{display:block;width:auto;height:30px;max-width:92px;object-fit:contain}
+.payment-brand-logo strong{font-weight:800}
+@media(max-width:420px){.payment-brand-logo img{height:25px;max-width:76px}}
+
+
+/* Refined payment brand selector — consistent sizing, clear selected state, dark mode */
+.payment-method-option{
+  position:relative;
+  min-height:104px;
+  overflow:hidden;
+  isolation:isolate;
+  background:linear-gradient(180deg,#fff 0%,#fbfdfb 100%);
+  border-color:#e1e9e2;
+  box-shadow:0 3px 10px rgba(25,55,35,.035);
+}
+.payment-method-option::before{
+  content:"";
+  position:absolute;
+  inset:0 0 auto;
+  height:3px;
+  background:var(--payment-brand-color,#16834a);
+  opacity:.0;
+  transition:opacity .2s ease;
+}
+.payment-method-option[data-payment-method="Nagad"]{--payment-brand-color:#f05a28}
+.payment-method-option[data-payment-method="bKash"]{--payment-brand-color:#d12053}
+.payment-method-option[data-payment-method="Rocket"]{--payment-brand-color:#54278f}
+.payment-method-option:hover,
+.payment-method-option:focus-visible{
+  border-color:var(--payment-brand-color,#16834a);
+  box-shadow:0 7px 18px rgba(25,55,35,.09);
+}
+.payment-method-option.active{
+  border:2px solid var(--payment-brand-color,#16834a);
+  padding:12px 8px;
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--payment-brand-color,#16834a) 12%,transparent),0 8px 18px rgba(25,55,35,.07);
+}
+.payment-method-option.active::before{opacity:1}
+.payment-brand-logo{
+  width:100%;
+  min-height:38px;
+  gap:7px;
+  letter-spacing:-.25px;
+}
+.payment-brand-logo img{
+  width:auto;
+  height:32px;
+  max-width:min(88px,52%);
+  object-fit:contain;
+  object-position:center;
+  flex:0 1 auto;
+}
+.payment-brand-logo strong{
+  font-size:14px;
+  line-height:1.15;
+}
+.payment-method-option small{
+  font-size:11px;
+  font-weight:600;
+  letter-spacing:.1px;
+}
+body[data-theme="dark"] .payment-method-option{
+  color:#f2f7f2;
+  background:linear-gradient(180deg,#1b2d23 0%,#15251d 100%);
+  border-color:#385141;
+  box-shadow:0 4px 12px rgba(0,0,0,.16);
+}
+body[data-theme="dark"] .payment-method-option small{color:#b7c9bc}
+body[data-theme="dark"] .payment-method-option:hover,
+body[data-theme="dark"] .payment-method-option:focus-visible{
+  border-color:var(--payment-brand-color,#8dcf9e);
+  box-shadow:0 7px 18px rgba(0,0,0,.24);
+}
+body[data-theme="dark"] .payment-method-option.active{
+  border-color:var(--payment-brand-color,#8dcf9e);
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--payment-brand-color,#8dcf9e) 18%,transparent),0 8px 18px rgba(0,0,0,.22);
+}
+@media(max-width:420px){
+  .payment-method-option{min-height:94px;padding:10px 4px}
+  .payment-method-option.active{padding:9px 3px}
+  .payment-brand-logo{min-height:34px;gap:4px}
+  .payment-brand-logo img{height:26px;max-width:48%}
+  .payment-brand-logo strong{font-size:12px}
+}
+@media(prefers-reduced-motion:reduce){
+  .payment-method-option,.payment-method-option::before{transition:none}
+}
+
+
+/* Logo-only payment choices: center each provider mark without duplicate labels */
+.payment-brand-logo{
+  justify-content:center;
+  gap:0;
+}
+.payment-brand-logo img{
+  width:auto;
+  max-width:100%;
+  height:40px;
+  flex:0 1 auto;
+}
+@media(max-width:420px){
+  .payment-brand-logo img{height:34px;max-width:100%}
+}
