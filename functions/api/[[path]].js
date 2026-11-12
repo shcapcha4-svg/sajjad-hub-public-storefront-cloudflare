@@ -86,13 +86,37 @@ async function ensureDownloadHistoryTable(env) {
 }
 
 async function ensureProductColumns(env) {
-  const columns = [["tag", "ALTER TABLE products ADD COLUMN tag TEXT NOT NULL DEFAULT ''"], ["offer_price", "ALTER TABLE products ADD COLUMN offer_price INTEGER"], ["is_deleted", "ALTER TABLE products ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0"]];
+  const columns = [
+    ["tag", "ALTER TABLE products ADD COLUMN tag TEXT NOT NULL DEFAULT ''"],
+    ["offer_price", "ALTER TABLE products ADD COLUMN offer_price INTEGER"],
+    ["is_deleted", "ALTER TABLE products ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0"],
+    ["is_active", "ALTER TABLE products ADD COLUMN is_active INTEGER NOT NULL DEFAULT 1"],
+    ["image_url", "ALTER TABLE products ADD COLUMN image_url TEXT"],
+    ["file_url", "ALTER TABLE products ADD COLUMN file_url TEXT"],
+  ];
   let { results = [] } = await env.DB.prepare("PRAGMA table_info(products)").all();
+  const originalColumns = new Set(results.map((column) => column.name));
   for (const [name, sql] of columns) {
     if (results.some((column) => column.name === name)) continue;
     try { await env.DB.prepare(sql).run(); }
-    catch (error) { const refreshed = await env.DB.prepare("PRAGMA table_info(products)").all(); if (!(refreshed.results || []).some((column) => column.name === name)) throw error; }
-    const refreshed = await env.DB.prepare("PRAGMA table_info(products)").all(); results = refreshed.results || results;
+    catch (error) {
+      const refreshed = await env.DB.prepare("PRAGMA table_info(products)").all();
+      if (!(refreshed.results || []).some((column) => column.name === name)) throw error;
+    }
+    const refreshed = await env.DB.prepare("PRAGMA table_info(products)").all();
+    results = refreshed.results || results;
+  }
+
+  // Older D1 databases used active/image_key/file_key. Preserve those values
+  // when bringing the table up to the current admin API column names.
+  if (originalColumns.has("active") && !originalColumns.has("is_active")) {
+    await env.DB.prepare("UPDATE products SET is_active=COALESCE(active,1)").run();
+  }
+  if (originalColumns.has("image_key") && !originalColumns.has("image_url")) {
+    await env.DB.prepare("UPDATE products SET image_url=image_key WHERE image_url IS NULL").run();
+  }
+  if (originalColumns.has("file_key") && !originalColumns.has("file_url")) {
+    await env.DB.prepare("UPDATE products SET file_url=file_key WHERE file_url IS NULL").run();
   }
 }
 
@@ -112,7 +136,7 @@ const safeProduct = (row) => ({
   createdAt: row.created_at || null,
   imageUrl: row.image_url ? `/api/media/${encodeURIComponent(row.image_url)}` : null,
   hasFile: !!row.file_url,
-  active: !!row.is_active,
+  active: !!(row.is_active ?? row.active),
 });
 
 const id = () => crypto.randomUUID();
