@@ -658,12 +658,14 @@ export async function onRequest({ request, env }) {
       const email = String(body.email || "").trim().toLowerCase().slice(0, 254);
       const phone = String(body.phone || "").trim().slice(0, 30);
       const trx = String(body.trxId || "").trim().slice(0, 100);
+      const paymentMethod = String(body.paymentMethod || "Nagad").trim();
       const items = Array.isArray(body.items) ? body.items : [];
 
       if (
         !customerName ||
         !/^\S+@\S+\.\S+$/.test(email) ||
         !/^01\d{9}$/.test(phone) ||
+        !["Nagad", "bKash", "Rocket"].includes(paymentMethod) ||
         trx.length < 4 ||
         !items.length ||
         items.length > 30
@@ -671,7 +673,7 @@ export async function onRequest({ request, env }) {
         return json(
           {
             success: false,
-            message: "নাম, ইমেইল, ১১ সংখ্যার ফোন, TrxID এবং পণ্য যাচাই করুন।",
+            message: "নাম, ইমেইল, ১১ সংখ্যার ফোন, পেমেন্ট মাধ্যম, TrxID এবং পণ্য যাচাই করুন।",
           },
           400
         );
@@ -712,7 +714,7 @@ export async function onRequest({ request, env }) {
       const inserted = await env.DB.prepare(
         "INSERT INTO orders(customer_name,phone,product_id,product_name,quantity,total_amount,payment_method,transaction_id,payment_status,customer_email) VALUES(?,?,?,?,?,?,?,?,?,?)"
       )
-        .bind(customerName, phone, first.id, first.name, valid.reduce((sum, item) => sum + item.quantity, 0), total, "Nagad", trx, "pending", email)
+        .bind(customerName, phone, first.id, first.name, valid.reduce((sum, item) => sum + item.quantity, 0), total, paymentMethod, trx, "pending", email)
         .run();
       const orderId = inserted.meta.last_row_id;
 
