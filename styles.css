@@ -1073,3 +1073,19 @@ body[data-theme="dark"] .payment-method-option.active{
 @media(prefers-reduced-motion:reduce){
   .payment-method-option,.payment-method-option::before{transition:none}
 }
+
+
+/* Logo-only payment choices: center each provider mark without duplicate labels */
+.payment-brand-logo{
+  justify-content:center;
+  gap:0;
+}
+.payment-brand-logo img{
+  width:auto;
+  max-width:100%;
+  height:40px;
+  flex:0 1 auto;
+}
+@media(max-width:420px){
+  .payment-brand-logo img{height:34px;max-width:100%}
+}
