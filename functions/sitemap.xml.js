@@ -3,9 +3,29 @@ const xmlEscape = (value) => String(value ?? "").replace(/[&<>"']/g, (ch) => ({"
 export async function onRequest({ request, env }) {
   const origin = new URL(request.url).origin;
   try {
-    const { results = [] } = await env.DB.prepare(
-      "SELECT id, created_at FROM products WHERE is_active=1 AND COALESCE(is_deleted,0)=0 ORDER BY id DESC"
+    // Support both the original schema ("active") and newer schemas
+    // ("is_active") without changing or migrating the live database.
+    const { results: columnRows = [] } = await env.DB.prepare(
+      "PRAGMA table_info(products)"
     ).all();
+    const columns = new Set(columnRows.map((column) => column.name));
+    const activeColumn = columns.has("is_active")
+      ? "is_active"
+      : columns.has("active")
+        ? "active"
+        : null;
+
+    if (!activeColumn) {
+      throw new Error("Products table has no supported active-status column");
+    }
+
+    const deletedFilter = columns.has("is_deleted")
+      ? " AND COALESCE(is_deleted,0)=0"
+      : "";
+    const { results = [] } = await env.DB.prepare(
+      `SELECT id, created_at FROM products WHERE ${activeColumn}=1${deletedFilter} ORDER BY id DESC`
+    ).all();
+
     const today = new Date().toISOString().slice(0, 10);
     const urls = [
       `<url><loc>${xmlEscape(origin)}/</loc><lastmod>${today}</lastmod><changefreq>daily</changefreq><priority>1.0</priority></url>`,
