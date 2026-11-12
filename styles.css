@@ -989,3 +989,87 @@ body[data-theme="dark"] .sh-touch-ripple{border-color:rgba(190,244,144,.78);back
 .payment-brand-logo img{display:block;width:auto;height:30px;max-width:92px;object-fit:contain}
 .payment-brand-logo strong{font-weight:800}
 @media(max-width:420px){.payment-brand-logo img{height:25px;max-width:76px}}
+
+
+/* Refined payment brand selector — consistent sizing, clear selected state, dark mode */
+.payment-method-option{
+  position:relative;
+  min-height:104px;
+  overflow:hidden;
+  isolation:isolate;
+  background:linear-gradient(180deg,#fff 0%,#fbfdfb 100%);
+  border-color:#e1e9e2;
+  box-shadow:0 3px 10px rgba(25,55,35,.035);
+}
+.payment-method-option::before{
+  content:"";
+  position:absolute;
+  inset:0 0 auto;
+  height:3px;
+  background:var(--payment-brand-color,#16834a);
+  opacity:.0;
+  transition:opacity .2s ease;
+}
+.payment-method-option[data-payment-method="Nagad"]{--payment-brand-color:#f05a28}
+.payment-method-option[data-payment-method="bKash"]{--payment-brand-color:#d12053}
+.payment-method-option[data-payment-method="Rocket"]{--payment-brand-color:#54278f}
+.payment-method-option:hover,
+.payment-method-option:focus-visible{
+  border-color:var(--payment-brand-color,#16834a);
+  box-shadow:0 7px 18px rgba(25,55,35,.09);
+}
+.payment-method-option.active{
+  border:2px solid var(--payment-brand-color,#16834a);
+  padding:12px 8px;
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--payment-brand-color,#16834a) 12%,transparent),0 8px 18px rgba(25,55,35,.07);
+}
+.payment-method-option.active::before{opacity:1}
+.payment-brand-logo{
+  width:100%;
+  min-height:38px;
+  gap:7px;
+  letter-spacing:-.25px;
+}
+.payment-brand-logo img{
+  width:auto;
+  height:32px;
+  max-width:min(88px,52%);
+  object-fit:contain;
+  object-position:center;
+  flex:0 1 auto;
+}
+.payment-brand-logo strong{
+  font-size:14px;
+  line-height:1.15;
+}
+.payment-method-option small{
+  font-size:11px;
+  font-weight:600;
+  letter-spacing:.1px;
+}
+body[data-theme="dark"] .payment-method-option{
+  color:#f2f7f2;
+  background:linear-gradient(180deg,#1b2d23 0%,#15251d 100%);
+  border-color:#385141;
+  box-shadow:0 4px 12px rgba(0,0,0,.16);
+}
+body[data-theme="dark"] .payment-method-option small{color:#b7c9bc}
+body[data-theme="dark"] .payment-method-option:hover,
+body[data-theme="dark"] .payment-method-option:focus-visible{
+  border-color:var(--payment-brand-color,#8dcf9e);
+  box-shadow:0 7px 18px rgba(0,0,0,.24);
+}
+body[data-theme="dark"] .payment-method-option.active{
+  border-color:var(--payment-brand-color,#8dcf9e);
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--payment-brand-color,#8dcf9e) 18%,transparent),0 8px 18px rgba(0,0,0,.22);
+}
+@media(max-width:420px){
+  .payment-method-option{min-height:94px;padding:10px 4px}
+  .payment-method-option.active{padding:9px 3px}
+  .payment-brand-logo{min-height:34px;gap:4px}
+  .payment-brand-logo img{height:26px;max-width:48%}
+  .payment-brand-logo strong{font-size:12px}
+}
+@media(prefers-reduced-motion:reduce){
+  .payment-method-option,.payment-method-option::before{transition:none}
+}
