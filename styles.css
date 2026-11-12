@@ -1227,52 +1227,33 @@ body[data-theme="dark"] .checkout-modal::after{opacity:.065}
 }
 
 
-/* Sajjadhub logo motion: keep the complete mark visible and animate the whole wordmark */
-.brand,.footer-brand{
-  position:relative;
-  overflow:visible;
-  isolation:isolate;
-}
+
+/* Sajjadhub logo: safe full-mark float and a faint shine contained inside the logo */
+.brand,.footer-brand{position:relative;overflow:visible;isolation:isolate}
 .brand img,.footer-brand img{
-  position:relative;
-  z-index:1;
-  transform-origin:50% 50%;
-  animation:shLogoFloat 3.8s cubic-bezier(.45,0,.55,1) infinite;
+  position:relative;z-index:1;display:block;max-width:100%;height:auto;
+  transform-origin:50% 50%;animation:shLogoFloat 4.2s ease-in-out infinite;
   will-change:transform;
 }
 .brand::after,.footer-brand::after{
-  content:"";
-  position:absolute;
-  z-index:2;
-  top:3px;
-  bottom:3px;
-  left:-38%;
-  width:28%;
-  border-radius:5px;
-  pointer-events:none;
-  background:linear-gradient(105deg,transparent 0%,rgba(255,255,255,0) 20%,rgba(255,255,255,.78) 48%,rgba(255,255,255,.18) 62%,transparent 100%);
-  filter:blur(.35px);
-  transform:skewX(-22deg);
-  animation:shLogoShine 4.6s ease-in-out infinite;
+  content:"";position:absolute;z-index:2;inset:0;pointer-events:none;
+  clip-path:inset(0);
+  background:linear-gradient(110deg,transparent 0%,transparent 43%,rgba(255,255,255,.08) 47%,rgba(255,255,255,.22) 50%,rgba(255,255,255,.08) 53%,transparent 58%,transparent 100%);
+  background-size:220% 100%;background-position:100% 0;
+  opacity:.38;animation:shLogoShine 6s ease-in-out infinite;
 }
 @keyframes shLogoFloat{
-  0%,100%{transform:translate3d(0,0,0) rotate(0deg)}
-  25%{transform:translate3d(0,-2px,0) rotate(-.35deg)}
-  50%{transform:translate3d(0,1.5px,0) rotate(0deg)}
-  75%{transform:translate3d(0,-1px,0) rotate(.3deg)}
+  0%,100%{transform:translate3d(0,0,0)}
+  50%{transform:translate3d(0,-1px,0)}
 }
 @keyframes shLogoShine{
-  0%,18%{left:-38%;opacity:0}
-  27%{opacity:.9}
-  52%{left:112%;opacity:.65}
-  63%,100%{left:112%;opacity:0}
-}
-.brand:hover img,.footer-brand:hover img{
-  animation-play-state:paused;
-  transform:perspective(900px) rotateY(-5deg) rotateX(3deg) translateY(-2px) scale(1.025);
+  0%,12%{background-position:100% 0;opacity:0}
+  22%{opacity:.38}
+  55%{background-position:0% 0;opacity:.28}
+  68%,100%{background-position:0% 0;opacity:0}
 }
 body[data-theme="dark"] .brand::after,body[data-theme="dark"] .footer-brand::after{
-  background:linear-gradient(105deg,transparent 0%,rgba(255,255,255,0) 20%,rgba(255,255,255,.94) 48%,rgba(185,237,114,.32) 62%,transparent 100%);
+  background-image:linear-gradient(110deg,transparent 0%,transparent 43%,rgba(255,255,255,.10) 47%,rgba(218,255,220,.24) 50%,rgba(255,255,255,.10) 53%,transparent 58%,transparent 100%);
 }
 @media(prefers-reduced-motion:reduce){
   .brand img,.footer-brand img{animation:none;transform:none;will-change:auto}
