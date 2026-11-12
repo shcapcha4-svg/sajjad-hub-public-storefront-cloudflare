@@ -1089,3 +1089,25 @@ body[data-theme="dark"] .payment-method-option.active{
 @media(max-width:420px){
   .payment-brand-logo img{height:34px;max-width:100%}
 }
+
+
+/* Dark-mode payment logos: add a bright neutral backing for reliable brand contrast */
+body[data-theme="dark"] .payment-brand-logo img{
+  box-sizing:content-box;
+  height:34px;
+  max-width:calc(100% - 18px);
+  padding:5px 9px;
+  border:1px solid #e5e7eb;
+  border-radius:9px;
+  background:#fff;
+  box-shadow:0 2px 8px rgba(0,0,0,.16);
+  object-fit:contain;
+}
+@media(max-width:420px){
+  body[data-theme="dark"] .payment-brand-logo img{
+    height:29px;
+    max-width:calc(100% - 14px);
+    padding:4px 7px;
+    border-radius:8px;
+  }
+}
