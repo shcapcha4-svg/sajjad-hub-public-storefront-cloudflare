@@ -1111,3 +1111,27 @@ body[data-theme="dark"] .payment-brand-logo img{
     border-radius:8px;
   }
 }
+
+
+/* Match the displayed Send Money number to the selected provider brand */
+.nagad-box #paymentNumber{
+  transition:color .22s ease,text-shadow .22s ease;
+}
+.nagad-box.payment-provider-nagad #paymentNumber{
+  color:#f05a28;
+  text-shadow:0 1px 0 rgba(240,90,40,.10);
+}
+.nagad-box.payment-provider-bkash #paymentNumber{
+  color:#d12053;
+  text-shadow:0 1px 0 rgba(209,32,83,.10);
+}
+.nagad-box.payment-provider-rocket #paymentNumber{
+  color:#54278f;
+  text-shadow:0 1px 0 rgba(84,39,143,.10);
+}
+body[data-theme="dark"] .nagad-box.payment-provider-nagad #paymentNumber{color:#ff8a5c}
+body[data-theme="dark"] .nagad-box.payment-provider-bkash #paymentNumber{color:#ff6b98}
+body[data-theme="dark"] .nagad-box.payment-provider-rocket #paymentNumber{color:#b99aff}
+@media(prefers-reduced-motion:reduce){
+  .nagad-box #paymentNumber{transition:none}
+}
