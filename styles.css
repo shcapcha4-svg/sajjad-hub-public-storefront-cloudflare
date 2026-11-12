@@ -1225,3 +1225,56 @@ body[data-theme="dark"] .checkout-modal::after{opacity:.065}
 @media(prefers-reduced-motion:reduce){
   .nagad-box .copy-button{transition:none}
 }
+
+
+/* Sajjadhub logo motion: keep the complete mark visible and animate the whole wordmark */
+.brand,.footer-brand{
+  position:relative;
+  overflow:visible;
+  isolation:isolate;
+}
+.brand img,.footer-brand img{
+  position:relative;
+  z-index:1;
+  transform-origin:50% 50%;
+  animation:shLogoFloat 3.8s cubic-bezier(.45,0,.55,1) infinite;
+  will-change:transform;
+}
+.brand::after,.footer-brand::after{
+  content:"";
+  position:absolute;
+  z-index:2;
+  top:3px;
+  bottom:3px;
+  left:-38%;
+  width:28%;
+  border-radius:5px;
+  pointer-events:none;
+  background:linear-gradient(105deg,transparent 0%,rgba(255,255,255,0) 20%,rgba(255,255,255,.78) 48%,rgba(255,255,255,.18) 62%,transparent 100%);
+  filter:blur(.35px);
+  transform:skewX(-22deg);
+  animation:shLogoShine 4.6s ease-in-out infinite;
+}
+@keyframes shLogoFloat{
+  0%,100%{transform:translate3d(0,0,0) rotate(0deg)}
+  25%{transform:translate3d(0,-2px,0) rotate(-.35deg)}
+  50%{transform:translate3d(0,1.5px,0) rotate(0deg)}
+  75%{transform:translate3d(0,-1px,0) rotate(.3deg)}
+}
+@keyframes shLogoShine{
+  0%,18%{left:-38%;opacity:0}
+  27%{opacity:.9}
+  52%{left:112%;opacity:.65}
+  63%,100%{left:112%;opacity:0}
+}
+.brand:hover img,.footer-brand:hover img{
+  animation-play-state:paused;
+  transform:perspective(900px) rotateY(-5deg) rotateX(3deg) translateY(-2px) scale(1.025);
+}
+body[data-theme="dark"] .brand::after,body[data-theme="dark"] .footer-brand::after{
+  background:linear-gradient(105deg,transparent 0%,rgba(255,255,255,0) 20%,rgba(255,255,255,.94) 48%,rgba(185,237,114,.32) 62%,transparent 100%);
+}
+@media(prefers-reduced-motion:reduce){
+  .brand img,.footer-brand img{animation:none;transform:none;will-change:auto}
+  .brand::after,.footer-brand::after{animation:none;display:none}
+}
