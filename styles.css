@@ -1245,16 +1245,17 @@ body[data-theme="dark"] .checkout-modal::after{opacity:.065}
   content:"";position:absolute;z-index:2;inset:0;
   display:block;pointer-events:none;
   background:linear-gradient(108deg,
-    transparent 0%,transparent 38%,
-    rgba(255,255,255,.025) 43%,
-    rgba(255,255,255,.12) 48%,
-    rgba(255,255,255,.20) 50%,
-    rgba(255,255,255,.12) 52%,
-    rgba(255,255,255,.025) 57%,
-    transparent 62%,transparent 100%);
-  background-size:240% 100%;background-position:100% 0;
+    transparent 0%,transparent 34%,
+    rgba(255,255,255,.10) 40%,
+    rgba(255,255,255,.42) 46%,
+    rgba(255,255,255,.88) 49.5%,
+    rgba(255,255,255,.72) 51%,
+    rgba(255,255,255,.32) 55%,
+    rgba(255,255,255,.08) 60%,
+    transparent 66%,transparent 100%);
+  background-size:260% 100%;background-position:100% 0;
   opacity:0;
-  filter:blur(1.8px);
+  filter:blur(1.15px);
   mix-blend-mode:screen;
   -webkit-mask-image:url("/sajjadhub-logo.svg");
   mask-image:url("/sajjadhub-logo.svg");
@@ -1262,7 +1263,7 @@ body[data-theme="dark"] .checkout-modal::after{opacity:.065}
   -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;
   -webkit-mask-position:center;-webkit-mask-size:100% 100%;
   mask-repeat:no-repeat;mask-position:center;mask-size:100% 100%;
-  animation:shLogoShine 3.1s cubic-bezier(.35,0,.2,1) infinite;
+  animation:shLogoShine 2.6s cubic-bezier(.35,0,.2,1) infinite;
 }
 @keyframes shLogoFloat{
   0%,100%{transform:translate3d(0,0,0)}
@@ -1270,8 +1271,8 @@ body[data-theme="dark"] .checkout-modal::after{opacity:.065}
 }
 @keyframes shLogoShine{
   0%,8%{background-position:100% 0;opacity:0}
-  18%{opacity:.62}
-  58%{background-position:0% 0;opacity:.48}
+  15%{opacity:1}
+  58%{background-position:0% 0;opacity:.92}
   72%,100%{background-position:0% 0;opacity:0}
 }
 @media(prefers-reduced-motion:reduce){
