@@ -1089,3 +1089,139 @@ body[data-theme="dark"] .payment-method-option.active{
 @media(max-width:420px){
   .payment-brand-logo img{height:34px;max-width:100%}
 }
+
+
+/* Dark-mode payment logos: add a bright neutral backing for reliable brand contrast */
+body[data-theme="dark"] .payment-brand-logo img{
+  box-sizing:content-box;
+  height:34px;
+  max-width:calc(100% - 18px);
+  padding:5px 9px;
+  border:1px solid #e5e7eb;
+  border-radius:9px;
+  background:#fff;
+  box-shadow:0 2px 8px rgba(0,0,0,.16);
+  object-fit:contain;
+}
+@media(max-width:420px){
+  body[data-theme="dark"] .payment-brand-logo img{
+    height:29px;
+    max-width:calc(100% - 14px);
+    padding:4px 7px;
+    border-radius:8px;
+  }
+}
+
+
+/* Match the displayed Send Money number to the selected provider brand */
+.nagad-box #paymentNumber{
+  transition:color .22s ease,text-shadow .22s ease;
+}
+.nagad-box.payment-provider-nagad #paymentNumber{
+  color:#f05a28;
+  text-shadow:0 1px 0 rgba(240,90,40,.10);
+}
+.nagad-box.payment-provider-bkash #paymentNumber{
+  color:#d12053;
+  text-shadow:0 1px 0 rgba(209,32,83,.10);
+}
+.nagad-box.payment-provider-rocket #paymentNumber{
+  color:#54278f;
+  text-shadow:0 1px 0 rgba(84,39,143,.10);
+}
+body[data-theme="dark"] .nagad-box.payment-provider-nagad #paymentNumber{color:#ff8a5c}
+body[data-theme="dark"] .nagad-box.payment-provider-bkash #paymentNumber{color:#ff6b98}
+body[data-theme="dark"] .nagad-box.payment-provider-rocket #paymentNumber{color:#b99aff}
+@media(prefers-reduced-motion:reduce){
+  .nagad-box #paymentNumber{transition:none}
+}
+
+
+/* Brand-tinted copy panel and subtle provider watermark in checkout popup */
+.nagad-box{
+  --payment-brand-color:#f05a28;
+  position:relative;
+  isolation:isolate;
+  overflow:hidden;
+  background:linear-gradient(125deg,rgba(240,90,40,.12),rgba(240,90,40,.045));
+  border:1px solid rgba(240,90,40,.34);
+  border-radius:14px;
+  box-shadow:0 7px 20px rgba(240,90,40,.07);
+}
+.nagad-box.payment-provider-bkash{
+  --payment-brand-color:#d12053;
+  background:linear-gradient(125deg,rgba(209,32,83,.12),rgba(209,32,83,.045));
+  border-color:rgba(209,32,83,.34);
+  box-shadow:0 7px 20px rgba(209,32,83,.07);
+}
+.nagad-box.payment-provider-rocket{
+  --payment-brand-color:#54278f;
+  background:linear-gradient(125deg,rgba(84,39,143,.12),rgba(84,39,143,.045));
+  border-color:rgba(84,39,143,.34);
+  box-shadow:0 7px 20px rgba(84,39,143,.07);
+}
+.nagad-box::after{
+  content:attr(data-payment-watermark);
+  position:absolute;
+  z-index:0;
+  right:8px;
+  bottom:-13px;
+  font:900 clamp(30px,7vw,54px)/1 Inter,Arial,sans-serif;
+  letter-spacing:-2px;
+  color:var(--payment-brand-color);
+  opacity:.075;
+  pointer-events:none;
+  transform:rotate(-9deg);
+  white-space:nowrap;
+}
+.nagad-box>*{position:relative;z-index:1}
+.nagad-box small{color:var(--payment-brand-color)}
+.nagad-box .copy-button{
+  color:#fff;
+  background:var(--payment-brand-color);
+  border:1px solid var(--payment-brand-color);
+  border-radius:9px;
+  font-weight:750;
+  box-shadow:0 4px 11px color-mix(in srgb,var(--payment-brand-color) 22%,transparent);
+  transition:transform .18s ease,filter .18s ease,box-shadow .18s ease;
+}
+.nagad-box .copy-button:hover{filter:brightness(1.08);transform:translateY(-1px);box-shadow:0 7px 15px color-mix(in srgb,var(--payment-brand-color) 28%,transparent)}
+.nagad-box .copy-button:active{transform:scale(.97)}
+.checkout-modal{position:relative;isolation:isolate;overflow:hidden}
+.checkout-modal::after{
+  content:attr(data-payment-watermark);
+  position:absolute;
+  z-index:0;
+  right:-13px;
+  top:38%;
+  font:900 clamp(62px,13vw,112px)/1 Inter,Arial,sans-serif;
+  letter-spacing:-5px;
+  color:var(--payment-brand-color,#f05a28);
+  opacity:.045;
+  pointer-events:none;
+  transform:rotate(-18deg);
+  white-space:nowrap;
+}
+.checkout-modal[data-payment-provider="bkash"]{--payment-brand-color:#d12053}
+.checkout-modal[data-payment-provider="rocket"]{--payment-brand-color:#54278f}
+.checkout-modal[data-payment-provider="nagad"]{--payment-brand-color:#f05a28}
+.checkout-modal>*{position:relative;z-index:1}
+body[data-theme="dark"] .nagad-box{
+  background:linear-gradient(125deg,rgba(255,138,92,.15),rgba(255,138,92,.055));
+  border-color:rgba(255,138,92,.42);
+}
+body[data-theme="dark"] .nagad-box.payment-provider-bkash{
+  background:linear-gradient(125deg,rgba(255,107,152,.15),rgba(255,107,152,.055));
+  border-color:rgba(255,107,152,.42);
+}
+body[data-theme="dark"] .nagad-box.payment-provider-rocket{
+  background:linear-gradient(125deg,rgba(185,154,255,.15),rgba(185,154,255,.055));
+  border-color:rgba(185,154,255,.42);
+}
+body[data-theme="dark"] .nagad-box.payment-provider-nagad{--payment-brand-color:#ff8a5c}
+body[data-theme="dark"] .nagad-box.payment-provider-bkash{--payment-brand-color:#ff6b98}
+body[data-theme="dark"] .nagad-box.payment-provider-rocket{--payment-brand-color:#b99aff}
+body[data-theme="dark"] .checkout-modal::after{opacity:.065}
+@media(prefers-reduced-motion:reduce){
+  .nagad-box .copy-button{transition:none}
+}
