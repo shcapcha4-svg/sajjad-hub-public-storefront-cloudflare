@@ -1263,7 +1263,7 @@ body[data-theme="dark"] .checkout-modal::after{opacity:.065}
   -webkit-mask-repeat:no-repeat;mask-repeat:no-repeat;
   -webkit-mask-position:center;-webkit-mask-size:100% 100%;
   mask-repeat:no-repeat;mask-position:center;mask-size:100% 100%;
-  animation:shLogoShine 2.6s cubic-bezier(.35,0,.2,1) infinite;
+  animation:shLogoShine 6.5s cubic-bezier(.35,0,.2,1) infinite;
 }
 @keyframes shLogoFloat{
   0%,100%{transform:translate3d(0,0,0)}
