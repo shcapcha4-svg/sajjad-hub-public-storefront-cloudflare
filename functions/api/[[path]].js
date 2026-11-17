@@ -1340,7 +1340,7 @@ export async function onRequest({ request, env }) {
                 "order",
                 String(order.customer_email).trim().toLowerCase(),
                 Number(orderId),
-                "/"
+                `/?open=orders&order=${encodeURIComponent(String(orderId))}`
               )
               .run();
           }
