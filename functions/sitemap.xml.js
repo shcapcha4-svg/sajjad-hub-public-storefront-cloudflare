@@ -23,7 +23,7 @@ export async function onRequest({ request, env }) {
       ? " AND COALESCE(is_deleted,0)=0"
       : "";
     const { results = [] } = await env.DB.prepare(
-      `SELECT id, created_at FROM products WHERE ${activeColumn}=1${deletedFilter} ORDER BY id DESC`
+      `SELECT id, created_at, updated_at FROM products WHERE ${activeColumn}=1${deletedFilter} ORDER BY id DESC`
     ).all();
 
     const today = new Date().toISOString().slice(0, 10);
@@ -31,7 +31,7 @@ export async function onRequest({ request, env }) {
       `<url><loc>${xmlEscape(origin)}/</loc><lastmod>${today}</lastmod><changefreq>daily</changefreq><priority>1.0</priority></url>`,
       ...["design-guide.html", "privacy-policy.html", "terms.html", "refund-policy.html", "contact.html"].map((page) => `<url><loc>${xmlEscape(origin)}/${page}</loc><lastmod>${today}</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>`),
       ...results.map((product) => {
-        const rawDate = String(product.created_at || "");
+        const rawDate = String(product.updated_at || product.created_at || "");
         const parsed = Date.parse(rawDate.includes("T") ? rawDate : rawDate.replace(" ", "T") + "Z");
         const lastmod = Number.isFinite(parsed) ? new Date(parsed).toISOString().slice(0, 10) : today;
         return `<url><loc>${xmlEscape(origin)}/product/${encodeURIComponent(product.id)}</loc><lastmod>${lastmod}</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>`;
