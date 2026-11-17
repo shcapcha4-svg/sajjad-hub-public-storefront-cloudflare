@@ -93,6 +93,9 @@ async function ensureProductColumns(env) {
     ["is_active", "ALTER TABLE products ADD COLUMN is_active INTEGER NOT NULL DEFAULT 1"],
     ["image_url", "ALTER TABLE products ADD COLUMN image_url TEXT"],
     ["file_url", "ALTER TABLE products ADD COLUMN file_url TEXT"],
+    ["file_name", "ALTER TABLE products ADD COLUMN file_name TEXT"],
+    ["file_content_type", "ALTER TABLE products ADD COLUMN file_content_type TEXT"],
+    ["file_extension", "ALTER TABLE products ADD COLUMN file_extension TEXT"],
   ];
   let { results = [] } = await env.DB.prepare("PRAGMA table_info(products)").all();
   const originalColumns = new Set(results.map((column) => column.name));
@@ -140,6 +143,25 @@ const safeProduct = (row) => ({
 });
 
 const id = () => crypto.randomUUID();
+const cleanUploadName = (value) => {
+  const name = String(value || "design-file").replace(/\\/g, "/").split("/").pop().replace(/[\r\n\0]/g, "").trim();
+  return (name || "design-file").slice(0, 240);
+};
+const extensionFromType = (type = "") => ({
+  "application/pdf": ".pdf", "image/png": ".png", "image/jpeg": ".jpg",
+  "image/webp": ".webp", "image/gif": ".gif", "image/svg+xml": ".svg",
+  "application/zip": ".zip", "application/x-zip-compressed": ".zip",
+  "application/postscript": ".eps", "application/illustrator": ".ai",
+  "application/vnd.adobe.illustrator": ".ai"
+}[String(type).split(";")[0].trim().toLowerCase()] || "");
+const safeDownloadName = (storedName, productName, contentType) => {
+  const name = cleanUploadName(storedName || productName || "design-file");
+  return /\.[a-z0-9]{1,12}$/i.test(name) ? name : name + extensionFromType(contentType);
+};
+const contentDisposition = (name) => {
+  const ascii = name.normalize("NFKD").replace(/[^\x20-\x7E]/g, "_").replace(/["\\]/g, "_");
+  return "attachment; filename=\"" + (ascii || "design-file") + "\"; filename*=UTF-8''" + encodeURIComponent(name);
+};
 
 const hex = (bytes) =>
   Array.from(new Uint8Array(bytes), (value) =>
@@ -531,9 +553,10 @@ export async function onRequest({ request, env }) {
     }
 
     if (route.startsWith("download/") && method === "GET") {
+      await ensureProductColumns(env);
       const token = decodeURIComponent(parts[1] || "");
       const row = await env.DB.prepare(
-        "SELECT t.*, p.file_url AS file_key, p.name FROM download_tokens t JOIN products p ON p.id=t.product_id JOIN orders o ON o.id=t.order_id AND o.payment_status='paid' WHERE t.token=?"
+        "SELECT t.*, p.file_url AS file_key, p.name, p.file_name, p.file_content_type, p.file_extension FROM download_tokens t JOIN products p ON p.id=t.product_id JOIN orders o ON o.id=t.order_id AND o.payment_status='paid' WHERE t.token=?"
       )
         .bind(token)
         .first();
@@ -558,13 +581,17 @@ export async function onRequest({ request, env }) {
       const buyer = await env.DB.prepare("SELECT customer_name,customer_email FROM orders WHERE id=?").bind(row.order_id).first();
       await env.DB.prepare("INSERT INTO download_history(token,order_id,product_id,customer_name,customer_email) VALUES(?,?,?,?,?)").bind(token,row.order_id,row.product_id,buyer?.customer_name||"",buyer?.customer_email||"").run();
 
+      const storedType = row.file_content_type || object.headers.get("Content-Type") || "application/octet-stream";
+      const downloadName = safeDownloadName(
+        row.file_name || (row.name || "design-file") + (row.file_extension || ""),
+        row.name,
+        storedType
+      );
       return new Response(object.body, {
         headers: {
-          "Content-Type":
-            object.headers.get("Content-Type") || "application/octet-stream",
-          "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(
-            row.name || "design-file"
-          )}`,
+          "Content-Type": storedType,
+          "Content-Disposition": contentDisposition(downloadName),
+          "X-Content-Type-Options": "nosniff",
           "Cache-Control": "private, no-store",
         },
       });
@@ -971,6 +998,9 @@ export async function onRequest({ request, env }) {
         const file = form.get("file");
         let imageKey = null;
         let fileKey = null;
+        let uploadedFileName = null;
+        let uploadedFileType = null;
+        let uploadedFileExtension = null;
 
         if (image instanceof File && image.size) {
           if (
@@ -1001,19 +1031,17 @@ export async function onRequest({ request, env }) {
             );
           }
 
+          uploadedFileName = cleanUploadName(file.name);
+          uploadedFileType = file.type || "application/octet-stream";
+          uploadedFileExtension = (uploadedFileName.match(/\.[a-z0-9]{1,12}$/i) || [""])[0].toLowerCase();
           fileKey = `downloads/${id()}`;
-          await putB2(
-            env,
-            fileKey,
-            file,
-            file.type || "application/octet-stream"
-          );
+          await putB2(env, fileKey, file, uploadedFileType);
         }
 
         const inserted = await env.DB.prepare(
-          "INSERT INTO products(name,description,price,image_url,category,file_url,is_active,tag,offer_price,is_deleted) VALUES(?,?,?,?,?,?,1,?,?,0)"
+          "INSERT INTO products(name,description,price,image_url,category,file_url,is_active,tag,offer_price,is_deleted,file_name,file_content_type,file_extension) VALUES(?,?,?,?,?,?,1,?,?,0,?,?,?)"
         )
-          .bind(name, String(form.get("description") || ""), Math.round(price), imageKey, category, fileKey, tag, offerPrice === null ? null : Math.round(offerPrice))
+          .bind(name, String(form.get("description") || ""), Math.round(price), imageKey, category, fileKey, tag, offerPrice === null ? null : Math.round(offerPrice), uploadedFileName, uploadedFileType, uploadedFileExtension)
           .run();
 
         return json({ success: true, id: inserted.meta.last_row_id });
@@ -1039,6 +1067,9 @@ export async function onRequest({ request, env }) {
         const file = form.get("file");
         let imageKey = old.image_url;
         let fileKey = old.file_url;
+        let fileName = old.file_name || null;
+        let fileContentType = old.file_content_type || null;
+        let fileExtension = old.file_extension || null;
 
         if (image instanceof File && image.size) {
           if (
@@ -1069,13 +1100,11 @@ export async function onRequest({ request, env }) {
             );
           }
 
+          fileName = cleanUploadName(file.name);
+          fileContentType = file.type || "application/octet-stream";
+          fileExtension = (fileName.match(/\.[a-z0-9]{1,12}$/i) || [""])[0].toLowerCase();
           fileKey = `downloads/${productId}/${id()}`;
-          await putB2(
-            env,
-            fileKey,
-            file,
-            file.type || "application/octet-stream"
-          );
+          await putB2(env, fileKey, file, fileContentType);
         }
 
         const value = (field, oldField = field) =>
@@ -1093,7 +1122,7 @@ export async function onRequest({ request, env }) {
         }
 
         await env.DB.prepare(
-          "UPDATE products SET name=?,category=?,price=?,description=?,image_url=?,file_url=?,is_active=1,tag=?,offer_price=? WHERE id=?"
+          "UPDATE products SET name=?,category=?,price=?,description=?,image_url=?,file_url=?,is_active=1,tag=?,offer_price=?,file_name=?,file_content_type=?,file_extension=? WHERE id=?"
         )
           .bind(
             value("name"),
@@ -1104,6 +1133,9 @@ export async function onRequest({ request, env }) {
             fileKey,
             value("tag", "tag"),
             offerPrice === null ? null : Math.round(offerPrice),
+            fileName,
+            fileContentType,
+            fileExtension,
             productId
           )
           .run();
@@ -1308,7 +1340,7 @@ export async function onRequest({ request, env }) {
                 "order",
                 String(order.customer_email).trim().toLowerCase(),
                 Number(orderId),
-                "/"
+                `/?open=orders&order=${encodeURIComponent(String(orderId))}`
               )
               .run();
           }

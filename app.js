@@ -173,6 +173,16 @@ document.getElementById("cartItems").addEventListener("click",e=>{const id=e.tar
 document.getElementById("openCart").onclick=openCart;document.getElementById("closeCart").onclick=closeCart;document.getElementById("backdrop").onclick=closeCart;
 const myOrdersDialog=document.getElementById("myOrdersDialog");
 document.getElementById("openMyOrders").addEventListener("click",()=>{document.getElementById("myOrderLookupMessage").textContent="";document.getElementById("myOrderLookupResult").innerHTML="";myOrdersDialog.showModal();});
+const notificationRoute=new URLSearchParams(window.location.search);
+if(notificationRoute.get("open")==="orders"){
+ const orderNumber=notificationRoute.get("order")||"";
+ document.getElementById("myOrderId").value=/^\\d{1,12}$/.test(orderNumber)?orderNumber:"";
+ document.getElementById("myOrderLookupMessage").textContent="অর্ডারটি দেখতে অর্ডারের সময় দেওয়া ইমেইল লিখে যাচাই করুন।";
+ myOrdersDialog.showModal();
+ notificationRoute.delete("open");notificationRoute.delete("order");
+ const cleanUrl=window.location.pathname+(notificationRoute.toString()?"?"+notificationRoute.toString():"")+window.location.hash;
+ window.history.replaceState({}, "", cleanUrl);
+}
 
 
 const memberDialog=document.getElementById("memberDialog");
