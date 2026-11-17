@@ -1,5 +1,13 @@
 const xmlEscape = (value) => String(value ?? "").replace(/[&<>"']/g, (ch) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&apos;"}[ch]));
 
+const formatLastmod = (value) => {
+  if (!value) return null;
+  const raw = String(value).trim();
+  const normalized = raw.includes("T") ? raw : raw.replace(" ", "T") + "Z";
+  const parsed = Date.parse(normalized);
+  return Number.isFinite(parsed) ? new Date(parsed).toISOString().slice(0, 10) : null;
+};
+
 export async function onRequest({ request, env }) {
   const origin = new URL(request.url).origin;
   try {
@@ -22,24 +30,31 @@ export async function onRequest({ request, env }) {
     const deletedFilter = columns.has("is_deleted")
       ? " AND COALESCE(is_deleted,0)=0"
       : "";
-    // Older databases may not yet have updated_at; select it only when present.
-    const dateColumns = columns.has("updated_at") ? "id, created_at, updated_at" : "id, created_at";
+    // Only use updated_at when the database actually has it. Never invent
+    // modification dates from today's date or from the original creation date.
+    const selectedColumns = columns.has("updated_at") ? "id, updated_at" : "id";
     const { results = [] } = await env.DB.prepare(
-      `SELECT ${dateColumns} FROM products WHERE ${activeColumn}=1${deletedFilter} ORDER BY id DESC`
+      `SELECT ${selectedColumns} FROM products WHERE ${activeColumn}=1${deletedFilter} ORDER BY id DESC`
     ).all();
 
-    const today = new Date().toISOString().slice(0, 10);
+    const staticPages = [
+      "",
+      "design-guide.html",
+      "privacy-policy.html",
+      "terms.html",
+      "refund-policy.html",
+      "contact.html",
+    ];
     const urls = [
-      `<url><loc>${xmlEscape(origin)}/</loc><lastmod>${today}</lastmod><changefreq>daily</changefreq><priority>1.0</priority></url>`,
-      ...["design-guide.html", "privacy-policy.html", "terms.html", "refund-policy.html", "contact.html"].map((page) => `<url><loc>${xmlEscape(origin)}/${page}</loc><lastmod>${today}</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>`),
+      ...staticPages.map((page) => `<url><loc>${xmlEscape(origin)}${page ? "/" + page : "/"}</loc></url>`),
       ...results.map((product) => {
-        const rawDate = String(product.updated_at || product.created_at || "");
-        const parsed = Date.parse(rawDate.includes("T") ? rawDate : rawDate.replace(" ", "T") + "Z");
-        const lastmod = Number.isFinite(parsed) ? new Date(parsed).toISOString().slice(0, 10) : today;
-        return `<url><loc>${xmlEscape(origin)}/product/${encodeURIComponent(product.id)}</loc><lastmod>${lastmod}</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>`;
+        const lastmod = formatLastmod(product.updated_at);
+        const loc = `${xmlEscape(origin)}/product/${encodeURIComponent(product.id)}`;
+        return `<url><loc>${loc}</loc>${lastmod ? `<lastmod>${lastmod}</lastmod>` : ""}</url>`;
       }),
     ];
-    return new Response(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join("\n")}\n</urlset>`, {
+
+    return new Response(`<?xml version="1.0" encoding="UTF-8"?>\\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\\n${urls.join("\\n")}\\n</urlset>`, {
       headers: {
         "Content-Type": "application/xml; charset=utf-8",
         "Cache-Control": "public, max-age=300, s-maxage=300",
