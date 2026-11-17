@@ -6,7 +6,7 @@
 .product-open .product-thumb{width:100%}
 .product-title-button h3{margin:8px 0 12px}
 .product-card:focus-visible,.product-open:focus-visible,.product-title-button:focus-visible,.details-link:focus-visible{outline:3px solid #9acb3d;outline-offset:3px}
-.details-link{border:0;background:transparent;color:#667085;font-size:12px;padding:10px 0 0;cursor:pointer}
+.details-link{display:inline-block;text-decoration:none;border:0;background:transparent;color:#667085;font-size:12px;padding:10px 0 0;cursor:pointer}
 .product-dialog{width:min(780px,calc(100% - 24px));max-width:780px;max-height:90dvh;overflow:auto}
 .product-detail-modal{position:relative;padding:28px;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:28px;align-items:center}
 .detail-art{min-height:330px;border-radius:12px;display:grid;place-items:center;padding:25px;overflow:hidden}
