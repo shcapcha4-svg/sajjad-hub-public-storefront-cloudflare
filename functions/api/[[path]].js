@@ -140,6 +140,25 @@ const safeProduct = (row) => ({
 });
 
 const id = () => crypto.randomUUID();
+const cleanUploadName = (value) => {
+  const name = String(value || "design-file").replace(/\\/g, "/").split("/").pop().replace(/[\r\n\0]/g, "").trim();
+  return (name || "design-file").slice(0, 240);
+};
+const extensionFromType = (type = "") => ({
+  "application/pdf": ".pdf", "image/png": ".png", "image/jpeg": ".jpg",
+  "image/webp": ".webp", "image/gif": ".gif", "image/svg+xml": ".svg",
+  "application/zip": ".zip", "application/x-zip-compressed": ".zip",
+  "application/postscript": ".eps", "application/illustrator": ".ai",
+  "application/vnd.adobe.illustrator": ".ai"
+}[String(type).split(";")[0].trim().toLowerCase()] || "");
+const safeDownloadName = (storedName, productName, contentType) => {
+  const name = cleanUploadName(storedName || productName || "design-file");
+  return /\.[a-z0-9]{1,12}$/i.test(name) ? name : name + extensionFromType(contentType);
+};
+const contentDisposition = (name) => {
+  const ascii = name.normalize("NFKD").replace(/[^\x20-\x7E]/g, "_").replace(/["\\]/g, "_");
+  return "attachment; filename=\"" + (ascii || "design-file") + "\"; filename*=UTF-8''" + encodeURIComponent(name);
+};
 
 const hex = (bytes) =>
   Array.from(new Uint8Array(bytes), (value) =>
