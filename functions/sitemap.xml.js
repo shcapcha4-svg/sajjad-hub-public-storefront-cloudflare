@@ -22,8 +22,10 @@ export async function onRequest({ request, env }) {
     const deletedFilter = columns.has("is_deleted")
       ? " AND COALESCE(is_deleted,0)=0"
       : "";
+    // Older databases may not yet have updated_at; select it only when present.
+    const dateColumns = columns.has("updated_at") ? "id, created_at, updated_at" : "id, created_at";
     const { results = [] } = await env.DB.prepare(
-      `SELECT id, created_at, updated_at FROM products WHERE ${activeColumn}=1${deletedFilter} ORDER BY id DESC`
+      `SELECT ${dateColumns} FROM products WHERE ${activeColumn}=1${deletedFilter} ORDER BY id DESC`
     ).all();
 
     const today = new Date().toISOString().slice(0, 10);
